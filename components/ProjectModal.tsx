@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { X, CheckCircle2, AlertTriangle, ShieldCheck, Cpu } from 'lucide-react';
+import { X, CheckCircle2, AlertTriangle, ShieldCheck, Cpu, Globe, ExternalLink } from 'lucide-react';
 import { Project, SiteLanguageData } from '@/lib/content';
 
 interface ProjectModalProps {
@@ -65,10 +65,18 @@ export default function ProjectModal({ project, onClose, lang, data, onConsultPr
             <X className="w-5 h-5" />
           </button>
 
-          <div className="absolute bottom-5 right-6 rtl:right-6 rtl:left-auto ltr:left-6 ltr:right-auto z-10">
-            <span className="inline-block px-3 py-1 rounded-md bg-[#00F2FE]/20 backdrop-blur-md border border-[#00F2FE]/40 text-[#00F2FE] text-xs font-mono font-bold mb-2">
-              {project.tag}
-            </span>
+          <div className="absolute bottom-5 right-6 rtl:right-6 rtl:left-auto ltr:left-6 ltr:right-auto z-10 flex flex-col items-start">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-block px-3 py-1 rounded-md bg-[#00F2FE]/20 backdrop-blur-md border border-[#00F2FE]/40 text-[#00F2FE] text-xs font-mono font-bold">
+                {project.tag}
+              </span>
+              {project.statusBadge && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-950/80 backdrop-blur-md border border-amber-500/50 text-amber-300 text-xs font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                  <span>{project.statusBadge}</span>
+                </span>
+              )}
+            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
               {project.title}
             </h2>
@@ -160,7 +168,19 @@ export default function ProjectModal({ project, onClose, lang, data, onConsultPr
           <p className="text-xs text-slate-400">
             {isAr ? 'تريد تنفيذ حلول مماثلة لمنشأتك؟' : 'Interested in a similar deployment?'}
           </p>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            {project.liveUrl && (
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE] border border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>{isAr ? 'زيارة المنصة الحالية' : 'Open Live Platform'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-transparent border border-slate-600 hover:border-slate-400 text-slate-300 text-xs font-semibold"

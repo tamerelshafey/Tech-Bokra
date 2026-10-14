@@ -68,6 +68,25 @@ export default function HomePage() {
         : 'Tech Bokra | Security & IT Infrastructure, ERP & Cloud Solutions';
   }, [lang]);
 
+  useEffect(() => {
+    // Automatically eliminate '#' and hash fragments (like #home) from address bar on page load
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const rawHash = window.location.hash.replace('#', '');
+      if (rawHash && rawHash !== 'home') {
+        const targetElement = document.getElementById(rawHash);
+        if (targetElement) {
+          setTimeout(() => {
+            targetElement.scrollIntoView({ behavior: 'smooth' });
+          }, 150);
+        }
+      } else if (rawHash === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // Remove hash from browser URL without page reload
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
   const toggleLanguage = () => {
     setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
   };
@@ -90,12 +109,19 @@ export default function HomePage() {
     }
   };
 
+  const cleanUrl = () => {
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  };
+
   const handleSelectServiceForQuote = (serviceTitle: string) => {
     setPrefilledService(serviceTitle);
     const contactElem = document.getElementById('contact');
     if (contactElem) {
       contactElem.scrollIntoView({ behavior: 'smooth' });
     }
+    cleanUrl();
   };
 
   const handleBookSurveyWithScope = (scopeSummary: string) => {
@@ -104,6 +130,7 @@ export default function HomePage() {
     if (contactElem) {
       contactElem.scrollIntoView({ behavior: 'smooth' });
     }
+    cleanUrl();
   };
 
   const scrollToContact = () => {
@@ -111,6 +138,7 @@ export default function HomePage() {
     if (contactElem) {
       contactElem.scrollIntoView({ behavior: 'smooth' });
     }
+    cleanUrl();
   };
 
   const scrollToEstimator = () => {
@@ -118,6 +146,7 @@ export default function HomePage() {
     if (estElem) {
       estElem.scrollIntoView({ behavior: 'smooth' });
     }
+    cleanUrl();
   };
 
   return (

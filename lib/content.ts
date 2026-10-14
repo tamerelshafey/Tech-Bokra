@@ -13,6 +13,9 @@ export interface Project {
   technologies: string[];
   challenges: string[];
   solutions: string[];
+  liveUrl?: string;
+  statusBadge?: string;
+  isUpcoming?: boolean;
 }
 
 export interface ServiceItem {
@@ -107,6 +110,7 @@ export interface SiteLanguageData {
     title: string;
     subtitle: string;
     filterAll: string;
+    filterUpcoming: string;
     filterSecurity: string;
     filterNetwork: string;
     filterSoftware: string;
@@ -116,6 +120,8 @@ export interface SiteLanguageData {
     challengeTitle: string;
     solutionTitle: string;
     techTitle: string;
+    livePreviewBtn: string;
+    upcomingBadge: string;
     list: Project[];
   };
   process: {
@@ -387,15 +393,18 @@ export const contentAr: SiteLanguageData = {
     title: "أبرز مشاريعنا وقصص النجاح",
     subtitle: "نفخر بسجل حافل من الإنجازات في البنية التحتية وتطوير التطبيقات والأنظمة لقطاعات متنوعة.",
     filterAll: "جميع المشاريع",
+    filterUpcoming: "منصات قيد التجهيز / شقيقة",
     filterSecurity: "أنظمة مراقبة",
     filterNetwork: "شبكات وتيار خفيف",
-    filterSoftware: "تطبيقات جوال",
+    filterSoftware: "تطبيقات ومنصات",
     filterERP: "أنظمة إدارة و ERP",
     viewDetails: "عرض تفاصيل المشروع",
     closeModal: "إغلاق",
     challengeTitle: "التحديات الهندسية للمشروع",
     solutionTitle: "الحلول المنفذة بواسطة تيك بكرة",
     techTitle: "التقنيات والمعدات المستخدمة",
+    livePreviewBtn: "زيارة المنصة الحالية (Live)",
+    upcomingBadge: "قيد التجهيز - قريباً",
     list: [
       {
         id: "state-council",
@@ -564,6 +573,68 @@ export const contentAr: SiteLanguageData = {
           "كاميرات حرارية ثنائية الطيف تطلق إنذاراً صوتياً وبصرياً فور تجاوز أي جزء لدرجة 60 مئوية قبل ظهور الدخان",
           "أتمتة دخول الشاحنات بربط باركود إذن الاستلام بنظام فتح البوابة التلقائي",
         ],
+      },
+      {
+        id: "helio-property",
+        title: "منصة هليو بروبرتي العقارية (Helio Property)",
+        client: "شركة هليو بروبرتي للتطوير والاستثمار العقاري",
+        tag: "منصة عقارية PropTech",
+        category: "software",
+        icon: "Building2",
+        image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
+        highlight: "منصة عقارية ذكية متخصصة في المشروعات والوحدات العقارية بمدينة هليوبوليس الجديدة والمناطق العمرانية الحديثة.",
+        summary: "منصة متكاملة لاستكشاف المشروعات العقارية، حجز الوحدات، وإدارة المبيعات وجداول الأقساط بدقة ومرونة.",
+        description: "تقوم تيك بكرة بتطوير وتجهيز منصة 'هليو بروبرتي' بأحدث تقنيات Next.js السحابية لتكون الواجهة الرقمية الأبرز لخدمة السوق العقاري في هليوبوليس الجديدة والمناطق العمرانية، مع محرك بحث جغرافي ذكي، إدارة العقود، وجداول الأقساط المرنة، وتجربة تصفح سريعة وتفاعلية.",
+        stats: [
+          { label: "الوحدات والمشروعات", value: "+500 وحدة" },
+          { label: "حالة الجاهزية", value: "90% قرب الإطلاق" },
+          { label: "سرعة التحميل", value: "0.2 ثانية" },
+        ],
+        technologies: ["Next.js 15 App Router", "Tailwind CSS & Motion", "Vercel Edge Network", "PostgreSQL Cloud Database", "Real Estate Search Engine", "WhatsApp Instant Hook"],
+        challenges: [
+          "عرض المخططات الهندسية والكتالوجات العقارية فائقة الدقة دون التأثير على سرعة التحميل على الموبايل",
+          "تنظيم جداول الأقساط المتغيرة وحسابات السداد وتأمين بيانات المشترين",
+          "تمكين فريق المبيعات من تحديث وتخصيص حالات الوحدات لحظياً",
+        ],
+        solutions: [
+          "الاعتماد على شبكة توزيع محتوى CDN عالمية مع تحسين تلقائي للصور والمخططات",
+          "تطوير لوحة تحكم ذكية تمكن المطور والمسوق من إدارة المشروعات وجداول الدفع بسهولة",
+          "ربط المنصة بنظام محادثات فوري عبر واتساب للرد على استفسارات المشترين فوراً",
+        ],
+        liveUrl: "https://helio-property.vercel.app/",
+        statusBadge: "قيد التجهيز - الإطلاق التجريبي",
+        isUpcoming: true,
+      },
+      {
+        id: "alrehla",
+        title: "منصة وتطبيق الرحلة (Al-Rehla)",
+        client: "مؤسسة ومنصة الرحلة (alrehla.org)",
+        tag: "منصة رقمية وتطبيق تفاعلي",
+        category: "software",
+        icon: "Sparkles",
+        image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+        highlight: "منصة معرفية وتفاعلية متطورة تقدم تجربة مستخدم نوعية للرحلات والتفاعل الاجتماعي والمحتوى المبتكر.",
+        summary: "منصة رقمية تجمع بين عمق المحتوى، التفاعل البصري، وتجربة المستخدم الحديثة المبنية وفق معايير عالمية.",
+        description: "تعمل تيك بكرة على دعم وتطوير البنية التقنية لمنصة 'الرحلة' (alrehla.org)، موفرة حلول استضافة وتطوير سحابي عالية الاعتمادية، مع واجهات مستخدم مخصصة تعتمد على السلاسة الحركية، وأنظمة تفاعل ومعالجة بيانات تضمن استقرار المنظومة لمئات الآلاف من الزيارات.",
+        stats: [
+          { label: "الزيارات والتفاعل", value: "+25,000" },
+          { label: "جاهزية السيرفرات", value: "99.9% Uptime" },
+          { label: "تقييم التجربة", value: "4.9 / 5" },
+        ],
+        technologies: ["Next.js & TypeScript", "Cloud Architecture", "Interactive Story Engine", "Redis Cache", "Progressive Web App"],
+        challenges: [
+          "تقديم تجربة بصرية استثنائية وجذابة دون المساومة على سرعة استجابة الموقع",
+          "إدارة تدفق المحتوى والوسائط التفاعلية مع حماية سرية المستخدمين",
+          "العمل بسلاسة تامة عبر جميع الأجهزة والمتصفحات مع دعم كامل للغتين",
+        ],
+        solutions: [
+          "هندسة واجهات برمجية سريعة وخفيفة مع تخزين مؤقت متقدم للمحتوى المتكرر",
+          "بنية تحتية سحابية مرنة قادرة على استيعاب طفرات الزوار بأعلى موثوقية",
+          "تكامل تصميمي عالي الجودة مع خطوط وتدرجات بصرية تمنح المستخدم إحساساً بالأصالة والابتكار",
+        ],
+        liveUrl: "https://www.alrehla.org/",
+        statusBadge: "مشروع نشط - تحديثات مستمرة",
+        isUpcoming: true,
       },
     ],
   },
@@ -859,15 +930,18 @@ export const contentEn: SiteLanguageData = {
     title: "Our Featured Projects",
     subtitle: "We pride ourselves on a proven track record of infrastructure and software achievements.",
     filterAll: "All Projects",
+    filterUpcoming: "Upcoming & Sister Platforms",
     filterSecurity: "Security & CCTV",
     filterNetwork: "Networks & LC",
-    filterSoftware: "Mobile Apps",
+    filterSoftware: "Apps & Platforms",
     filterERP: "Management Systems",
     viewDetails: "View Project Details",
     closeModal: "Close",
     challengeTitle: "Engineering Challenges",
     solutionTitle: "Tech Bokra Solutions Implemented",
     techTitle: "Technologies & Hardware Deployed",
+    livePreviewBtn: "Visit Live Platform",
+    upcomingBadge: "In Progress - Beta Launch Soon",
     list: [
       {
         id: "state-council",
@@ -1036,6 +1110,68 @@ export const contentEn: SiteLanguageData = {
           "Bi-spectrum thermal optics triggering audio-visual warnings the moment heat exceeds 60°C",
           "Automated UHF RFID tags reading truck manifests and raising hydraulic gates in 15 seconds",
         ],
+      },
+      {
+        id: "helio-property",
+        title: "Helio Property Platform",
+        client: "Helio Property Real Estate Development",
+        tag: "PropTech Platform",
+        category: "software",
+        icon: "Building2",
+        image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
+        highlight: "Smart PropTech platform dedicated to residential & commercial developments in New Heliopolis and beyond.",
+        summary: "Integrated real estate platform enabling smart unit discovery, reservation workflows, flexible installment tracking, and developer CRM.",
+        description: "Tech Bokra is engineering and deploying the 'Helio Property' platform utilizing cloud-native Next.js and high-performance serverless infrastructure. The platform serves as the premier digital gateway for the New Heliopolis property market, offering geo-search filters, contract management, flexible installment plans, and sub-second page loads.",
+        stats: [
+          { label: "Listed Units", value: "+500 Units" },
+          { label: "Launch Status", value: "90% Beta Ready" },
+          { label: "Render Latency", value: "0.2s Instant" },
+        ],
+        technologies: ["Next.js 15 App Router", "Tailwind CSS & Motion", "Vercel Edge Network", "PostgreSQL Cloud Database", "Real Estate Search Engine", "WhatsApp Instant Hook"],
+        challenges: [
+          "Rendering high-res architectural plans and floor layouts with zero mobile latency",
+          "Managing flexible installment schedules and securing prospective buyer data",
+          "Empowering sales agents with real-time unit status updates (Available, Reserved, Sold)",
+        ],
+        solutions: [
+          "Optimized responsive CDN delivery for immediate high-definition property asset loading",
+          "Engineered an intuitive control dashboard for instant unit and pricing updates",
+          "Instant WhatsApp & Email webhooks bridging client inquiries directly to sales reps",
+        ],
+        liveUrl: "https://helio-property.vercel.app/",
+        statusBadge: "In Progress - Beta Launch Soon",
+        isUpcoming: true,
+      },
+      {
+        id: "alrehla",
+        title: "Al-Rehla Platform",
+        client: "Al-Rehla Organization (alrehla.org)",
+        tag: "Interactive Platform",
+        category: "software",
+        icon: "Sparkles",
+        image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+        highlight: "An innovative interactive knowledge and digital storytelling platform offering a distinctive user journey.",
+        summary: "A world-class digital platform combining depth of content, visual interactivity, and high-performance user experience.",
+        description: "Tech Bokra powers and supports the technical infrastructure of 'Al-Rehla' (alrehla.org), delivering ultra-reliable cloud hosting, bespoke fluid animations, and high-throughput data processing to ensure rock-solid stability across hundreds of thousands of visitor sessions.",
+        stats: [
+          { label: "Monthly Engagements", value: "+25,000" },
+          { label: "Server Availability", value: "99.9% Uptime" },
+          { label: "User Satisfaction", value: "4.9 / 5" },
+        ],
+        technologies: ["Next.js & TypeScript", "Cloud Architecture", "Interactive Story Engine", "Redis Cache", "Progressive Web App"],
+        challenges: [
+          "Delivering immersive interactive experiences without compromising response speeds",
+          "Managing media content pipelines while safeguarding user privacy and data",
+          "Cross-device responsiveness with full RTL and LTR support",
+        ],
+        solutions: [
+          "Fast, lightweight API caching ensuring immediate page interactions",
+          "Scalable cloud cluster capable of handling traffic spikes seamlessly",
+          "Bespoke visual typography and elegant layout fostering engagement",
+        ],
+        liveUrl: "https://www.alrehla.org/",
+        statusBadge: "Active Platform - Continuous Evolution",
+        isUpcoming: true,
       },
     ],
   },

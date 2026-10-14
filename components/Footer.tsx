@@ -31,6 +31,26 @@ export default function Footer({
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  };
+
+  const handleNavClick = (sectionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    if (sectionId === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
   };
 
   const displayAddress = address || data.footer.addressVal;
@@ -44,8 +64,12 @@ export default function Footer({
           
           {/* Brand Bio (5 Cols) */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0B1A2F] to-[#10233D] border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] font-black text-lg">
+            <button 
+              type="button" 
+              onClick={() => scrollToTop()} 
+              className="flex items-center gap-3 text-start cursor-pointer group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0B1A2F] to-[#10233D] border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] font-black text-lg group-hover:border-[#00F2FE] transition">
                 TB
               </div>
               <div className="text-2xl font-black text-white tracking-tight">
@@ -54,7 +78,7 @@ export default function Footer({
                   Tech Bokra
                 </span>
               </div>
-            </div>
+            </button>
 
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
               {data.footer.brandBio}
@@ -72,34 +96,58 @@ export default function Footer({
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm text-slate-400">
               <li>
-                <a href="#services" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('services', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.services}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#projects" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('projects', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.projects}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#architecture" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('architecture', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.architecture}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#estimator" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('estimator', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.estimator}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#process" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('process', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.process}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#faq" className="hover:text-[#00F2FE] transition">
+                <button
+                  type="button"
+                  onClick={(e) => handleNavClick('faq', e)}
+                  className="hover:text-[#00F2FE] transition text-start cursor-pointer"
+                >
                   {data.nav.faq}
-                </a>
+                </button>
               </li>
             </ul>
           </div>

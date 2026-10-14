@@ -139,24 +139,24 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact }: Her
 
             {/* Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row gap-4">
-              <a
-                href="#contact"
+              <button
+                type="button"
                 onClick={onOpenContact}
-                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#0369A1] text-[#071120] font-black text-base shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:shadow-[0_0_35px_rgba(0,242,254,0.6)] transition-all transform active:scale-95 group"
+                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#0369A1] text-[#071120] font-black text-base shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:shadow-[0_0_35px_rgba(0,242,254,0.6)] transition-all transform active:scale-95 group cursor-pointer"
               >
                 <Headphones className="w-5 h-5 text-[#071120]" />
                 <span>{data.hero.btnContact}</span>
                 <ArrowIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </a>
+              </button>
 
-              <a
-                href="#estimator"
+              <button
+                type="button"
                 onClick={onOpenEstimator}
-                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl bg-[#10233D] hover:bg-[#152C4D] border border-[#00F2FE]/40 hover:border-[#00F2FE] text-[#00F2FE] font-bold text-base transition-all shadow-sm"
+                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl bg-[#10233D] hover:bg-[#152C4D] border border-[#00F2FE]/40 hover:border-[#00F2FE] text-[#00F2FE] font-bold text-base transition-all shadow-sm cursor-pointer"
               >
                 <Calculator className="w-5 h-5 text-[#00F2FE]" />
                 <span>{data.hero.btnEstimate}</span>
-              </a>
+              </button>
             </div>
 
             {/* Quick Guarantees Bar */}
