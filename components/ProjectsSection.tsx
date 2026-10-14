@@ -22,11 +22,12 @@ interface ProjectsSectionProps {
   lang: 'ar' | 'en';
   data: SiteLanguageData;
   onConsultProject: (projectTitle: string) => void;
+  projectUrlOverrides?: Record<string, string>;
 }
 
 type FilterCategory = 'all' | 'upcoming' | 'security' | 'network' | 'software' | 'erp';
 
-export default function ProjectsSection({ lang, data, onConsultProject }: ProjectsSectionProps) {
+export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides }: ProjectsSectionProps) {
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -183,42 +184,45 @@ export default function ProjectsSection({ lang, data, onConsultProject }: Projec
                   </div>
                 </div>
 
-                {/* Inspect Details & Live Preview Buttons */}
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => setSelectedProject(project)}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <span>{data.projects.viewDetails}</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
-
-                  {project.liveUrl && (
-                    <a
-                      href={project.liveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2.5 px-3 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE] border border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                      title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
+                  {/* Inspect Details & Live Preview Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      onClick={() => setSelectedProject({
+                        ...project,
+                        liveUrl: (projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl,
+                      })}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                      <span>{data.projects.viewDetails}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
 
-        {/* Modal Viewer */}
-        <ProjectModal
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-          lang={lang}
-          data={data}
-          onConsultProject={onConsultProject}
-        />
+                    {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
+                      <a
+                        href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 px-3 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE] border border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Modal Viewer */}
+          <ProjectModal
+            project={selectedProject}
+            onClose={() => setSelectedProject(null)}
+            lang={lang}
+            data={data}
+            onConsultProject={onConsultProject}
+          />
 
       </div>
     </section>

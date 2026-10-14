@@ -22,9 +22,15 @@ interface HeroProps {
   data: SiteLanguageData;
   onOpenEstimator: () => void;
   onOpenContact: () => void;
+  heroOverrides?: {
+    badge?: string;
+    titleLine1?: string;
+    titleLine2?: string;
+    sub?: string;
+  };
 }
 
-export default function Hero({ lang, data, onOpenEstimator, onOpenContact }: HeroProps) {
+export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroOverrides }: HeroProps) {
   const [activeTab, setActiveTab] = useState<'cctv' | 'network' | 'access' | 'cloud'>('cctv');
   const [heroImageError, setHeroImageError] = useState(false);
   const isAr = lang === 'ar';
@@ -119,22 +125,22 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact }: Her
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00F2FE]" />
               </span>
               <span className="font-medium text-slate-300">
-                {data.hero.badge}
+                {heroOverrides?.badge || data.hero.badge}
               </span>
             </div>
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.15] tracking-tight">
-              <span>{data.hero.titleLine1}</span>{' '}
+              <span>{heroOverrides?.titleLine1 || data.hero.titleLine1}</span>{' '}
               <br className="hidden sm:inline" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F2FE] via-[#38BDF8] to-[#0284C7] text-glow">
-                {data.hero.titleLine2}
+                {heroOverrides?.titleLine2 || data.hero.titleLine2}
               </span>
             </h1>
 
             {/* Subheading / Value explanation */}
             <p className="text-base sm:text-lg md:text-xl text-slate-300 leading-relaxed max-w-2xl font-normal">
-              {data.hero.sub}
+              {heroOverrides?.sub || data.hero.sub}
             </p>
 
             {/* Action Buttons */}
