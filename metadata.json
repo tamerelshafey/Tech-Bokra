@@ -1,0 +1,6 @@
+{
+  "name": "تيك بكرة | Tech Bokra",
+  "description": "المنصة الرسمية المطورة لشركة تيك بكرة (Tech Bokra) - حلول الأنظمة الأمنية والمراقبة الذكية، البنية التحتية للشبكات والتيار الخفيف، وحلول تخطيط الموارد والبرمجيات للشركات.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
