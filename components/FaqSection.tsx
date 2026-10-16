@@ -8,9 +8,10 @@ import { useTheme } from '@/components/ThemeProvider';
 interface FaqSectionProps {
   lang: 'ar' | 'en';
   data: SiteLanguageData;
+  customFaq?: { q: string; a: string }[];
 }
 
-export default function FaqSection({ lang, data }: FaqSectionProps) {
+export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const { isDark } = useTheme();
   const isAr = lang === 'ar';

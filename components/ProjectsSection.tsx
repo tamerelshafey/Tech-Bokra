@@ -24,11 +24,12 @@ interface ProjectsSectionProps {
   data: SiteLanguageData;
   onConsultProject: (projectTitle: string) => void;
   projectUrlOverrides?: Record<string, string>;
+  customProjects?: Project[];
 }
 
 type FilterCategory = 'all' | 'upcoming' | 'security' | 'network' | 'software' | 'erp';
 
-export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides }: ProjectsSectionProps) {
+export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides, customProjects }: ProjectsSectionProps) {
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -59,7 +60,9 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
     }
   };
 
-  const filteredProjects = data.projects.list.filter((p) => {
+  const activeProjects = customProjects && customProjects.length > 0 ? customProjects : data.projects.list;
+
+  const filteredProjects = activeProjects.filter((p) => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') return p.isUpcoming === true;
     return p.category === filter;

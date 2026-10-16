@@ -41,7 +41,7 @@ import {
   Lock
 } from 'lucide-react';
 import Link from 'next/link';
-import { siteConfig as defaultSiteConfig, contentAr, contentEn } from '@/lib/content';
+import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 import { 
@@ -102,6 +102,27 @@ export interface EditableConfig {
   // Live Project URLs
   helioPropertyUrl: string;
   alrehlaUrl: string;
+
+  // Media & Images CMS
+  heroCctvImage?: string;
+  heroNetworkImage?: string;
+  heroAccessImage?: string;
+  heroCloudImage?: string;
+
+  // Projects CMS
+  projectsList?: Project[];
+
+  // Services CMS
+  servicesList?: ServiceItem[];
+
+  // FAQ CMS
+  faqList?: { q: string; a: string }[];
+
+  // Footer & Brand Bio
+  brandBioAr?: string;
+  brandBioEn?: string;
+  commercialRegister?: string;
+  taxId?: string;
 }
 
 export const defaultEditableConfig: EditableConfig = {
@@ -148,6 +169,27 @@ export const defaultEditableConfig: EditableConfig = {
   // Live Projects
   helioPropertyUrl: 'https://helio-property.vercel.app/',
   alrehlaUrl: 'https://www.alrehla.org/',
+
+  // Media & Images CMS
+  heroCctvImage: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
+  heroNetworkImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
+  heroAccessImage: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80',
+  heroCloudImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+
+  // Projects CMS
+  projectsList: contentAr.projects.list,
+
+  // Services CMS
+  servicesList: contentAr.services.list,
+
+  // FAQ CMS
+  faqList: contentAr.faq.items,
+
+  // Footer & Brand Bio
+  brandBioAr: contentAr.footer.brandBio,
+  brandBioEn: contentEn.footer.brandBio,
+  commercialRegister: defaultSiteConfig.commercialRegister,
+  taxId: defaultSiteConfig.taxId,
 };
 
 interface AdminSettingsModalProps {

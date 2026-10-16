@@ -17,16 +17,17 @@ import {
   Sparkles,
   FileCheck
 } from 'lucide-react';
-import { SiteLanguageData } from '@/lib/content';
+import { SiteLanguageData, ServiceItem } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface ServicesSectionProps {
   lang: 'ar' | 'en';
   data: SiteLanguageData;
   onSelectService: (serviceTitle: string) => void;
+  customServices?: ServiceItem[];
 }
 
-export default function ServicesSection({ lang, data, onSelectService }: ServicesSectionProps) {
+export default function ServicesSection({ lang, data, onSelectService, customServices }: ServicesSectionProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp'>('all');
   const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -58,7 +59,9 @@ export default function ServicesSection({ lang, data, onSelectService }: Service
     setExpandedSpecs((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const filteredServices = data.services.list.filter((s) => {
+  const activeList = customServices && customServices.length > 0 ? customServices : data.services.list;
+
+  const filteredServices = activeList.filter((s) => {
     if (activeFilter === 'all') return true;
     return s.category === activeFilter;
   });
