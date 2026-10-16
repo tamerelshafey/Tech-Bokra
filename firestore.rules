@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 'tam.elshafey@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 2. Settings: Public read for live website rendering, admin-only write
+    match /settings/{settingsId} {
+      allow get: if isValidId(settingsId);
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(settingsId);
+    }
+
+    // 3. Customer Inquiries & Quote Requests
+    match /inquiries/{inquiryId} {
+      // Anyone can submit a new inquiry / lead (create)
+      allow create: if isValidId(inquiryId) &&
+        request.resource.data.clientName is string &&
+        request.resource.data.clientName.size() >= 2 &&
+        request.resource.data.clientName.size() <= 100 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 6 &&
+        request.resource.data.phone.size() <= 32 &&
+        request.resource.data.status == 'new';
+
+      // PII Protection: Only authorized admins can read, list, update or delete customer leads
+      allow get, list, update, delete: if isAdmin() && isValidId(inquiryId);
+    }
+
+    // 4. Authorized Admins Collection
+    match /admins/{adminId} {
+      allow read, write: if isAdmin() && isValidId(adminId);
+    }
+  }
+}

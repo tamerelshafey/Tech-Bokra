@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
+import { submitInquiry } from '@/lib/dbService';
 
 interface ProjectEstimatorProps {
   lang: 'ar' | 'en';
@@ -112,6 +113,17 @@ export default function ProjectEstimator({
     const encoded = encodeURIComponent(
       summary + `\n\n${isAr ? 'أرجو التواصل لتحديد موعد المعاينة الفنية الميدانية.' : 'Please arrange a technical survey appointment.'}`
     );
+
+    // Persist estimator lead into Firestore
+    submitInquiry({
+      clientName: isAr ? 'استفسار من حاسبة التكلفة' : 'Estimator Inquiry Lead',
+      phone: 'طلب فوري عبر واتساب',
+      facilityType: facilityTypes.find((f) => f.id === facility)?.[isAr ? 'labelAr' : 'labelEn'] || facility,
+      selectedSystems: selectedSystems,
+      notes: `حجم المنشأة: ${scale} | الضمان: ${slaTier === 'standard' ? 'سنتين' : '24/7 SLA'} | مدة تقديرية: ${getEstimatedDays()}`,
+      source: 'estimator',
+    }).catch((err) => console.warn('Estimator lead save warning:', err));
+
     window.open(`https://wa.me/${whatsappNumber}?text=${encoded}`, '_blank');
   };
 

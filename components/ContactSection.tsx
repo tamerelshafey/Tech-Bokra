@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
+import { submitInquiry } from '@/lib/dbService';
 
 interface ContactSectionProps {
   lang: 'ar' | 'en';
@@ -132,6 +133,17 @@ export default function ContactSection({
     const text = getFormattedMessage();
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
+
+    // Persist lead to Firestore asynchronously
+    submitInquiry({
+      clientName: name,
+      phone,
+      facilityType: company,
+      selectedSystems: service ? [service] : [],
+      notes: notes ? `المحافظة: ${governorate} | ${notes}` : `المحافظة: ${governorate}`,
+      source: 'contact_form',
+    }).catch((err) => console.warn('Inquiry auto-save error:', err));
+
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -141,6 +153,17 @@ export default function ContactSection({
     const text = getFormattedMessage();
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
+
+    // Persist lead to Firestore asynchronously
+    submitInquiry({
+      clientName: name,
+      phone,
+      facilityType: company,
+      selectedSystems: service ? [service] : [],
+      notes: notes ? `المحافظة: ${governorate} | ${notes}` : `المحافظة: ${governorate}`,
+      source: 'contact_form',
+    }).catch((err) => console.warn('Inquiry auto-save error:', err));
+
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(
       isAr ? `طلب أو استفسار: ${company}` : `Inquiry & Quote Request: ${company}`
     )}&body=${encodeURIComponent(text)}`;

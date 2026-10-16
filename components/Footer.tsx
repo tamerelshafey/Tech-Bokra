@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { ArrowUp, Phone, Mail, MapPin, Settings, Sun, Moon } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUp, Phone, Mail, MapPin, Settings, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
-import TechBokraLogo from '@/components/TechBokraLogo';
+import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface FooterProps {
@@ -16,6 +17,8 @@ interface FooterProps {
   address?: string;
   linkedinUrl?: string;
   facebookUrl?: string;
+  logoEmblemStyle?: LogoEmblemStyle;
+  customLogoUrl?: string;
 }
 
 export default function Footer({ 
@@ -28,6 +31,8 @@ export default function Footer({
   address,
   linkedinUrl = siteConfig.linkedinUrl,
   facebookUrl = siteConfig.facebookUrl,
+  logoEmblemStyle = 'modern-tb',
+  customLogoUrl,
 }: FooterProps) {
   const isAr = lang === 'ar';
   const { theme, toggleTheme, isDark } = useTheme();
@@ -82,7 +87,13 @@ export default function Footer({
               className="flex items-center text-start cursor-pointer group focus:outline-none"
               aria-label="Tech Bokra Home"
             >
-              <TechBokraLogo size="lg" theme={theme} lang={lang} />
+              <TechBokraLogo 
+                size="lg" 
+                theme={theme} 
+                lang={lang} 
+                emblemStyle={logoEmblemStyle}
+                customImageUrl={customLogoUrl}
+              />
             </button>
 
             <p className={`text-xs sm:text-sm leading-relaxed max-w-md ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -267,9 +278,21 @@ export default function Footer({
                 }`}
               >
                 <Settings className={`w-3 h-3 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
-                <span>{isAr ? 'لوحة ضبط المحتوى' : 'Settings'}</span>
+                <span>{isAr ? 'الضبط السريع' : 'Settings'}</span>
               </button>
             )}
+
+            <Link
+              href="/admin"
+              className={`inline-flex items-center gap-1.5 transition px-2.5 py-1 rounded-lg border font-semibold ${
+                isDark
+                  ? 'bg-[#00F2FE]/10 hover:bg-[#00F2FE]/20 border-[#00F2FE]/30 text-[#00F2FE]'
+                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
+              }`}
+            >
+              <LayoutDashboard className="w-3 h-3" />
+              <span>{isAr ? 'لوحة التحكم الإدارية' : 'Admin Console'}</span>
+            </Link>
           </div>
           
           <button

@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Central website configuration for branding, contact info, slogans, and announcement",
+      "type": "object",
+      "properties": {
+        "whatsappNumber": { "type": "string", "maxLength": 32 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 100 },
+        "secondaryEmail": { "type": "string", "maxLength": 100 },
+        "addressAr": { "type": "string", "maxLength": 255 },
+        "addressEn": { "type": "string", "maxLength": 255 },
+        "workingHoursAr": { "type": "string", "maxLength": 255 },
+        "workingHoursEn": { "type": "string", "maxLength": 255 },
+        "linkedinUrl": { "type": "string", "maxLength": 300 },
+        "facebookUrl": { "type": "string", "maxLength": 300 },
+        "heroBadgeAr": { "type": "string", "maxLength": 150 },
+        "heroBadgeEn": { "type": "string", "maxLength": 150 },
+        "heroTitleLine1Ar": { "type": "string", "maxLength": 150 },
+        "heroTitleLine1En": { "type": "string", "maxLength": 150 },
+        "heroTitleLine2Ar": { "type": "string", "maxLength": 150 },
+        "heroTitleLine2En": { "type": "string", "maxLength": 150 },
+        "heroSubAr": { "type": "string", "maxLength": 600 },
+        "heroSubEn": { "type": "string", "maxLength": 600 },
+        "showAnnouncement": { "type": "boolean" },
+        "announcementBadgeAr": { "type": "string", "maxLength": 80 },
+        "announcementBadgeEn": { "type": "string", "maxLength": 80 },
+        "announcementTextAr": { "type": "string", "maxLength": 300 },
+        "announcementTextEn": { "type": "string", "maxLength": 300 },
+        "announcementLink": { "type": "string", "maxLength": 300 },
+        "stat1Val": { "type": "string", "maxLength": 30 },
+        "stat2Val": { "type": "string", "maxLength": 30 },
+        "stat3Val": { "type": "string", "maxLength": 30 },
+        "stat4Val": { "type": "string", "maxLength": 30 },
+        "logoEmblemStyle": { "type": "string", "enum": ["modern-tb", "security-shield", "cyber-cube"] },
+        "customLogoUrl": { "type": "string", "maxLength": 500000 },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["whatsappNumber", "phone", "email", "addressAr"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Incoming client request or site survey booking from contact form or estimator",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 100 },
+        "facilityType": { "type": "string", "maxLength": 60 },
+        "selectedSystems": {
+          "type": "array",
+          "description": "Selected security and IT systems"
+        },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "source": { "type": "string", "enum": ["contact_form", "estimator", "custom_quote"] },
+        "status": { "type": "string", "enum": ["new", "contacted", "survey_scheduled", "contracted", "archived"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["clientName", "phone", "status"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator user profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "editor"] },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/settings/{settingsId}": {
+      "schema": "#/entities/SiteSettings",
+      "description": "Global website settings and live configuration"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": "#/entities/Inquiry",
+      "description": "Customer inquiry and project survey leads"
+    },
+    "/admins/{adminId}": {
+      "schema": "#/entities/AdminUser",
+      "description": "Registered authorized admin users"
+    }
+  }
+}

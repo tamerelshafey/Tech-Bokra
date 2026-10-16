@@ -17,6 +17,8 @@ import AdminSettingsModal, { EditableConfig, defaultEditableConfig } from '@/com
 import { contentAr, contentEn, siteConfig } from '@/lib/content';
 import { MessageSquare, Settings, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import { testConnection } from '@/lib/firebase';
+import { subscribeSiteSettings } from '@/lib/dbService';
 
 const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v2';
 
@@ -74,6 +76,20 @@ export default function HomePage() {
       // Remove hash from browser URL without page reload
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
+  }, []);
+
+  useEffect(() => {
+    // 1. Validate connection on boot as mandated by Firebase integration guidelines
+    testConnection();
+
+    // 2. Real-time subscription to global cloud settings from Firestore
+    const unsubscribe = subscribeSiteSettings((cloudConfig) => {
+      if (cloudConfig) {
+        setCustomConfig((prev) => ({ ...prev, ...cloudConfig }));
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const toggleLanguage = () => {
@@ -207,6 +223,8 @@ export default function HomePage() {
         data={data}
         onOpenSettings={() => setIsSettingsOpen(true)}
         whatsappNumber={customConfig.whatsappNumber}
+        logoEmblemStyle={customConfig.logoEmblemStyle}
+        customLogoUrl={customConfig.customLogoUrl}
       />
 
       {/* Main Content Sections */}
@@ -308,6 +326,8 @@ export default function HomePage() {
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
+        logoEmblemStyle={customConfig.logoEmblemStyle}
+        customLogoUrl={customConfig.customLogoUrl}
       />
 
       {/* Floating Action Buttons */}

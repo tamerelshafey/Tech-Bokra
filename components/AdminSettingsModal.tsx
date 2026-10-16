@@ -22,14 +22,48 @@ import {
   Download,
   Upload,
   ExternalLink,
+  MessageSquare,
   Sun,
-  Moon
+  Moon,
+  Image as ImageIcon,
+  Trash2,
+  Inbox,
+  UserCheck,
+  LogOut,
+  LogIn,
+  Filter,
+  Calendar,
+  CloudCheck,
+  CloudUpload,
+  RefreshCw,
+  ExternalLink as ExtLinkIcon,
+  LayoutDashboard
 } from 'lucide-react';
+import Link from 'next/link';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn } from '@/lib/content';
-import TechBokraLogo from '@/components/TechBokraLogo';
+import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
+import { 
+  auth, 
+  googleProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  User 
+} from '@/lib/firebase';
+import { 
+  FirestoreInquiry, 
+  subscribeInquiries, 
+  updateInquiryStatus, 
+  deleteInquiry, 
+  saveSiteSettingsToCloud 
+} from '@/lib/dbService';
 
 export interface EditableConfig {
+  // Logo & Branding
+  logoEmblemStyle: LogoEmblemStyle;
+  customLogoUrl: string;
+
   // Contact & Social
   whatsappNumber: string;
   phone: string;
@@ -72,6 +106,10 @@ export interface EditableConfig {
 }
 
 export const defaultEditableConfig: EditableConfig = {
+  // Logo
+  logoEmblemStyle: 'modern-tb',
+  customLogoUrl: '',
+
   // Contact
   whatsappNumber: defaultSiteConfig.whatsappNumber,
   phone: defaultSiteConfig.phone,
@@ -122,7 +160,7 @@ interface AdminSettingsModalProps {
   onResetDefault: () => void;
 }
 
-type TabType = 'contact' | 'hero' | 'announcement' | 'stats' | 'projects' | 'export';
+type TabType = 'contact' | 'logo' | 'leads' | 'hero' | 'announcement' | 'stats' | 'projects' | 'export';
 
 export default function AdminSettingsModal({
   isOpen,
@@ -138,8 +176,37 @@ export default function AdminSettingsModal({
   const [activeTab, setActiveTab] = useState<TabType>('contact');
   const [copied, setCopied] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [cloudSavedSuccess, setCloudSavedSuccess] = useState(false);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [importError, setImportError] = useState('');
+
+  // Firebase Auth & Cloud Leads State
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [inquiries, setInquiries] = useState<FirestoreInquiry[]>([]);
+  const [leadsFilter, setLeadsFilter] = useState<string>('all');
+  const [loginError, setLoginError] = useState('');
+  const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+
+  // Listen to Auth State
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to Realtime Inquiries when modal is open and user is admin
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const unsubscribe = subscribeInquiries(
+      (data) => setInquiries(data),
+      (err) => console.warn('Inquiries sync notice:', err.message)
+    );
+    return () => unsubscribe();
+  }, [isOpen, user]);
 
   // Sync if currentConfig changes from outside
   const [prevConfig, setPrevConfig] = useState(currentConfig);
@@ -158,15 +225,49 @@ export default function AdminSettingsModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const handleGoogleLogin = async () => {
+    try {
+      setLoginError('');
+      await signInWithPopup(auth, googleProvider);
+      setActionSuccessMsg(isAr ? 'تم تسجيل الدخول بنجاح وتفعيل المزامنة السحابية!' : 'Signed in successfully! Cloud sync active.');
+      setTimeout(() => setActionSuccessMsg(''), 4000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setLoginError(msg);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setActionSuccessMsg(isAr ? 'تم تسجيل الخروج.' : 'Logged out.');
+      setTimeout(() => setActionSuccessMsg(''), 3000);
+    } catch (err: unknown) {
+      console.warn('Logout error:', err);
+    }
+  };
+
   const handleChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     onSaveConfig(formData);
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setTimeout(() => setSavedSuccess(false), 3500);
+
+    // Save to Cloud Firestore
+    setIsSavingCloud(true);
+    try {
+      await saveSiteSettingsToCloud(formData, user);
+      setCloudSavedSuccess(true);
+      setTimeout(() => setCloudSavedSuccess(false), 4000);
+    } catch (err: unknown) {
+      console.warn('Cloud save skipped or warning:', err);
+    } finally {
+      setIsSavingCloud(false);
+    }
   };
 
   const handleCopyTypeScript = () => {
@@ -243,25 +344,72 @@ export const siteConfig = ${JSON.stringify(
           <div className="flex items-center gap-3">
             <TechBokraLogo size="sm" theme={theme} variant="icon" />
             <div>
-              <h2 className={`text-lg sm:text-xl font-black flex items-center gap-2 ${
+              <h2 className={`text-lg sm:text-xl font-black flex items-center gap-2 flex-wrap ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
-                <span>{isAr ? 'لوحة ضبط وتعديل المحتوى المتطورة' : 'Advanced Live Content Manager'}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded font-mono border font-bold ${
-                  isDark ? 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30' : 'bg-sky-50 text-[#0284C7] border-sky-200'
+                <span>{isAr ? 'لوحة تحكم الموقع وقاعدة البيانات' : 'Cloud CMS & Database Manager'}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded font-mono border font-bold flex items-center gap-1 ${
+                  user
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : isDark ? 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30' : 'bg-sky-50 text-[#0284C7] border-sky-200'
                 }`}>
-                  NO-DB READY
+                  {user ? <UserCheck className="w-3 h-3 text-emerald-400" /> : <CloudCheck className="w-3 h-3 text-[#00F2FE]" />}
+                  {user ? (user.email === 'tam.elshafey@gmail.com' ? 'SUPER ADMIN (tam.elshafey)' : 'ADMIN') : 'FIREBASE CONNECTED'}
                 </span>
               </h2>
               <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {isAr
-                  ? 'تحكم فوري بالهواتف، الإعلانات، النصوص، روابط المشاريع، وتصدير الكود لـ Vercel / GitHub'
-                  : 'Instant control over phone numbers, hero copy, project URLs, and direct Git export'}
+                  ? 'مزامنة فورية مع قاعدة بيانات Firebase: الشعار، بيانات الاتصال، واستقبال طلبات المعاينة'
+                  : 'Instant Firebase Cloud Sync: branding, contacts, and real-time customer leads'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Google Admin Login / Logout */}
+            {authLoading ? null : user ? (
+              <div className="flex items-center gap-1.5">
+                <span className="hidden lg:inline text-[11px] font-mono text-emerald-400 px-2 py-1 rounded bg-emerald-950/40 border border-emerald-500/30">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  type="button"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 transition cursor-pointer"
+                  title={isAr ? 'تسجيل الخروج' : 'Log Out'}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{isAr ? 'خروج' : 'Logout'}</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoogleLogin}
+                type="button"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] transition shadow-sm cursor-pointer"
+                title={isAr ? 'تسجيل الدخول كمدير معتمد بحساب Google' : 'Sign in as Admin with Google'}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>{isAr ? 'دخول المدير' : 'Admin Login'}</span>
+              </button>
+            )}
+
+            {/* Direct Link to Full Dedicated Dashboard Page */}
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                isDark
+                  ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 border-[#00F2FE]/40 text-[#00F2FE]'
+                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
+              }`}
+              title={isAr ? 'فتح صفحة لوحة التحكم الكاملة' : 'Open Full Admin Dashboard'}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>{isAr ? 'لوحة التحكم الكاملة' : 'Full Console'}</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </Link>
+
             {/* Quick theme toggle in admin modal */}
             <button
               onClick={toggleTheme}
@@ -314,6 +462,36 @@ export const siteConfig = ${JSON.stringify(
           >
             <Phone className="w-3.5 h-3.5" />
             <span>{isAr ? 'الاتصال والعناوين' : 'Contact & Address'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('logo')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'logo'
+                ? isDark ? 'border-[#00F2FE] text-[#00F2FE]' : 'border-[#0284C7] text-[#0284C7]'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>{isAr ? 'تخصيص الشعار والهوية' : 'Logo & Branding'}</span>
+          </button>
+
+          {/* New Leads & Inquiries CRM Tab */}
+          <button
+            onClick={() => setActiveTab('leads')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer relative ${
+              activeTab === 'leads'
+                ? isDark ? 'border-[#00F2FE] text-[#00F2FE]' : 'border-[#0284C7] text-[#0284C7]'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Inbox className="w-3.5 h-3.5" />
+            <span>{isAr ? 'طلبات العملاء والمعاينات' : 'Customer Leads'}</span>
+            {inquiries.filter((i) => i.status === 'new').length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-mono font-bold">
+                {inquiries.filter((i) => i.status === 'new').length}
+              </span>
+            )}
           </button>
 
           <button
@@ -383,11 +561,25 @@ export const siteConfig = ${JSON.stringify(
           {savedSuccess && (
             <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs flex items-center gap-2 animate-in fade-in">
               <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>
-                {isAr
-                  ? 'تم حفظ الإعدادات بنجاح وتطبيقها على كامل الموقع فوراً!'
-                  : 'Settings saved and applied live across the entire website!'}
-              </span>
+              <div>
+                <span>
+                  {isAr
+                    ? 'تم حفظ الإعدادات بنجاح وتطبيقها على كامل الموقع فوراً!'
+                    : 'Settings saved and applied live across the entire website!'}
+                </span>
+                {cloudSavedSuccess && (
+                  <span className="block mt-0.5 text-emerald-300 font-bold">
+                    {isAr ? '✓ تم تحديث قاعدة بيانات Firebase بنجاح لجميع زوار الموقع.' : '✓ Synced to Firebase Firestore successfully for all visitors.'}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {actionSuccessMsg && (
+            <div className="p-3 rounded-xl bg-sky-950/80 border border-sky-500/50 text-sky-200 text-xs flex items-center gap-2 animate-in fade-in">
+              <Sparkles className="w-4 h-4 text-[#00F2FE] shrink-0" />
+              <span>{actionSuccessMsg}</span>
             </div>
           )}
 
@@ -529,6 +721,549 @@ export const siteConfig = ${JSON.stringify(
                     className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Logo & Brand Identity */}
+          {activeTab === 'logo' && (
+            <div className="space-y-6">
+              <div>
+                <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {isAr ? 'شعار وهوية Tech Bokra الرسمية' : 'Tech Bokra Official Brand Logo'}
+                </h4>
+                <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {isAr
+                    ? 'اختر من نماذج الشعار الهندسية فائقة التباين، أو ارفع ملف صورة الشعار الخاص بك مباشرة من جهازك:'
+                    : 'Choose from high-contrast vector brand emblems or upload your custom logo image:'}
+                </p>
+              </div>
+
+              {/* Gemini Image Notice */}
+              <div className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start gap-3 ${
+                isDark 
+                  ? 'bg-[#00F2FE]/10 border-[#00F2FE]/30 text-sky-200' 
+                  : 'bg-sky-50 border-sky-200 text-sky-900'
+              }`}>
+                <Sparkles className="w-5 h-5 text-[#00F2FE] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-bold mb-1">
+                    {isAr ? '💡 ملاحظة هامة بخصوص روابط صور Gemini:' : '💡 Note regarding Gemini conversation links:'}
+                  </strong>
+                  <p>
+                    {isAr
+                      ? 'الروابط التي تبدأ بـ https://gemini.google.com/app/... هي محادثات خاصة محمية بحسابك، ولا يمكن للمواقع الخارجية سحب الصورة منها مباشرة. لحل ذلك بسهولة: اضغط بالزر الأيمن على الصورة داخل Gemini واختر "حفظ الصورة باسم" (Save Image)، ثم اضغط على زر "رفع ملف صورة من جهازك" بالأسفل لتطبيقها فوراً وبأعلى دقة!'
+                      : 'URLs starting with https://gemini.google.com/app/... are private chat sessions. To use your generated logo: Right-click the image in Gemini, select "Save Image", then click "Upload Image File from Device" below!'}
+                  </p>
+                </div>
+              </div>
+
+              {/* 1. Vector Emblem Style Selector */}
+              <div>
+                <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {isAr ? '1. نماذج الشعار الفيكتور (أشكال هندسية مستقيمة فائقة الدقة):' : '1. Vector Brand Mark Presets:'}
+                </label>
+
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {/* Preset 1: Modern TB Origami Hexagon */}
+                  <div
+                    onClick={() => {
+                      handleChange('logoEmblemStyle', 'modern-tb');
+                    }}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                      formData.logoEmblemStyle === 'modern-tb' && !formData.customLogoUrl
+                        ? isDark
+                          ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
+                          : 'bg-sky-50 border-[#0284C7] shadow-md ring-2 ring-[#0284C7]/20'
+                        : isDark
+                        ? 'bg-[#071120]/60 border-white/10 hover:border-white/20'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/20 text-[#00F2FE]">
+                        {isAr ? 'الموصى به' : 'Recommended'}
+                      </span>
+                      {formData.logoEmblemStyle === 'modern-tb' && !formData.customLogoUrl && (
+                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                      )}
+                    </div>
+                    <div className="h-16 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="modern-tb" size="md" theme={theme} />
+                    </div>
+                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'أوريجامي التكنولوجيا TB' : 'TB Origami Hexagon'}
+                    </h5>
+                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAr ? 'هندسة مستقيمة تجمع T و B بسيان متوهج وزجاج تقني منير عالي التباين.' : 'Straight orthographic monogram combining T & B with high-contrast glowing facets.'}
+                    </p>
+                  </div>
+
+                  {/* Preset 2: Security Shield */}
+                  <div
+                    onClick={() => {
+                      handleChange('logoEmblemStyle', 'security-shield');
+                    }}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                      formData.logoEmblemStyle === 'security-shield' && !formData.customLogoUrl
+                        ? isDark
+                          ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
+                          : 'bg-sky-50 border-[#0284C7] shadow-md ring-2 ring-[#0284C7]/20'
+                        : isDark
+                        ? 'bg-[#071120]/60 border-white/10 hover:border-white/20'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400">
+                        {isAr ? 'أنظمة أمنية' : 'Security'}
+                      </span>
+                      {formData.logoEmblemStyle === 'security-shield' && !formData.customLogoUrl && (
+                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                      )}
+                    </div>
+                    <div className="h-16 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="security-shield" size="md" theme={theme} />
+                    </div>
+                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'درع الأمان والمراقبة' : 'Security & Aperture Shield'}
+                    </h5>
+                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAr ? 'درع حماية سيبراني مع عدسة كاميرا ذكية ومسارات شبكية مترابطة.' : 'Futuristic cyber shield with camera aperture and connected nodes.'}
+                    </p>
+                  </div>
+
+                  {/* Preset 3: Cyber Cube */}
+                  <div
+                    onClick={() => {
+                      handleChange('logoEmblemStyle', 'cyber-cube');
+                    }}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                      formData.logoEmblemStyle === 'cyber-cube' && !formData.customLogoUrl
+                        ? isDark
+                          ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
+                          : 'bg-sky-50 border-[#0284C7] shadow-md ring-2 ring-[#0284C7]/20'
+                        : isDark
+                        ? 'bg-[#071120]/60 border-white/10 hover:border-white/20'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">
+                        {isAr ? 'بنية تحتية' : 'Infrastructure'}
+                      </span>
+                      {formData.logoEmblemStyle === 'cyber-cube' && !formData.customLogoUrl && (
+                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                      )}
+                    </div>
+                    <div className="h-16 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="cyber-cube" size="md" theme={theme} />
+                    </div>
+                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'المكعب التكنولوجي 3D' : 'Cyber Isometric Cube'}
+                    </h5>
+                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAr ? 'مكعب تقني يرمز لتكامل الأجهزة والبرمجيات وشبكات السيرفرات.' : 'Isometric 3D prism representing hardware, software & IT infrastructure.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Custom Image Upload or URL */}
+              <div className={`p-4 sm:p-5 rounded-2xl border ${
+                isDark ? 'bg-[#071120]/80 border-white/10' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {isAr ? '2. رفع صورة شعار مخصصة (Custom Image):' : '2. Upload Custom Logo Image:'}
+                </label>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* File Upload Button */}
+                  <div>
+                    <label 
+                      htmlFor="logo-file-input"
+                      className={`w-full py-4 px-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition text-center ${
+                        isDark 
+                          ? 'border-[#00F2FE]/40 hover:border-[#00F2FE] bg-[#10233D]/50 hover:bg-[#10233D]' 
+                          : 'border-slate-300 hover:border-[#0284C7] bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <Upload className={`w-6 h-6 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                        {isAr ? 'اضغط لاختيار صورة من جهازك' : 'Choose image file from device'}
+                      </span>
+                      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        PNG, SVG, JPG, WebP
+                      </span>
+                    </label>
+                    <input
+                      id="logo-file-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const dataUrl = event.target?.result as string;
+                            handleChange('customLogoUrl', dataUrl);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* URL Input and Status */}
+                  <div className="flex flex-col justify-between">
+                    <div>
+                      <span className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {isAr ? 'أو أدخل رابط الصورة المباشر:' : 'Or enter direct image URL:'}
+                      </span>
+                      <input
+                        type="url"
+                        value={formData.customLogoUrl}
+                        onChange={(e) => handleChange('customLogoUrl', e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                        className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-mono outline-none border transition ${
+                          isDark
+                            ? 'bg-[#0B1A2F] border-white/10 text-white focus:border-[#00F2FE]'
+                            : 'bg-white border-slate-300 text-slate-900 focus:border-[#0284C7]'
+                        }`}
+                      />
+                    </div>
+
+                    {formData.customLogoUrl && (
+                      <div className="pt-3 flex items-center justify-between">
+                        <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-bold">
+                          <Check className="w-3.5 h-3.5" />
+                          {isAr ? 'تم تفعيل الصورة المخصصة' : 'Custom image active'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleChange('customLogoUrl', '')}
+                          className="px-2.5 py-1 text-[11px] text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-500/30 rounded-lg flex items-center gap-1 cursor-pointer transition"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>{isAr ? 'إزالة الصورة المخصصة' : 'Remove Image'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Dual Theme Live Preview */}
+              <div>
+                <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {isAr ? '3. معاينة حية فورية للشعار في كلا الوضعين (Dark & Light):' : '3. Live Dual-Theme Preview:'}
+                </label>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Dark Theme Preview */}
+                  <div className="p-4 rounded-2xl bg-[#071120] border border-[#00F2FE]/30 shadow-inner">
+                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                      <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                        <Moon className="w-3.5 h-3.5 text-[#00F2FE]" />
+                        {isAr ? 'الوضع الليلي (Dark Mode)' : 'Dark Theme'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">bg: #071120</span>
+                    </div>
+                    <div className="py-2">
+                      <TechBokraLogo
+                        size="md"
+                        theme="dark"
+                        lang={lang}
+                        showSubtitle={true}
+                        emblemStyle={formData.logoEmblemStyle}
+                        customImageUrl={formData.customLogoUrl}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Light Theme Preview */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-300 shadow-md">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                      <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                        <Sun className="w-3.5 h-3.5 text-amber-500" />
+                        {isAr ? 'الوضع الفاتح (Light Mode)' : 'Light Theme'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">bg: #FFFFFF</span>
+                    </div>
+                    <div className="py-2">
+                      <TechBokraLogo
+                        size="md"
+                        theme="light"
+                        lang={lang}
+                        showSubtitle={true}
+                        emblemStyle={formData.logoEmblemStyle}
+                        customImageUrl={formData.customLogoUrl}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Realtime Customer Inquiries & CRM */}
+          {activeTab === 'leads' && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                <div>
+                  <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <span>{isAr ? 'طلبات العملاء والمعاينات الواردة (CRM)' : 'Customer Leads & Inquiries CRM'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#00F2FE]/20 text-[#00F2FE]">
+                      {inquiries.length} {isAr ? 'طلب' : 'Leads'}
+                    </span>
+                  </h4>
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {isAr
+                      ? 'مزامنة لحظية مباشرة مع Firebase: تتبع واستجابة فورية لطلبات الاستشارات والمعاينات'
+                      : 'Real-time Firebase sync: manage customer quotes and survey requests'}
+                  </p>
+                </div>
+
+                {!user && (
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    className="px-3 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'تسجيل دخول المدير' : 'Login to Manage'}</span>
+                  </button>
+                )}
+              </div>
+
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/40 text-rose-200 text-xs">
+                  {loginError}
+                </div>
+              )}
+
+              {/* Status Metric Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className={`p-3 rounded-xl border ${isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="text-[10px] text-slate-400 block">{isAr ? 'إجمالي الطلبات' : 'Total Leads'}</span>
+                  <span className={`text-lg font-mono font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{inquiries.length}</span>
+                </div>
+                <div className="p-3 rounded-xl border bg-rose-950/30 border-rose-500/30">
+                  <span className="text-[10px] text-rose-300 block">{isAr ? 'طلبات جديدة (تحتاج رد)' : 'New Leads'}</span>
+                  <span className="text-lg font-mono font-black text-rose-400">
+                    {inquiries.filter((i) => i.status === 'new').length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl border bg-sky-950/30 border-sky-500/30">
+                  <span className="text-[10px] text-sky-300 block">{isAr ? 'تم التواصل' : 'Contacted'}</span>
+                  <span className="text-lg font-mono font-black text-[#00F2FE]">
+                    {inquiries.filter((i) => i.status === 'contacted').length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl border bg-emerald-950/30 border-emerald-500/30">
+                  <span className="text-[10px] text-emerald-300 block">{isAr ? 'معاينة مجدولة / تعاقد' : 'Survey / Won'}</span>
+                  <span className="text-lg font-mono font-black text-emerald-400">
+                    {inquiries.filter((i) => i.status === 'survey_scheduled' || i.status === 'contracted').length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+                {[
+                  { id: 'all', labelAr: 'الكل', labelEn: 'All' },
+                  { id: 'new', labelAr: 'جديد', labelEn: 'New' },
+                  { id: 'contacted', labelAr: 'تم التواصل', labelEn: 'Contacted' },
+                  { id: 'survey_scheduled', labelAr: 'حجز معاينة', labelEn: 'Survey' },
+                  { id: 'contracted', labelAr: 'تم التعاقد', labelEn: 'Contracted' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setLeadsFilter(tab.id)}
+                    className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer border ${
+                      leadsFilter === tab.id
+                        ? isDark
+                          ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE]'
+                          : 'bg-[#0284C7] text-white border-[#0284C7]'
+                        : isDark
+                        ? 'bg-[#071120] text-slate-300 border-white/10 hover:border-white/20'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {isAr ? tab.labelAr : tab.labelEn}
+                  </button>
+                ))}
+              </div>
+
+              {/* Inquiries Cards List */}
+              <div className="space-y-3">
+                {inquiries
+                  .filter((item) => leadsFilter === 'all' || item.status === leadsFilter)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        item.status === 'new'
+                          ? isDark
+                            ? 'bg-[#10233D]/90 border-[#00F2FE]/50 shadow-[0_0_15px_rgba(0,242,254,0.15)]'
+                            : 'bg-sky-50/70 border-sky-300 shadow-sm'
+                          : isDark
+                          ? 'bg-[#071120]/80 border-white/10'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${
+                            item.status === 'new' ? 'bg-rose-500 animate-ping' : item.status === 'contracted' ? 'bg-emerald-400' : 'bg-sky-400'
+                          }`} />
+                          <h5 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {item.clientName}
+                          </h5>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                            item.source === 'estimator'
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'bg-[#00F2FE]/15 text-[#00F2FE]'
+                          }`}>
+                            {item.source === 'estimator' ? (isAr ? 'حاسبة التكلفة' : 'Estimator') : (isAr ? 'نموذج الاتصال' : 'Contact Form')}
+                          </span>
+                        </div>
+
+                        {/* Status Dropdown */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.status}
+                            onChange={(e) => updateInquiryStatus(item.id, e.target.value as FirestoreInquiry['status'])}
+                            className={`text-xs rounded-lg px-2.5 py-1 font-bold outline-none border cursor-pointer ${
+                              item.status === 'new'
+                                ? 'bg-rose-950/70 text-rose-300 border-rose-500/40'
+                                : item.status === 'contracted'
+                                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                                : 'bg-[#152C4D] text-slate-200 border-white/20'
+                            }`}
+                          >
+                            <option value="new">{isAr ? '🔴 جديد' : '🔴 New'}</option>
+                            <option value="contacted">{isAr ? '🟡 تم التواصل' : '🟡 Contacted'}</option>
+                            <option value="survey_scheduled">{isAr ? '🔵 حجز معاينة' : '🔵 Survey Scheduled'}</option>
+                            <option value="contracted">{isAr ? '🟢 تم التعاقد' : '🟢 Contracted'}</option>
+                            <option value="archived">{isAr ? '⚪ مؤرشف' : '⚪ Archived'}</option>
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(isAr ? 'هل أنت متأكد من حذف هذا الطلب؟' : 'Delete this inquiry?')) {
+                                deleteInquiry(item.id);
+                              }
+                            }}
+                            className="p-1 rounded-lg hover:bg-rose-950/40 text-rose-400 transition"
+                            title={isAr ? 'حذف الطلب' : 'Delete lead'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lead Contact & Details */}
+                      <div className="pt-3 grid sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block mb-1">
+                            {isAr ? 'بيانات التواصل الفوري:' : 'Instant Contact:'}
+                          </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono font-bold text-white bg-[#0B1A2F] px-2 py-1 rounded border border-white/10">
+                              {item.phone}
+                            </span>
+
+                            {/* Direct WhatsApp Action */}
+                            {item.phone && (
+                              <a
+                                href={`https://wa.me/${item.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                  isAr
+                                    ? `مرحباً أستاذ ${item.clientName}، نتواصل معك من شركة تيك بكرة (Tech Bokra) بخصوص طلبكم.`
+                                    : `Hello ${item.clientName}, contacting you from Tech Bokra regarding your request.`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 rounded-lg bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/40 text-[#25D366] font-bold flex items-center gap-1 transition"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>{isAr ? 'مراسلة واتساب' : 'WhatsApp'}</span>
+                              </a>
+                            )}
+
+                            {/* Direct Call Action */}
+                            {item.phone && (
+                              <a
+                                href={`tel:${item.phone}`}
+                                className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-400 font-bold flex items-center gap-1 transition"
+                              >
+                                <Phone className="w-3 h-3" />
+                                <span>{isAr ? 'اتصال' : 'Call'}</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {item.facilityType && (
+                          <div>
+                            <span className="text-[10px] text-slate-400 block mb-1">
+                              {isAr ? 'المنشأة / القطاع:' : 'Facility Sector:'}
+                            </span>
+                            <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                              {item.facilityType}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Systems Badges */}
+                      {item.selectedSystems && item.selectedSystems.length > 0 && (
+                        <div className="pt-2 flex items-center gap-1.5 flex-wrap">
+                          {item.selectedSystems.map((sys, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] px-2 py-0.5 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-medium"
+                            >
+                              {sys}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Notes / Message */}
+                      {item.notes && (
+                        <p className={`mt-2 p-2.5 rounded-xl text-xs leading-relaxed border ${
+                          isDark ? 'bg-[#071120] border-white/5 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                        }`}>
+                          {item.notes}
+                        </p>
+                      )}
+
+                      {/* Timestamp */}
+                      <span className="text-[10px] text-slate-500 font-mono mt-2 block">
+                        {new Date(item.createdAt).toLocaleString(isAr ? 'ar-EG' : 'en-US')}
+                      </span>
+                    </div>
+                  ))}
+
+                {inquiries.length === 0 && (
+                  <div className={`p-8 rounded-2xl text-center border-2 border-dashed ${
+                    isDark ? 'border-white/10 bg-[#071120]/40' : 'border-slate-200 bg-slate-50'
+                  }`}>
+                    <Inbox className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <p className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {isAr ? 'لا توجد طلبات واردة حتى الآن' : 'No incoming leads yet'}
+                    </p>
+                    <p className={`text-[11px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {isAr
+                        ? 'عندما يقوم أي عميل بإرسال نموذج الاتصال أو حاسبة التكلفة، سيظهر طلبه هنا فوراً مع إمكانية الرد بضغطة زر.'
+                        : 'When a customer submits a quote or uses the estimator, their request will appear here instantly.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -898,10 +1633,19 @@ export const siteConfig = ${JSON.stringify(
 
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] font-black text-xs shadow-[0_0_15px_rgba(0,242,254,0.3)] flex items-center justify-center gap-1.5 transition"
+                disabled={isSavingCloud}
+                className="px-6 py-2.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] font-black text-xs shadow-[0_0_15px_rgba(0,242,254,0.3)] flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-60"
               >
-                <Save className="w-4 h-4" />
-                <span>{isAr ? 'حفظ وتطبيق فوراً' : 'Save & Apply Live'}</span>
+                {isSavingCloud ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#071120]" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>
+                  {isSavingCloud 
+                    ? (isAr ? 'جاري المزامنة مع Firebase...' : 'Syncing with Firebase...')
+                    : (isAr ? 'حفظ وتطبيق فوراً' : 'Save & Apply Live')}
+                </span>
               </button>
             </div>
           </div>
