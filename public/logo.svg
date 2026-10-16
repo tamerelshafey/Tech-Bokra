@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 160" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Cyan gradient for upper ribbon fold -->
+    <linearGradient id="tb-cyan-grad" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="45%" stop-color="#00C4EE" />
+      <stop offset="100%" stop-color="#0088B5" />
+    </linearGradient>
+
+    <!-- Deep teal/cyan for lower origami facet -->
+    <linearGradient id="tb-teal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5D4" />
+      <stop offset="60%" stop-color="#00C2E8" />
+      <stop offset="100%" stop-color="#007799" />
+    </linearGradient>
+
+    <!-- Deep Navy gradient for corporate right block -->
+    <linearGradient id="tb-navy-grad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#0B2342" />
+      <stop offset="50%" stop-color="#06162B" />
+      <stop offset="100%" stop-color="#040F1D" />
+    </linearGradient>
+
+    <!-- Shading filter for realistic 3D bevel / shadow -->
+    <filter id="tb-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#00F2FE" flood-opacity="0.25" />
+    </filter>
+
+    <filter id="tb-subtle-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Straightened Geometric Origami Emblem -->
+  <g transform="translate(15, 10)">
+    <!-- 1. Top Ribbon Facet (Cyan/Teal with rounded inner arch cutout) -->
+    <path 
+      d="M 32 36 
+         C 32 26, 40 20, 52 20 
+         L 108 20 
+         C 114 20, 118 24, 116 30 
+         L 98 78 
+         C 95 85, 87 90, 80 90 
+         L 62 90 
+         C 52 90, 46 82, 48 72 
+         L 54 48 
+         C 55 42, 50 38, 44 38 
+         C 37 38, 32 43, 30 50 
+         L 16 88 
+         C 14 94, 9 98, 4 98 
+         L 2 98 
+         C 0 98, 0 92, 2 86 
+         Z" 
+      fill="url(#tb-cyan-grad)"
+      filter="url(#tb-shadow)"
+    />
+
+    <!-- Top Ribbon 3D Bevel/Crease -->
+    <path 
+      d="M 32 24 L 60 20 L 52 48 L 44 38 Z" 
+      fill="#00F2FE" 
+      opacity="0.6"
+    />
+
+    <!-- 2. Bottom-Left Prism / Fold (Turquoise Diamond facets) -->
+    <g filter="url(#tb-subtle-shadow)">
+      <!-- Left facet of prism -->
+      <path 
+        d="M 2 108 L 48 108 L 26 142 Z" 
+        fill="url(#tb-teal-grad)" 
+      />
+      <!-- Bottom fold facet with darker depth -->
+      <path 
+        d="M 26 142 L 48 108 L 58 132 L 36 148 Z" 
+        fill="#0090A8" 
+      />
+    </g>
+
+    <!-- 3. Right Main Block (Deep Navy with diagonal pill slot) -->
+    <g filter="url(#tb-subtle-shadow)">
+      <!-- Solid base block with rounded tech angles -->
+      <path 
+        d="M 78 72 
+           L 126 78 
+           C 132 79, 136 84, 134 90 
+           L 124 144 
+           C 122 150, 117 154, 111 154 
+           L 68 148 
+           C 62 147, 58 142, 60 136 
+           L 68 84 
+           C 70 78, 74 72, 78 72 
+           Z" 
+        fill="url(#tb-navy-grad)"
+        stroke="#00F2FE"
+        stroke-width="1"
+        stroke-opacity="0.3"
+      />
+
+      <!-- Diagonal Pill Slot (Cutout with glowing inner edge) -->
+      <rect 
+        x="80" 
+        y="96" 
+        width="16" 
+        height="46" 
+        rx="8" 
+        transform="rotate(-36 88 119)" 
+        fill="#071120" 
+        stroke="#00F2FE" 
+        stroke-width="1.5"
+        stroke-opacity="0.5"
+      />
+    </g>
+  </g>
+
+  <!-- Clean Straightened Typography: "Tech Bokra" -->
+  <g transform="translate(170, 0)">
+    <!-- Dark Mode version of Typography (White + Cyan) -->
+    <text x="0" y="70" font-family="'Cairo', 'Inter', 'Segoe UI', sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" letter-spacing="-1">
+      Tech
+    </text>
+    <text x="0" y="128" font-family="'Cairo', 'Inter', 'Segoe UI', sans-serif" font-weight="900" font-size="52" fill="#00F2FE" letter-spacing="-1">
+      Bokra
+    </text>
+    <!-- Tagline underneath -->
+    <text x="3" y="148" font-family="'Cairo', 'Inter', sans-serif" font-weight="600" font-size="12" fill="#94A3B8" letter-spacing="2">
+      SECURITY &amp; IT INFRASTRUCTURE
+    </text>
+  </g>
+</svg>

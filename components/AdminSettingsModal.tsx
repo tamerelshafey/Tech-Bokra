@@ -21,9 +21,13 @@ import {
   Link as LinkIcon,
   Download,
   Upload,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn } from '@/lib/content';
+import TechBokraLogo from '@/components/TechBokraLogo';
+import { useTheme } from '@/components/ThemeProvider';
 
 export interface EditableConfig {
   // Contact & Social
@@ -129,6 +133,7 @@ export default function AdminSettingsModal({
   onResetDefault,
 }: AdminSettingsModalProps) {
   const isAr = lang === 'ar';
+  const { theme, toggleTheme, isDark } = useTheme();
   const [formData, setFormData] = useState<EditableConfig>(currentConfig);
   const [activeTab, setActiveTab] = useState<TabType>('contact');
   const [copied, setCopied] = useState(false);
@@ -224,23 +229,31 @@ export const siteConfig = ${JSON.stringify(
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-3xl rounded-3xl bg-gradient-to-b from-[#10233D] to-[#071120] border border-[#00F2FE]/40 shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden my-6"
+        className={`relative w-full max-w-3xl rounded-3xl overflow-hidden my-6 border transition-colors ${
+          isDark
+            ? 'bg-gradient-to-b from-[#10233D] to-[#071120] border-[#00F2FE]/40 shadow-[0_25px_60px_rgba(0,0,0,0.85)]'
+            : 'bg-white border-slate-200 shadow-[0_25px_60px_rgba(15,23,42,0.18)]'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-[#0B1A2F] border-b border-white/10 flex items-center justify-between">
+        <div className={`p-5 sm:p-6 border-b flex items-center justify-between ${
+          isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-slate-50 border-slate-200'
+        }`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#071120] border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE]">
-              <Settings className="w-5 h-5 animate-spin-slow" />
-            </div>
+            <TechBokraLogo size="sm" theme={theme} variant="icon" />
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+              <h2 className={`text-lg sm:text-xl font-black flex items-center gap-2 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 <span>{isAr ? 'لوحة ضبط وتعديل المحتوى المتطورة' : 'Advanced Live Content Manager'}</span>
-                <span className="text-[10px] bg-[#00F2FE]/15 text-[#00F2FE] px-2 py-0.5 rounded font-mono border border-[#00F2FE]/30">
+                <span className={`text-[10px] px-2 py-0.5 rounded font-mono border font-bold ${
+                  isDark ? 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30' : 'bg-sky-50 text-[#0284C7] border-sky-200'
+                }`}>
                   NO-DB READY
                 </span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {isAr
                   ? 'تحكم فوري بالهواتف، الإعلانات، النصوص، روابط المشاريع، وتصدير الكود لـ Vercel / GitHub'
                   : 'Instant control over phone numbers, hero copy, project URLs, and direct Git export'}
@@ -248,23 +261,55 @@ export const siteConfig = ${JSON.stringify(
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-[#152C4D] text-slate-300 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120] transition"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Quick theme toggle in admin modal */}
+            <button
+              onClick={toggleTheme}
+              type="button"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                isDark 
+                  ? 'bg-[#152C4D] border-white/10 text-slate-200 hover:border-[#00F2FE]' 
+                  : 'bg-white border-slate-300 text-slate-700 hover:border-[#0284C7] shadow-sm'
+              }`}
+              title={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">{isAr ? 'الوضع الفاتح' : 'Light Mode'}</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="hidden sm:inline">{isAr ? 'الوضع الداكن' : 'Dark Mode'}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-full transition cursor-pointer ${
+                isDark 
+                  ? 'bg-[#152C4D] text-slate-300 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120]' 
+                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+              }`}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-white/10 bg-[#071120]/70 px-4 sm:px-6 pt-3 gap-2 overflow-x-auto scrollbar-none">
+        <div className={`flex border-b px-4 sm:px-6 pt-3 gap-2 overflow-x-auto scrollbar-none ${
+          isDark ? 'border-white/10 bg-[#071120]/70' : 'border-slate-200 bg-slate-50'
+        }`}>
           <button
             onClick={() => setActiveTab('contact')}
-            className={`pb-3 px-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs font-bold border-b-2 whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'contact'
-                ? 'border-[#00F2FE] text-[#00F2FE]'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-[#00F2FE] text-[#00F2FE]' : 'border-[#0284C7] text-[#0284C7]'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Phone className="w-3.5 h-3.5" />

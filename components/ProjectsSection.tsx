@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Project, SiteLanguageData } from '@/lib/content';
 import ProjectModal from '@/components/ProjectModal';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface ProjectsSectionProps {
   lang: 'ar' | 'en';
@@ -31,6 +32,7 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const { isDark } = useTheme();
 
   const isAr = lang === 'ar';
 
@@ -64,21 +66,42 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
   });
 
   return (
-    <section id="projects" className="py-24 relative bg-[#071120] border-t border-white/5">
+    <section 
+      id="projects" 
+      className={`py-24 relative transition-colors duration-300 border-t ${
+        isDark 
+          ? 'bg-[#071120] border-white/5' 
+          : 'bg-[#F8FAFC] border-slate-200'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#10233D] border border-[#00F2FE]/30 text-xs font-semibold text-[#00F2FE] mb-4 shadow-[0_0_15px_rgba(0,242,254,0.15)]">
+          <div 
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-4 border shadow-sm ${
+              isDark 
+                ? 'bg-[#10233D] border-[#00F2FE]/30 text-[#00F2FE]' 
+                : 'bg-sky-50 border-sky-200 text-[#0284C7]'
+            }`}
+          >
             <Sparkles className="w-4 h-4" />
             <span>{isAr ? 'سجل الإنجازات والمنصات الذكية' : 'Proven Implementations & Platforms'}</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 
+            className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
             <span>{data.projects.title}</span>
           </h2>
 
-          <p className="text-slate-300 text-base sm:text-lg mt-4 leading-relaxed">
+          <p 
+            className={`text-base sm:text-lg mt-4 leading-relaxed ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}
+          >
             {data.projects.subtitle}
           </p>
         </div>
@@ -92,22 +115,33 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
             { id: 'network', label: data.projects.filterNetwork },
             { id: 'software', label: data.projects.filterSoftware },
             { id: 'erp', label: data.projects.filterERP },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id as FilterCategory)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
-                filter === tab.id
-                  ? 'bg-[#00F2FE] text-[#071120] shadow-[0_0_15px_rgba(0,242,254,0.35)] scale-105'
-                  : tab.isSpecial
-                  ? 'bg-[#10233D] text-[#00F2FE] hover:text-white hover:bg-[#152C4D] border border-[#00F2FE]/40'
-                  : 'bg-[#10233D] text-slate-300 hover:text-white hover:bg-[#152C4D] border border-white/5'
-              }`}
-            >
-              {tab.isSpecial && <Radio className="w-3.5 h-3.5 text-[#00F2FE] animate-pulse" />}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          ].map((tab) => {
+            const isActive = filter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id as FilterCategory)}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                  isActive
+                    ? isDark
+                      ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.35)] scale-105'
+                      : 'bg-[#0284C7] text-white border-[#0284C7] shadow-md scale-105'
+                    : tab.isSpecial
+                      ? isDark
+                        ? 'bg-[#10233D] text-[#00F2FE] hover:text-white hover:bg-[#152C4D] border-[#00F2FE]/40'
+                        : 'bg-sky-50 text-[#0284C7] hover:bg-sky-100 border-sky-300'
+                      : isDark
+                        ? 'bg-[#10233D] text-slate-300 hover:text-white hover:bg-[#152C4D] border-white/5'
+                        : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-100 border-slate-200'
+                }`}
+              >
+                {tab.isSpecial && (
+                  <Radio className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                )}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Projects Cards Grid */}
@@ -118,13 +152,23 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
             return (
               <div
                 key={project.id}
-                className="rounded-2xl bg-gradient-to-b from-[#0F223D] to-[#0A1A2F] border border-[#00F2FE]/20 hover:border-[#00F2FE]/50 p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-[0_15px_35px_rgba(0,0,0,0.4)] group overflow-hidden relative"
+                className={`rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative border ${
+                  isDark
+                    ? 'bg-gradient-to-b from-[#0F223D] to-[#0A1A2F] border-[#00F2FE]/20 hover:border-[#00F2FE]/50 shadow-[0_15px_35px_rgba(0,0,0,0.4)]'
+                    : 'bg-white border-slate-200 hover:border-[#0284C7]/40 shadow-[0_4px_25px_rgba(15,23,42,0.08)] hover:shadow-xl'
+                }`}
               >
                 <div>
                   {/* Real Project Photography Banner */}
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden mb-5 border border-[#00F2FE]/20 shadow-md bg-[#0B1A2F]">
+                  <div 
+                    className={`relative w-full h-48 rounded-xl overflow-hidden mb-5 border shadow-md ${
+                      isDark 
+                        ? 'border-[#00F2FE]/20 bg-[#0B1A2F]' 
+                        : 'border-slate-200 bg-slate-100'
+                    }`}
+                  >
                     {imageErrors[project.id] ? (
-                      <div className="w-full h-full bg-gradient-to-br from-[#152C4D] to-[#071120] flex items-center justify-center text-[#00F2FE]/40">
+                      <div className="w-full h-full bg-slate-200 dark:bg-[#152C4D] flex items-center justify-center text-slate-400 dark:text-[#00F2FE]/40">
                         <Icon className="w-12 h-12" />
                       </div>
                     ) : (
@@ -138,20 +182,20 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                         onError={() => setImageErrors((prev) => ({ ...prev, [project.id]: true }))}
                       />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A1A2F] via-[#0A1A2F]/30 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent pointer-events-none" />
                     
-                    <div className="absolute top-3 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto w-10 h-10 rounded-xl bg-[#071120]/80 backdrop-blur-md border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] shadow-lg">
-                      <Icon className="w-5 h-5" />
+                    <div className="absolute top-3 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto w-10 h-10 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg">
+                      <Icon className="w-5 h-5 text-sky-400" />
                     </div>
 
                     {/* Tag / Category Badge */}
-                    <span className="absolute bottom-2.5 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto text-[11px] font-mono font-bold text-[#00F2FE] bg-[#071120]/90 px-2.5 py-0.5 rounded border border-[#00F2FE]/30">
+                    <span className="absolute bottom-2.5 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto text-[11px] font-mono font-bold text-sky-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-sky-400/30">
                       {project.tag}
                     </span>
 
                     {/* Prominent Status Badge if upcoming / sister platform */}
                     {project.statusBadge && (
-                      <span className="absolute top-3 left-3 rtl:left-3 rtl:right-auto ltr:right-3 ltr:left-auto text-[10px] font-bold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-amber-500/40 flex items-center gap-1 shadow-lg">
+                      <span className="absolute top-3 left-3 rtl:left-3 rtl:right-auto ltr:right-3 ltr:left-auto text-[10px] font-bold text-amber-200 bg-amber-950/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-amber-500/50 flex items-center gap-1 shadow-lg">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                         <span>{project.statusBadge}</span>
                       </span>
@@ -159,24 +203,59 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                   </div>
 
                   {/* Title & Client */}
-                  <h3 className="text-xl font-bold text-white mb-1.5 group-hover:text-[#00F2FE] transition-colors leading-snug">
+                  <h3 
+                    className={`text-xl font-bold mb-1.5 transition-colors leading-snug ${
+                      isDark 
+                        ? 'text-white group-hover:text-[#00F2FE]' 
+                        : 'text-slate-900 group-hover:text-[#0284C7]'
+                    }`}
+                  >
                     {project.title}
                   </h3>
 
-                  <p className="text-xs text-[#00F2FE] font-medium mb-2.5">
+                  <p 
+                    className={`text-xs font-semibold mb-2.5 ${
+                      isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                    }`}
+                  >
                     {project.client}
                   </p>
 
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4 line-clamp-3">
+                  <p 
+                    className={`text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3 ${
+                      isDark ? 'text-slate-300' : 'text-slate-600'
+                    }`}
+                  >
                     {project.summary}
                   </p>
 
                   {/* 3 Quick Stat Badges */}
-                  <div className="grid grid-cols-3 gap-2 py-3 border-t border-white/5 mb-5 text-center">
+                  <div 
+                    className={`grid grid-cols-3 gap-2 py-3 border-t mb-5 text-center ${
+                      isDark ? 'border-white/5' : 'border-slate-100'
+                    }`}
+                  >
                     {project.stats.map((st, sIdx) => (
-                      <div key={sIdx} className="bg-[#10233D]/60 p-2 rounded-lg">
-                        <div className="text-[10px] text-slate-400 truncate">{st.label}</div>
-                        <div className="text-xs font-bold font-mono text-[#00F2FE] mt-0.5 truncate">
+                      <div 
+                        key={sIdx} 
+                        className={`p-2 rounded-lg border ${
+                          isDark 
+                            ? 'bg-[#10233D]/60 border-white/5' 
+                            : 'bg-slate-50 border-slate-200/80'
+                        }`}
+                      >
+                        <div 
+                          className={`text-[10px] truncate ${
+                            isDark ? 'text-slate-400' : 'text-slate-500'
+                          }`}
+                        >
+                          {st.label}
+                        </div>
+                        <div 
+                          className={`text-xs font-bold font-mono mt-0.5 truncate ${
+                            isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                          }`}
+                        >
                           {st.value}
                         </div>
                       </div>
@@ -184,45 +263,53 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                   </div>
                 </div>
 
-                  {/* Inspect Details & Live Preview Buttons */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      onClick={() => setSelectedProject({
-                        ...project,
-                        liveUrl: (projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl,
-                      })}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                {/* Inspect Details & Live Preview Buttons */}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={() => setSelectedProject({
+                      ...project,
+                      liveUrl: (projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl,
+                    })}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border ${
+                      isDark
+                        ? 'bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] border-transparent'
+                        : 'bg-sky-50 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border-sky-200 hover:border-[#0284C7]'
+                    }`}
+                  >
+                    <span>{data.projects.viewDetails}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+
+                  {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
+                    <a
+                      href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
+                        isDark
+                          ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
+                          : 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white'
+                      }`}
+                      title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
                     >
-                      <span>{data.projects.viewDetails}</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-
-                    {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
-                      <a
-                        href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2.5 px-3 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE] border border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                        title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                        <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
-                      </a>
-                    )}
-                  </div>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
+                    </a>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
+        </div>
 
-          {/* Modal Viewer */}
-          <ProjectModal
-            project={selectedProject}
-            onClose={() => setSelectedProject(null)}
-            lang={lang}
-            data={data}
-            onConsultProject={onConsultProject}
-          />
+        {/* Modal Viewer */}
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+          lang={lang}
+          data={data}
+          onConsultProject={onConsultProject}
+        />
 
       </div>
     </section>

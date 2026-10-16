@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { SiteLanguageData } from '@/lib/content';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface TechPartnersProps {
   lang: 'ar' | 'en';
@@ -10,6 +11,7 @@ interface TechPartnersProps {
 
 export default function TechPartners({ lang, data }: TechPartnersProps) {
   const isAr = lang === 'ar';
+  const { isDark } = useTheme();
 
   const partners = [
     { name: 'Cisco Systems', role: 'Core Switches & Firewalls', badge: 'Certified Partner' },
@@ -23,14 +25,18 @@ export default function TechPartners({ lang, data }: TechPartnersProps) {
   ];
 
   return (
-    <section className="py-16 bg-[#071120] border-y border-white/5 relative">
+    <section 
+      className={`py-16 border-y relative transition-colors duration-300 ${
+        isDark ? 'bg-[#071120] border-white/5' : 'bg-slate-50 border-slate-200'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <h3 className="text-xl sm:text-2xl font-black text-white">
+          <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {data.partners.title}
           </h3>
-          <p className="text-xs sm:text-sm text-slate-400 mt-2">
+          <p className={`text-xs sm:text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {data.partners.subtitle}
           </p>
         </div>
@@ -39,15 +45,31 @@ export default function TechPartners({ lang, data }: TechPartnersProps) {
           {partners.map((partner, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-xl bg-[#0B1A2F]/80 border border-white/5 hover:border-[#00F2FE]/30 transition-all text-center group"
+              className={`p-4 rounded-xl border transition-all text-center group ${
+                isDark 
+                  ? 'bg-[#0B1A2F]/80 border-white/5 hover:border-[#00F2FE]/30' 
+                  : 'bg-white border-slate-200 hover:border-[#0284C7]/40 shadow-sm hover:shadow-md'
+              }`}
             >
-              <div className="text-sm sm:text-base font-bold text-white font-mono group-hover:text-[#00F2FE] transition-colors">
+              <div 
+                className={`text-sm sm:text-base font-bold font-mono transition-colors ${
+                  isDark 
+                    ? 'text-white group-hover:text-[#00F2FE]' 
+                    : 'text-slate-900 group-hover:text-[#0284C7]'
+                }`}
+              >
                 {partner.name}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
+              <div className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {partner.role}
               </div>
-              <span className="inline-block mt-2 text-[9px] font-mono text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded border border-[#00F2FE]/20">
+              <span 
+                className={`inline-block mt-2 text-[9px] font-mono px-2 py-0.5 rounded border font-bold ${
+                  isDark 
+                    ? 'text-[#00F2FE] bg-[#00F2FE]/10 border-[#00F2FE]/20' 
+                    : 'text-[#0284C7] bg-sky-50 border-sky-200'
+                }`}
+              >
                 {partner.badge}
               </span>
             </div>

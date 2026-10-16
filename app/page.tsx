@@ -15,7 +15,8 @@ import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
 import AdminSettingsModal, { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
 import { contentAr, contentEn, siteConfig } from '@/lib/content';
-import { MessageSquare, Settings, Sparkles, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { MessageSquare, Settings, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v2';
 
@@ -25,6 +26,7 @@ export default function HomePage() {
   const [prefilledNotes, setPrefilledNotes] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState(false);
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const [customConfig, setCustomConfig] = useState<EditableConfig>(() => {
     if (typeof window !== 'undefined') {
@@ -138,20 +140,34 @@ export default function HomePage() {
 
   return (
     <div
-      className={`min-h-screen bg-[#071120] text-slate-100 selection:bg-[#00F2FE] selection:text-[#071120] ${
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? 'bg-[#071120] text-slate-100' : 'bg-[#F8FAFC] text-slate-900'
+      } selection:bg-[#00F2FE] selection:text-[#071120] ${
         isAr ? 'font-cairo' : 'font-inter'
       }`}
     >
       {/* Dynamic Top Announcement Banner */}
       {customConfig.showAnnouncement && !isAnnouncementDismissed && (
-        <div className="relative z-50 bg-gradient-to-r from-[#071a33] via-[#092b4d] to-[#071a33] border-b border-[#00F2FE]/30 py-2.5 px-4 text-xs shadow-md">
+        <div 
+          className={`relative z-50 border-b py-2.5 px-4 text-xs shadow-md transition-colors ${
+            isDark
+              ? 'bg-gradient-to-r from-[#071a33] via-[#092b4d] to-[#071a33] border-[#00F2FE]/30'
+              : 'bg-gradient-to-r from-sky-50 via-cyan-50 to-sky-50 border-sky-200 text-slate-800'
+          }`}
+        >
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE] font-bold text-[10px] shrink-0 border border-[#00F2FE]/40">
-                <Sparkles className="w-3 h-3 text-[#00F2FE]" />
+              <span 
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 border ${
+                  isDark
+                    ? 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40'
+                    : 'bg-sky-100 text-sky-800 border-sky-300'
+                }`}
+              >
+                <Sparkles className={`w-3 h-3 ${isDark ? 'text-[#00F2FE]' : 'text-sky-600'}`} />
                 <span>{isAr ? customConfig.announcementBadgeAr : customConfig.announcementBadgeEn}</span>
               </span>
-              <p className="text-slate-200 truncate font-medium">
+              <p className={`truncate font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 {isAr ? customConfig.announcementTextAr : customConfig.announcementTextEn}
               </p>
               {customConfig.announcementLink && (
@@ -159,7 +175,9 @@ export default function HomePage() {
                   href={customConfig.announcementLink}
                   target={customConfig.announcementLink.startsWith('http') ? '_blank' : '_self'}
                   rel="noopener noreferrer"
-                  className="hidden sm:inline-flex items-center gap-1 text-[#00F2FE] hover:underline font-bold shrink-0 text-[11px]"
+                  className={`hidden sm:inline-flex items-center gap-1 hover:underline font-bold shrink-0 text-[11px] ${
+                    isDark ? 'text-[#00F2FE]' : 'text-sky-600'
+                  }`}
                 >
                   <span>{isAr ? 'استكشف الآن' : 'Explore Now'}</span>
                   <ArrowIcon className="w-3 h-3" />
@@ -169,7 +187,11 @@ export default function HomePage() {
 
             <button
               onClick={() => setIsAnnouncementDismissed(true)}
-              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition shrink-0"
+              className={`p-1 rounded-full transition shrink-0 ${
+                isDark
+                  ? 'text-slate-400 hover:text-white hover:bg-white/10'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'
+              }`}
               aria-label="Dismiss banner"
             >
               <X className="w-3.5 h-3.5" />
@@ -178,7 +200,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Navigation with settings trigger & dynamic phone */}
+      {/* Navigation with settings trigger, theme toggle & dynamic phone */}
       <Navbar
         lang={lang}
         onToggleLang={toggleLanguage}
@@ -290,10 +312,28 @@ export default function HomePage() {
 
       {/* Floating Action Buttons */}
       <aside aria-label="Quick Actions" className="fixed bottom-6 left-6 rtl:left-6 rtl:right-auto ltr:right-6 ltr:left-auto z-40 flex flex-col gap-2.5">
+        {/* Floating Quick Theme Switcher */}
+        <button
+          onClick={toggleTheme}
+          className={`w-12 h-12 rounded-full border shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer ${
+            isDark
+              ? 'bg-[#10233D]/95 hover:bg-[#152C4D] text-amber-400 border-[#00F2FE]/40 shadow-[0_0_20px_rgba(0,242,254,0.25)]'
+              : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+          }`}
+          title={isAr ? (isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن') : (isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
+          aria-label={isAr ? 'تبديل الثيم' : 'Toggle Theme'}
+        >
+          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-slate-700" />}
+        </button>
+
         {/* Floating Quick Settings Trigger */}
         <button
           onClick={() => setIsSettingsOpen(true)}
-          className="w-12 h-12 rounded-full bg-[#10233D]/95 hover:bg-[#152C4D] text-[#00F2FE] border border-[#00F2FE]/50 shadow-[0_0_20px_rgba(0,242,254,0.3)] flex items-center justify-center transition-all duration-300 hover:scale-110 group cursor-pointer"
+          className={`w-12 h-12 rounded-full border shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 group cursor-pointer ${
+            isDark
+              ? 'bg-[#10233D]/95 hover:bg-[#152C4D] text-[#00F2FE] border-[#00F2FE]/50 shadow-[0_0_20px_rgba(0,242,254,0.3)]'
+              : 'bg-white hover:bg-slate-100 text-[#0284C7] border-slate-300 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+          }`}
           title={isAr ? 'لوحة ضبط وتعديل المحتوى' : 'Live Content & Settings'}
           aria-label={isAr ? 'فتح لوحة ضبط المحتوى' : 'Open Content Settings'}
         >

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, 
   MessageSquare, 
@@ -9,11 +9,10 @@ import {
   MapPin, 
   Clock, 
   CheckCircle2, 
-  AlertCircle,
-  Copy,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface ContactSectionProps {
   lang: 'ar' | 'en';
@@ -37,13 +36,14 @@ export default function ContactSection({
   address,
 }: ContactSectionProps) {
   const isAr = lang === 'ar';
+  const { isDark } = useTheme();
 
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [service, setService] = useState('cctv');
   const [governorate, setGovernorate] = useState('cairo');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(prefilledNotes || '');
   const [errorMsg, setErrorMsg] = useState('');
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
 
@@ -68,36 +68,35 @@ export default function ContactSection({
     }
   }
 
-  const serviceOptions = [
-    { id: 'cctv', labelAr: 'أنظمة المراقبة الذكية وكاميرات 4K (CCTV)', labelEn: 'Intelligent CCTV & Video Analytics' },
-    { id: 'network', labelAr: 'البنية التحتية للشبكات وكابلات الفايبر', labelEn: 'Structured Cabling & Fiber Optics' },
-    { id: 'access', labelAr: 'أنظمة التحكم بالدخول وبوابات البصمة', labelEn: 'Biometric Access Control & Turnstiles' },
-    { id: 'erp', labelAr: 'أنظمة ERP والفاتورة الإلكترونية المصرية', labelEn: 'ERP Systems & Egyptian ETA Tax API' },
-    { id: 'mobile', labelAr: 'تطوير تطبيقات الجوال والمنصات السحابية', labelEn: 'Mobile App Development (iOS & Android)' },
-    { id: 'consulting', labelAr: 'استشارات التحول الرقمي وعقود الصيانة SLA', labelEn: 'Digital Transformation & SLA Contracts' },
+  const governorateOptions = [
+    { id: 'cairo', labelAr: 'القاهرة الكبرى والتجمع والمدن الجديدة', labelEn: 'Cairo & New Cities' },
+    { id: 'giza', labelAr: 'الجيزة و 6 أكتوبر والشيخ زايد', labelEn: 'Giza, 6th of October & Zayed' },
+    { id: 'alex', labelAr: 'الإسكندرية والساحل الشمالي', labelEn: 'Alexandria & North Coast' },
+    { id: 'redsea', labelAr: 'البحر الأحمر والغردقة والجونة', labelEn: 'Red Sea & Hurghada' },
+    { id: 'delta', labelAr: 'محافظات الدلتا والقناة', labelEn: 'Delta & Canal Governorates' },
+    { id: 'upper', labelAr: 'محافظات الصعيد ومحاور الطاقة', labelEn: 'Upper Egypt Governorates' },
   ];
 
-  const governorateOptions = [
-    { id: 'cairo', labelAr: 'القاهرة (مدينة نصر، التجمع، المعادي، مصر الجديدة)', labelEn: 'Cairo (Nasr City, New Cairo, Maadi, Heliopolis)' },
-    { id: 'giza', labelAr: 'الجيزة (6 أكتوبر، الشيخ زايد، الدقي، المهندسين)', labelEn: 'Giza (6th of October, Sheikh Zayed, Dokki)' },
-    { id: 'new_capital', labelAr: 'العاصمة الإدارية الجديدة والمدن الجديدة', labelEn: 'New Administrative Capital & New Cities' },
-    { id: 'alex', labelAr: 'الإسكندرية والساحل الشمالي', labelEn: 'Alexandria & North Coast' },
-    { id: 'suez_sinai', labelAr: 'البحر الأحمر، السويس، ورأس سدر', labelEn: 'Red Sea, Suez, Ras Sedr' },
-    { id: 'industrial_zones', labelAr: 'المدن والمناطق الصناعية (العاشر، السادات، الروبيكي)', labelEn: 'Industrial Hubs (10th of Ramadan, Sadat, etc.)' },
-    { id: 'other', labelAr: 'محافظات ومناطق أخرى', labelEn: 'Other Governorates' },
+  const serviceOptions = [
+    { id: 'cctv', labelAr: 'كاميرات المراقبة الذكية 4K وتحليلات AI', labelEn: '4K CCTV & AI Analytics' },
+    { id: 'network', labelAr: 'بنية الشبكات المتطورة وكوابل الفايبر والراكات', labelEn: 'Structured Cabling & Fiber' },
+    { id: 'access', labelAr: 'بوابات المرور السريعة والتحكم في الدخول البيومتري', labelEn: 'Biometric Access & Turnstiles' },
+    { id: 'erp', labelAr: 'منظومات تخطيط الموارد ERP والربط الضريبي ETA', labelEn: 'Odoo ERP & Egyptian Tax API' },
+    { id: 'mobile', labelAr: 'برمجيات ومنصات الويب وتطبيقات الجوال المخصصة', labelEn: 'Custom Software & Mobile Apps' },
+    { id: 'consulting', labelAr: 'استشارة فنية متكاملة وتوريدات مشاريع عامة', labelEn: 'Full Integrated Engineering Scope' },
   ];
 
   const validate = () => {
     if (!name.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال الاسم بالكامل' : 'Please enter your full name');
+      setErrorMsg(isAr ? 'يرجى كتابة الاسم بالكامل' : 'Please provide your full name');
       return false;
     }
     if (!company.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال اسم المنشأة أو الشركة' : 'Please enter company/facility name');
+      setErrorMsg(isAr ? 'يرجى تحديد اسم المنشأة أو الشركة' : 'Please provide facility / company name');
       return false;
     }
-    if (!phone.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال رقم الهاتف أو الواتساب' : 'Please enter your phone number');
+    if (!phone.trim() || phone.trim().length < 8) {
+      setErrorMsg(isAr ? 'يرجى كتابة رقم هاتف صحيح للتواصل' : 'Please provide a valid phone number');
       return false;
     }
     setErrorMsg('');
@@ -109,14 +108,14 @@ export default function ContactSection({
     const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
 
     return isAr
-      ? `طلب استفسار وتواصل مع تيك بكرة (Tech Bokra):\n` +
+      ? `طلب استشارة ومعاينة فنية هندسية - تيك بكرة:\n` +
         `• الاسم: ${name}\n` +
-        `• المنشأة: ${company}\n` +
+        `• المنشأة / الشركة: ${company}\n` +
         `• الهاتف: ${phone}\n` +
-        `• الخدمة المطلوبة: ${sName}\n` +
-        `• الموقع/المدينة: ${gName}\n` +
+        `• التخصص المطلوب: ${sName}\n` +
+        `• النطاق الجغرافي: ${gName}\n` +
         (notes ? `• تفاصيل إضافية: ${notes}\n` : '') +
-        `\nأرجو التواصل لمناقشة التفاصيل والرد على الاستفسار.`
+        `\nأرجو التكرم بالتواصل لتحديد موعد المعاينة.`
       : `Tech Bokra Inquiry & Quote Request:\n` +
         `• Full Name: ${name}\n` +
         `• Facility: ${company}\n` +
@@ -148,21 +147,40 @@ export default function ContactSection({
   };
 
   return (
-    <section id="contact" className="py-24 relative bg-[#071120] border-t border-white/5 cyber-grid">
+    <section 
+      id="contact" 
+      className={`py-24 relative border-t transition-colors duration-300 ${
+        isDark ? 'bg-[#071120] border-white/5 cyber-grid' : 'bg-white border-slate-200 cyber-grid'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10233D] border border-[#00F2FE]/25 text-xs font-semibold text-[#00F2FE] mb-4">
+          <div 
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-4 border ${
+              isDark 
+                ? 'bg-[#10233D] border-[#00F2FE]/25 text-[#00F2FE]' 
+                : 'bg-sky-50 border-sky-200 text-[#0284C7]'
+            }`}
+          >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>{data.contact.quickResponseBadge}</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+          <h2 
+            className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
             <span>{data.contact.title}</span>
           </h2>
 
-          <p className="text-slate-300 text-base sm:text-lg mt-4 leading-relaxed">
+          <p 
+            className={`text-base sm:text-lg mt-4 leading-relaxed ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}
+          >
             {data.contact.subtitle}
           </p>
         </div>
@@ -171,16 +189,28 @@ export default function ContactSection({
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           
           {/* Main Interactive Form (7 Cols) */}
-          <div className="lg:col-span-7 bg-[#0B1A2F]/90 p-6 sm:p-8 rounded-3xl border border-[#00F2FE]/30 shadow-2xl backdrop-blur-xl relative">
+          <div 
+            className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl border shadow-xl backdrop-blur-xl relative ${
+              isDark 
+                ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/30' 
+                : 'bg-white border-slate-200 shadow-[0_4px_30px_rgba(15,23,42,0.08)]'
+            }`}
+          >
             
             {submittedRef && (
-              <div className="mb-6 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs sm:text-sm flex items-start gap-3 animate-in fade-in">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <div 
+                className={`mb-6 p-4 rounded-2xl border text-xs sm:text-sm flex items-start gap-3 animate-in fade-in ${
+                  isDark 
+                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200' 
+                    : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                }`}
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-bold text-white mb-1">
+                  <div className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {data.contact.successMessage}
                   </div>
-                  <div className="font-mono text-emerald-300 text-xs">
+                  <div className={`font-mono text-xs ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
                     {isAr ? 'رقم مرجع طلبك: ' : 'Reference ID: '} <strong>{submittedRef}</strong>
                   </div>
                 </div>
@@ -188,8 +218,14 @@ export default function ContactSection({
             )}
 
             {errorMsg && (
-              <div className="mb-6 p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <div 
+                className={`mb-6 p-3.5 rounded-xl border text-xs flex items-center gap-2.5 ${
+                  isDark 
+                    ? 'bg-red-950/60 border-red-500/40 text-red-200' 
+                    : 'bg-red-50 border-red-300 text-red-800'
+                }`}
+              >
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
@@ -198,8 +234,8 @@ export default function ContactSection({
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {data.contact.nameLabel} <span className="text-[#00F2FE]">*</span>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {data.contact.nameLabel} <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>*</span>
                   </label>
                   <input
                     type="text"
@@ -208,13 +244,17 @@ export default function ContactSection({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={data.contact.namePlaceholder}
-                    className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-3 text-white text-xs sm:text-sm placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition"
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {data.contact.companyLabel} <span className="text-[#00F2FE]">*</span>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {data.contact.companyLabel} <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>*</span>
                   </label>
                   <input
                     type="text"
@@ -223,15 +263,19 @@ export default function ContactSection({
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder={data.contact.companyPlaceholder}
-                    className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-3 text-white text-xs sm:text-sm placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition"
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
                   />
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {data.contact.phoneLabel} <span className="text-[#00F2FE]">*</span>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {data.contact.phoneLabel} <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>*</span>
                   </label>
                   <input
                     type="tel"
@@ -240,21 +284,33 @@ export default function ContactSection({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={data.contact.phonePlaceholder}
-                    className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-3 text-white text-xs sm:text-sm placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition font-mono"
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition font-mono border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     {data.contact.governorateLabel}
                   </label>
                   <select
                     value={governorate}
                     onChange={(e) => setGovernorate(e.target.value)}
-                    className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-3 text-white text-xs sm:text-sm focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition cursor-pointer"
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition cursor-pointer border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
                   >
                     {governorateOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id} className="bg-[#0B1A2F] text-white">
+                      <option 
+                        key={opt.id} 
+                        value={opt.id} 
+                        className={isDark ? 'bg-[#0B1A2F] text-white' : 'bg-white text-slate-900'}
+                      >
                         {isAr ? opt.labelAr : opt.labelEn}
                       </option>
                     ))}
@@ -263,16 +319,24 @@ export default function ContactSection({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   {data.contact.serviceLabel}
                 </label>
                 <select
                   value={service}
                   onChange={(e) => setService(e.target.value)}
-                  className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-3 text-white text-xs sm:text-sm focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition cursor-pointer"
+                  className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition cursor-pointer border ${
+                    isDark
+                      ? 'bg-[#10233D] border-white/10 text-white focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                      : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                  }`}
                 >
                   {serviceOptions.map((opt) => (
-                    <option key={opt.id} value={opt.id} className="bg-[#0B1A2F] text-white">
+                    <option 
+                      key={opt.id} 
+                      value={opt.id} 
+                      className={isDark ? 'bg-[#0B1A2F] text-white' : 'bg-white text-slate-900'}
+                    >
                       {isAr ? opt.labelAr : opt.labelEn}
                     </option>
                   ))}
@@ -280,7 +344,7 @@ export default function ContactSection({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   {data.contact.notesLabel}
                 </label>
                 <textarea
@@ -288,7 +352,11 @@ export default function ContactSection({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={data.contact.notesPlaceholder}
-                  className="w-full bg-[#10233D] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs sm:text-sm placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE] outline-none transition"
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm outline-none transition border ${
+                    isDark
+                      ? 'bg-[#10233D] border-white/10 text-white placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                      : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                  }`}
                 />
               </div>
 
@@ -297,7 +365,7 @@ export default function ContactSection({
                 <button
                   type="button"
                   onClick={handleSendWhatsApp}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(37,211,102,0.3)] transition transform active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{data.contact.btnWhatsapp}</span>
@@ -306,7 +374,11 @@ export default function ContactSection({
                 <button
                   type="button"
                   onClick={handleSendEmail}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#10233D] hover:bg-[#152C4D] border-2 border-[#00F2FE] text-[#00F2FE] font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
+                    isDark
+                      ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE] text-[#00F2FE]'
+                      : 'bg-sky-50 hover:bg-[#0284C7] hover:text-white border-[#0284C7] text-[#0284C7]'
+                  }`}
                 >
                   <Mail className="w-4 h-4" />
                   <span>{data.contact.btnEmail}</span>
@@ -320,76 +392,114 @@ export default function ContactSection({
           <div className="lg:col-span-5 space-y-4">
             
             {/* Direct Phone Card */}
-            <div className="p-6 rounded-2xl bg-[#0B1A2F]/90 border border-[#00F2FE]/20 hover:border-[#00F2FE]/40 transition shadow-lg">
+            <div 
+              className={`p-6 rounded-2xl border transition shadow-sm hover:shadow-md ${
+                isDark 
+                  ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/20 hover:border-[#00F2FE]/40' 
+                  : 'bg-white border-slate-200 hover:border-[#0284C7]/40'
+              }`}
+            >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-[#10233D] text-[#00F2FE] flex items-center justify-center">
+                <div 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDark ? 'bg-[#10233D] text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+                  }`}
+                >
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {isAr ? 'الخط الساخن والمكالمات الفورية' : 'Engineering Hotline'}
                   </h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {isAr ? 'مهندسو الدعم في خدمتك' : 'Available for immediate consult'}
                   </p>
                 </div>
               </div>
               <a
                 href={`tel:${whatsappNumber}`}
-                className="block text-xl font-bold font-mono text-[#00F2FE] hover:underline mt-2 ltr:text-left rtl:text-right"
+                className={`block text-xl font-bold font-mono hover:underline mt-2 ltr:text-left rtl:text-right ${
+                  isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                }`}
               >
                 {hotlinePhone}
               </a>
             </div>
 
             {/* Email Card */}
-            <div className="p-6 rounded-2xl bg-[#0B1A2F]/90 border border-[#00F2FE]/20 hover:border-[#00F2FE]/40 transition shadow-lg">
+            <div 
+              className={`p-6 rounded-2xl border transition shadow-sm hover:shadow-md ${
+                isDark 
+                  ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/20 hover:border-[#00F2FE]/40' 
+                  : 'bg-white border-slate-200 hover:border-[#0284C7]/40'
+              }`}
+            >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-[#10233D] text-[#00F2FE] flex items-center justify-center">
+                <div 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDark ? 'bg-[#10233D] text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+                  }`}
+                >
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {isAr ? 'البريد الإلكتروني المعتمد' : 'Official Support Email'}
                   </h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {isAr ? 'لتلقي كراسات الشروط والـ BOQ' : 'Send RFP & Tender Documents'}
                   </p>
                 </div>
               </div>
               <a
                 href={`mailto:${email}`}
-                className="block text-base font-bold font-mono text-slate-200 hover:text-[#00F2FE] hover:underline mt-1"
+                className={`block text-base font-bold font-mono hover:underline mt-1 ${
+                  isDark ? 'text-slate-200 hover:text-[#00F2FE]' : 'text-slate-800 hover:text-[#0284C7]'
+                }`}
               >
                 {email}
               </a>
             </div>
 
             {/* Address & Hours */}
-            <div className="p-6 rounded-2xl bg-[#0B1A2F]/90 border border-[#00F2FE]/20 hover:border-[#00F2FE]/40 transition shadow-lg space-y-3">
+            <div 
+              className={`p-6 rounded-2xl border transition shadow-sm hover:shadow-md space-y-3 ${
+                isDark 
+                  ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/20 hover:border-[#00F2FE]/40' 
+                  : 'bg-white border-slate-200 hover:border-[#0284C7]/40'
+              }`}
+            >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#10233D] text-[#00F2FE] flex items-center justify-center shrink-0">
+                <div 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isDark ? 'bg-[#10233D] text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+                  }`}
+                >
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {isAr ? 'المقر الرئيسي' : 'Headquarters'}
                   </h4>
-                  <p className="text-xs text-slate-300 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                     {address || (isAr ? siteConfig.addressAr : siteConfig.addressEn)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 pt-2 border-t border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-[#10233D] text-slate-400 flex items-center justify-center shrink-0">
+              <div className={`flex items-start gap-3 pt-2 border-t ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
+                <div 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isDark ? 'bg-[#10233D] text-slate-400' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-300">
+                  <h4 className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     {isAr ? 'ساعات العمل الرسمية' : 'Operating Hours'}
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {isAr ? siteConfig.workingHoursAr : siteConfig.workingHoursEn}
                   </p>
                 </div>
