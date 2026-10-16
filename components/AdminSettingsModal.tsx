@@ -37,7 +37,8 @@ import {
   CloudUpload,
   RefreshCw,
   ExternalLink as ExtLinkIcon,
-  LayoutDashboard
+  LayoutDashboard,
+  Lock
 } from 'lucide-react';
 import Link from 'next/link';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn } from '@/lib/content';
@@ -45,8 +46,6 @@ import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 import { 
   auth, 
-  googleProvider, 
-  signInWithPopup, 
   signOut, 
   onAuthStateChanged, 
   User 
@@ -225,18 +224,6 @@ export default function AdminSettingsModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoginError('');
-      await signInWithPopup(auth, googleProvider);
-      setActionSuccessMsg(isAr ? 'تم تسجيل الدخول بنجاح وتفعيل المزامنة السحابية!' : 'Signed in successfully! Cloud sync active.');
-      setTimeout(() => setActionSuccessMsg(''), 4000);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setLoginError(msg);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -382,31 +369,21 @@ export const siteConfig = ${JSON.stringify(
                   <span className="hidden sm:inline">{isAr ? 'خروج' : 'Logout'}</span>
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={handleGoogleLogin}
-                type="button"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] transition shadow-sm cursor-pointer"
-                title={isAr ? 'تسجيل الدخول كمدير معتمد بحساب Google' : 'Sign in as Admin with Google'}
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>{isAr ? 'دخول المدير' : 'Admin Login'}</span>
-              </button>
-            )}
+            ) : null}
 
-            {/* Direct Link to Full Dedicated Dashboard Page */}
+            {/* Direct Link to Full Dedicated Secret Portal Page */}
             <Link
-              href="/admin"
+              href="/tb-portal-9482x"
               onClick={onClose}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
                 isDark
                   ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 border-[#00F2FE]/40 text-[#00F2FE]'
                   : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
               }`}
-              title={isAr ? 'فتح صفحة لوحة التحكم الكاملة' : 'Open Full Admin Dashboard'}
+              title={isAr ? 'فتح بوابة الإدارة المشفرة' : 'Open Encrypted Console'}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{isAr ? 'لوحة التحكم الكاملة' : 'Full Console'}</span>
+              <span>{isAr ? 'البوابة المشفرة' : 'Secure Portal'}</span>
               <ExternalLink className="w-3 h-3 opacity-70" />
             </Link>
 
@@ -1026,14 +1003,14 @@ export const siteConfig = ${JSON.stringify(
                 </div>
 
                 {!user && (
-                  <button
-                    type="button"
-                    onClick={handleGoogleLogin}
+                  <Link
+                    href="/tb-portal-9482x"
+                    onClick={onClose}
                     className="px-3 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
                   >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'تسجيل دخول المدير' : 'Login to Manage'}</span>
-                  </button>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'الدخول للبوابة المشفرة' : 'Login to Secure Portal'}</span>
+                  </Link>
                 )}
               </div>
 

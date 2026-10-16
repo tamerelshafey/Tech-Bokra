@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { ArrowUp, Phone, Mail, MapPin, Settings, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { ArrowUp, Phone, Mail, MapPin, Sun, Moon } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
@@ -268,31 +267,6 @@ export default function Footer({
               )}
             </button>
 
-            {onOpenSettings && (
-              <button
-                onClick={onOpenSettings}
-                className={`inline-flex items-center gap-1.5 transition px-2 py-1 rounded-lg border ${
-                  isDark
-                    ? 'bg-white/5 hover:bg-[#10233D] border-white/5 text-slate-400 hover:text-[#00F2FE]'
-                    : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-600 hover:text-[#0284C7] shadow-sm'
-                }`}
-              >
-                <Settings className={`w-3 h-3 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
-                <span>{isAr ? 'الضبط السريع' : 'Settings'}</span>
-              </button>
-            )}
-
-            <Link
-              href="/admin"
-              className={`inline-flex items-center gap-1.5 transition px-2.5 py-1 rounded-lg border font-semibold ${
-                isDark
-                  ? 'bg-[#00F2FE]/10 hover:bg-[#00F2FE]/20 border-[#00F2FE]/30 text-[#00F2FE]'
-                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
-              }`}
-            >
-              <LayoutDashboard className="w-3 h-3" />
-              <span>{isAr ? 'لوحة التحكم الإدارية' : 'Admin Console'}</span>
-            </Link>
           </div>
           
           <button

@@ -1,5 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  User 
+} from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '@/firebase-applet-config.json';
 
@@ -11,7 +18,6 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 // Auth initialization
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
 // Error handler conforming to Skill specification
 export enum OperationType {
@@ -72,5 +78,5 @@ export async function testConnection() {
   }
 }
 
-export { signInWithPopup, signOut, onAuthStateChanged };
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
 export type { User };

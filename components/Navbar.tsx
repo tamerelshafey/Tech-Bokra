@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Shield, MessageSquare, Menu, X, Globe, Settings, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { Shield, MessageSquare, Menu, X, Globe, Sun, Moon } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
@@ -173,37 +172,6 @@ export default function Navbar({
               <span className="font-mono uppercase font-bold">{lang === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
 
-            {/* Settings Trigger */}
-            {onOpenSettings && (
-              <button
-                onClick={onOpenSettings}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm cursor-pointer border ${
-                  isDark
-                    ? 'bg-[#10233D] hover:bg-[#152C4D] border-white/10 hover:border-[#00F2FE]/40 text-slate-300 hover:text-[#00F2FE]'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 hover:text-[#0284C7]'
-                }`}
-                title={lang === 'ar' ? 'نافذة الضبط السريع' : 'Quick Settings'}
-                aria-label={lang === 'ar' ? 'نافذة الضبط السريع' : 'Quick Settings'}
-              >
-                <Settings className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
-                <span className="hidden 2xl:inline">{lang === 'ar' ? 'الضبط السريع' : 'Settings'}</span>
-              </button>
-            )}
-
-            {/* Full Admin Dashboard Page Link */}
-            <Link
-              href="/admin"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
-                isDark
-                  ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 border-[#00F2FE]/40 text-[#00F2FE] hover:shadow-[0_0_12px_rgba(0,242,254,0.25)]'
-                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
-              }`}
-              title={lang === 'ar' ? 'لوحة التحكم الإدارية الكاملة' : 'Full Admin Dashboard'}
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{lang === 'ar' ? 'لوحة التحكم' : 'Admin'}</span>
-            </Link>
-
             {/* Direct WhatsApp Call */}
             <a
               href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
@@ -258,21 +226,6 @@ export default function Navbar({
               <Globe className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
               <span>{lang === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
-
-            {onOpenSettings && (
-              <button
-                onClick={onOpenSettings}
-                className={`p-2 rounded-lg border text-xs cursor-pointer ${
-                  isDark
-                    ? 'bg-[#10233D] border-white/10 text-[#00F2FE]'
-                    : 'bg-slate-100 border-slate-300 text-[#0284C7]'
-                }`}
-                title={lang === 'ar' ? 'الضبط' : 'Settings'}
-                aria-label={lang === 'ar' ? 'الضبط' : 'Settings'}
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -334,18 +287,6 @@ export default function Navbar({
               <MessageSquare className="w-4 h-4" />
               <span>{lang === 'ar' ? 'تحدث مباشرة عبر واتساب' : 'Chat via WhatsApp'}</span>
             </a>
-
-            <Link
-              href="/admin"
-              className={`w-full text-center py-2.5 rounded-xl border font-bold text-sm flex items-center justify-center gap-2 transition ${
-                isDark
-                  ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/40 text-[#00F2FE]'
-                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-[#0284C7]'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>{lang === 'ar' ? 'لوحة التحكم الإدارية الكاملة' : 'Full Admin Dashboard'}</span>
-            </Link>
           </div>
         </div>
       )}

@@ -13,9 +13,9 @@ import TechPartners from '@/components/TechPartners';
 import FaqSection from '@/components/FaqSection';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
-import AdminSettingsModal, { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
+import { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
 import { contentAr, contentEn, siteConfig } from '@/lib/content';
-import { MessageSquare, Settings, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
+import { MessageSquare, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { testConnection } from '@/lib/firebase';
 import { subscribeSiteSettings } from '@/lib/dbService';
@@ -26,7 +26,6 @@ export default function HomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [prefilledService, setPrefilledService] = useState<string>('');
   const [prefilledNotes, setPrefilledNotes] = useState<string>('');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
 
@@ -94,24 +93,6 @@ export default function HomePage() {
 
   const toggleLanguage = () => {
     setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
-
-  const handleSaveConfig = (newConfig: EditableConfig) => {
-    setCustomConfig(newConfig);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newConfig));
-    } catch {
-      // Ignore storage errors
-    }
-  };
-
-  const handleResetDefault = () => {
-    setCustomConfig(defaultEditableConfig);
-    try {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    } catch {
-      // Ignore storage errors
-    }
   };
 
   const cleanUrl = () => {
@@ -216,12 +197,11 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Navigation with settings trigger, theme toggle & dynamic phone */}
+      {/* Navigation with theme toggle & dynamic phone */}
       <Navbar
         lang={lang}
         onToggleLang={toggleLanguage}
         data={data}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         whatsappNumber={customConfig.whatsappNumber}
         logoEmblemStyle={customConfig.logoEmblemStyle}
         customLogoUrl={customConfig.customLogoUrl}
@@ -319,7 +299,6 @@ export default function HomePage() {
       <Footer
         lang={lang}
         data={data}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
@@ -346,20 +325,6 @@ export default function HomePage() {
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-slate-700" />}
         </button>
 
-        {/* Floating Quick Settings Trigger */}
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className={`w-12 h-12 rounded-full border shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 group cursor-pointer ${
-            isDark
-              ? 'bg-[#10233D]/95 hover:bg-[#152C4D] text-[#00F2FE] border-[#00F2FE]/50 shadow-[0_0_20px_rgba(0,242,254,0.3)]'
-              : 'bg-white hover:bg-slate-100 text-[#0284C7] border-slate-300 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-          }`}
-          title={isAr ? 'لوحة ضبط وتعديل المحتوى' : 'Live Content & Settings'}
-          aria-label={isAr ? 'فتح لوحة ضبط المحتوى' : 'Open Content Settings'}
-        >
-          <Settings className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
-        </button>
-
         {/* Floating WhatsApp Quick Action */}
         <a
           href={`https://wa.me/${customConfig.whatsappNumber}?text=${encodeURIComponent(
@@ -376,16 +341,6 @@ export default function HomePage() {
           <MessageSquare className="w-7 h-7 group-hover:animate-pulse" />
         </a>
       </aside>
-
-      {/* Comprehensive Content & Settings Admin Modal */}
-      <AdminSettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        lang={lang}
-        currentConfig={customConfig}
-        onSaveConfig={handleSaveConfig}
-        onResetDefault={handleResetDefault}
-      />
     </div>
   );
 }
