@@ -49,12 +49,18 @@ import {
   SlidersHorizontal,
   Edit3,
   Camera,
-  Network
+  Network,
+  ChevronDown,
+  ChevronUp,
+  FolderPlus,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
-import { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
+import { EditableConfig, defaultEditableConfig, MediaVaultItem } from '@/components/AdminSettingsModal';
+import ProjectModal from '@/components/ProjectModal';
 import { 
   auth, 
   signInWithEmailAndPassword, 
@@ -69,6 +75,11 @@ import {
   saveSiteSettingsToCloud,
   subscribeSiteSettings 
 } from '@/lib/dbService';
+import { 
+  safeSaveConfigToStorage, 
+  safeLoadConfigFromStorage, 
+  compressImageFile 
+} from '@/lib/storageHelper';
 
 const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v2';
 const MASTER_KEY_STORAGE = 'tech_bokra_master_key_v1';
@@ -144,28 +155,13 @@ export default function SecureAdminPortalPage() {
   const isLockedOut = lockoutUntil > 0;
 
   // Password Management State
-  const [currentMasterKey, setCurrentMasterKey] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(MASTER_KEY_STORAGE) || DEFAULT_MASTER_KEY;
-    }
-    return DEFAULT_MASTER_KEY;
-  });
+  const [currentMasterKey, setCurrentMasterKey] = useState<string>(DEFAULT_MASTER_KEY);
   const [newMasterKeyInput, setNewMasterKeyInput] = useState<string>('');
   const [keyChangeSuccess, setKeyChangeSuccess] = useState<boolean>(false);
   const [keyChangeError, setKeyChangeError] = useState<string>('');
 
   // Config State
-  const [config, setConfig] = useState<EditableConfig>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (saved) return { ...defaultEditableConfig, ...JSON.parse(saved) };
-      } catch {
-        // ignore
-      }
-    }
-    return defaultEditableConfig;
-  });
+  const [config, setConfig] = useState<EditableConfig>(defaultEditableConfig);
 
   // Leads & CRM State
   const [inquiries, setInquiries] = useState<FirestoreInquiry[]>([]);
@@ -177,10 +173,34 @@ export default function SecureAdminPortalPage() {
   const [notificationMsg, setNotificationMsg] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
+  // Projects CMS & Image Uploader Hub State
+  const [projectFilter, setProjectFilter] = useState<'all' | 'published' | 'draft' | 'upcoming'>('all');
+  const [projectCategoryFilter, setProjectCategoryFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp'>('all');
+  const [projectSearch, setProjectSearch] = useState<string>('');
+  const [expandedProjectIdx, setExpandedProjectIdx] = useState<number | null>(null);
+  const [previewModalProject, setPreviewModalProject] = useState<Project | null>(null);
+  const [vaultPickerTargetProjectIdx, setVaultPickerTargetProjectIdx] = useState<number | null>(null);
+  const [vaultPickerTargetHeroField, setVaultPickerTargetHeroField] = useState<keyof EditableConfig | null>(null);
+  const [newTechTagInput, setNewTechTagInput] = useState<Record<number, string>>({});
+  const [uploadedAssetUrl, setUploadedAssetUrl] = useState<string>('');
+  const [uploadedAssetName, setUploadedAssetName] = useState<string>('');
+  const [uploadedAssetSize, setUploadedAssetSize] = useState<string>('');
+  const [copiedAssetUrl, setCopiedAssetUrl] = useState<boolean>(false);
+  const [targetProjectForUpload, setTargetProjectForUpload] = useState<string>('');
+  const [recentUploads, setRecentUploads] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
+
   // Check Session and Brute Force on Client Mount
   useEffect(() => {
     const timer = setTimeout(() => {
       if (typeof window !== 'undefined') {
+        const savedKey = localStorage.getItem(MASTER_KEY_STORAGE);
+        if (savedKey) setCurrentMasterKey(savedKey);
+
+        const savedConfig = safeLoadConfigFromStorage();
+        if (savedConfig) {
+          setConfig((prev) => ({ ...prev, ...savedConfig }));
+        }
+
         const session = sessionStorage.getItem(SESSION_AUTH_KEY);
         if (session) {
           try {
@@ -362,9 +382,7 @@ export default function SecureAdminPortalPage() {
   const handleConfigChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
     setConfig((prev) => {
       const updated = { ...prev, [field]: value };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-      }
+      safeSaveConfigToStorage(updated);
       return updated;
     });
   };
@@ -374,10 +392,8 @@ export default function SecureAdminPortalPage() {
     setNotificationMsg('');
 
     try {
-      // 1. Local Cache
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(config));
-      }
+      // 1. Safe Local Cache
+      safeSaveConfigToStorage(config);
 
       // 2. Cloud Firestore Real-time Persistence
       await saveSiteSettingsToCloud(config, auth?.currentUser || null);
@@ -408,19 +424,321 @@ export default function SecureAdminPortalPage() {
     }
   };
 
-  // Helper: File to base64 Data URL
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof EditableConfig) => {
+  // Helper: Compressed File to base64 Data URL for any single config field
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof EditableConfig) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const result = uploadEvent.target?.result as string;
-        if (result) {
-          handleConfigChange(fieldName, result);
+      try {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
+          handleConfigChange(fieldName, compressed);
+          setNotificationMsg(isAr ? 'تم ضغط ورفع الصورة بنجاح!' : 'Image compressed and updated successfully!');
+          setTimeout(() => setNotificationMsg(''), 3000);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Image compression error:', err);
+      }
     }
+  };
+
+  // Helper: Upload file to Media Assets Vault and generate direct URL
+  const handleAssetUploaderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      try {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
+          const sizeKB = `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`;
+          const fileName = file.name;
+          setUploadedAssetUrl(compressed);
+          setUploadedAssetName(fileName);
+          setUploadedAssetSize(sizeKB);
+
+          const newVaultItem: MediaVaultItem = {
+            id: `asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: fileName.replace(/\.[^/.]+$/, ''),
+            url: compressed,
+            size: sizeKB,
+            date: new Date().toISOString().split('T')[0],
+            tag: isAr ? 'مرفوع محلياً' : 'Local Upload',
+          };
+
+          const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+          const updatedVault = [newVaultItem, ...currentVault];
+          handleConfigChange('mediaVault', updatedVault);
+
+          setRecentUploads((prev) => [
+            { id: newVaultItem.id, name: fileName, url: compressed, size: sizeKB },
+            ...prev.slice(0, 5)
+          ]);
+
+          setNotificationMsg(isAr ? `تم ضغط وحفظ صورة "${fileName}" في الخزينة بنجاح!` : `Uploaded "${fileName}" successfully!`);
+          setTimeout(() => setNotificationMsg(''), 4000);
+        }
+      } catch (err) {
+        console.error('Error uploading asset:', err);
+      }
+    }
+  };
+
+  // Helper: Direct Project Image Upload with automatic Media Vault registration
+  const handleProjectImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, projectIdx: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImageFile(file);
+      if (compressed) {
+        const currentList = [...(config.projectsList || contentAr.projects.list)];
+        currentList[projectIdx] = { ...currentList[projectIdx], image: compressed };
+        handleConfigChange('projectsList', currentList);
+
+        // Also add to Media Vault so it has a permanent reference
+        const sizeKB = `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`;
+        const newVaultItem: MediaVaultItem = {
+          id: `proj-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          url: compressed,
+          size: sizeKB,
+          date: new Date().toISOString().split('T')[0],
+          tag: currentList[projectIdx]?.tag || 'Project',
+        };
+        const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+        handleConfigChange('mediaVault', [newVaultItem, ...currentVault]);
+
+        setNotificationMsg(isAr ? 'تم ضغط ورفع صورة المشروع وحفظها في الخزينة بنجاح!' : 'Project image compressed and uploaded!');
+        setTimeout(() => setNotificationMsg(''), 3000);
+      }
+    } catch (err) {
+      console.error('Error uploading project image:', err);
+    }
+  };
+
+  const handleApplyUploadedAssetToProject = (targetProjId: string, assetUrl: string) => {
+    if (!targetProjId || !assetUrl) return;
+    const currentList = config.projectsList || contentAr.projects.list;
+    const updated = currentList.map((p) => {
+      if (p.id === targetProjId) {
+        return { ...p, image: assetUrl };
+      }
+      return p;
+    });
+    handleConfigChange('projectsList', updated);
+    setNotificationMsg(isAr ? 'تم تعيين وتحديث صورة المشروع بنجاح!' : 'Project image updated successfully!');
+    setTimeout(() => setNotificationMsg(''), 4000);
+  };
+
+  const handleApplyUploadedAssetToHero = (field: keyof EditableConfig, assetUrl: string) => {
+    if (!assetUrl) return;
+    handleConfigChange(field, assetUrl);
+    setNotificationMsg(isAr ? 'تم تحديث صورة بطاقة الهيدر بنجاح!' : 'Hero image updated successfully!');
+    setTimeout(() => setNotificationMsg(''), 3000);
+  };
+
+  const copyAssetUrlToClipboard = (url: string, name?: string) => {
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopiedAssetUrl(true);
+      setNotificationMsg(
+        isAr 
+          ? (name ? `تم نسخ رابط صورة "${name}" بنجاح!` : 'تم نسخ رابط الصورة بنجاح! يمكنك الآن لصقه في أي مشروع أو خدمة.')
+          : 'Image URL copied to clipboard!'
+      );
+      setTimeout(() => {
+        setCopiedAssetUrl(false);
+        setNotificationMsg('');
+      }, 3000);
+    }
+  };
+
+  const handleDeleteVaultItem = (itemId: string) => {
+    const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+    const updated = currentVault.filter((item) => item.id !== itemId);
+    handleConfigChange('mediaVault', updated);
+    setNotificationMsg(isAr ? 'تم حذف العنصر من خزينة الوسائط.' : 'Item deleted from vault.');
+    setTimeout(() => setNotificationMsg(''), 3000);
+  };
+
+  const handleAddNewProject = () => {
+    const currentList = config.projectsList || contentAr.projects.list;
+    const newId = `project-${Date.now()}`;
+    const newProject: Project = {
+      id: newId,
+      title: isAr ? 'مشروع هندسي وتقني جديد' : 'New Engineering & Tech Project',
+      client: isAr ? 'اسم العميل / المؤسسة المنفذ لها' : 'Client Organization Name',
+      tag: isAr ? 'أنظمة متكاملة' : 'Integrated Systems',
+      category: 'security',
+      icon: 'ShieldCheck',
+      image: CURATED_IMAGE_PRESETS.cctv[0].url,
+      summary: isAr ? 'نبذة موجزة عن نطاق المشروع والحلول المنفذة بنجاح للمنشأة.' : 'Brief summary of project scope.',
+      description: isAr ? 'قام فريق تيك بكرة بتصميم وتوريد وتنفيذ المنظومة بأعلى المعايير الهندسية مع تفعيل الضمان وعقد الصيانة.' : 'Full case study of scope, milestones, and delivery.',
+      highlight: isAr ? 'إنجاز تسليم المشروع بنسبة 100% وفق أعلى المعايير الهندسية والاعتمادية.' : '100% compliance with engineering standards.',
+      stats: [
+        { label: isAr ? 'الوحدات المنفذة' : 'Units', value: '+40 نقطة' },
+        { label: isAr ? 'زمن الإنجاز' : 'Timeline', value: '10 أيام' },
+        { label: isAr ? 'الاعتمادية' : 'Reliability', value: '100%' },
+      ],
+      technologies: ['IP 4K Cameras', 'Cat6A Structured Cabling', 'Managed Core Switches'],
+      challenges: [isAr ? 'متطلبات أمنية وهندسية دقيقة لربط المنشأة' : 'Strict engineering requirements'],
+      solutions: [isAr ? 'تنفيذ بنية تحتية معزولة ومحمية بكابلات معتمدة' : 'Isolated, high-availability architecture'],
+      isDraft: false,
+      isUpcoming: false,
+      statusBadge: isAr ? 'مشروع مكتمل' : 'Completed',
+      liveUrl: '',
+    };
+
+    const updated = [newProject, ...currentList];
+    handleConfigChange('projectsList', updated);
+    setExpandedProjectIdx(0);
+    setNotificationMsg(isAr ? 'تمت إضافة مشروع جديد بنجاح! يمكنك الآن تعديل كافة تفاصيله ونشره.' : 'New project added!');
+    setTimeout(() => setNotificationMsg(''), 4000);
+  };
+
+  const handleToggleProjectDraft = (projId: string) => {
+    const currentList = config.projectsList || contentAr.projects.list;
+    let nextState = false;
+    const updated = currentList.map((p) => {
+      if (p.id === projId) {
+        nextState = !p.isDraft;
+        return { ...p, isDraft: nextState };
+      }
+      return p;
+    });
+    handleConfigChange('projectsList', updated);
+    setNotificationMsg(
+      nextState
+        ? (isAr ? 'تم تحويل المشروع إلى "مسودة" (مخفي من الموقع للزوار)' : 'Project set to Draft (Hidden from visitors)')
+        : (isAr ? 'تم نشر المشروع بنجاح (ظاهر الآن لجميع زوار الموقع)' : 'Project Published to live site!')
+    );
+    setTimeout(() => setNotificationMsg(''), 3500);
+  };
+
+  const handleDuplicateProject = (idx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const source = currentList[idx];
+    if (!source) return;
+    const cloned: Project = {
+      ...source,
+      id: `proj-${Date.now()}`,
+      title: `${source.title} (${isAr ? 'نسخة مسودة' : 'Copy Draft'})`,
+      isDraft: true, // cloned as draft for safety
+    };
+    currentList.splice(idx + 1, 0, cloned);
+    handleConfigChange('projectsList', currentList);
+    setExpandedProjectIdx(idx + 1);
+    setNotificationMsg(isAr ? 'تم استنساخ المشروع كمسودة بنجاح! يمكنك تعديله.' : 'Project duplicated as draft.');
+    setTimeout(() => setNotificationMsg(''), 3500);
+  };
+
+  const handleMoveProject = (idx: number, direction: 'up' | 'down') => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= currentList.length) return;
+    const temp = currentList[idx];
+    currentList[idx] = currentList[targetIdx];
+    currentList[targetIdx] = temp;
+    handleConfigChange('projectsList', currentList);
+    setExpandedProjectIdx(targetIdx);
+  };
+
+  const handleDeleteProject = (projId: string) => {
+    if (typeof window !== 'undefined' && !window.confirm(isAr ? 'هل أنت متأكد من حذف هذا المشروع من سابقة الأعمال؟' : 'Delete this project?')) {
+      return;
+    }
+    const currentList = config.projectsList || contentAr.projects.list;
+    const updated = currentList.filter((p) => p.id !== projId);
+    handleConfigChange('projectsList', updated);
+    setExpandedProjectIdx(null);
+    setNotificationMsg(isAr ? 'تم حذف المشروع من القائمة.' : 'Project removed.');
+    setTimeout(() => setNotificationMsg(''), 4000);
+  };
+
+  const handleUpdateProjectField = (idx: number, field: keyof Project, val: any) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    currentList[idx] = { ...currentList[idx], [field]: val };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleAddProjectTechnology = (idx: number, tech: string) => {
+    if (!tech.trim()) return;
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = currentList[idx].technologies || [];
+    currentList[idx] = { ...currentList[idx], technologies: [...existing, tech.trim()] };
+    handleConfigChange('projectsList', currentList);
+    setNewTechTagInput((prev) => ({ ...prev, [idx]: '' }));
+  };
+
+  const handleRemoveProjectTechnology = (idx: number, techIdx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].technologies || [])];
+    existing.splice(techIdx, 1);
+    currentList[idx] = { ...currentList[idx], technologies: existing };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleAddProjectChallenge = (idx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = currentList[idx].challenges || [];
+    currentList[idx] = { 
+      ...currentList[idx], 
+      challenges: [...existing, isAr ? 'تحدي هندسي جديد...' : 'New engineering challenge...'] 
+    };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleUpdateProjectChallenge = (idx: number, chIdx: number, text: string) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].challenges || [])];
+    existing[chIdx] = text;
+    currentList[idx] = { ...currentList[idx], challenges: existing };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleRemoveProjectChallenge = (idx: number, chIdx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].challenges || [])];
+    existing.splice(chIdx, 1);
+    currentList[idx] = { ...currentList[idx], challenges: existing };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleAddProjectSolution = (idx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = currentList[idx].solutions || [];
+    currentList[idx] = { 
+      ...currentList[idx], 
+      solutions: [...existing, isAr ? 'حل هندسي منفذ بواسطة تيك بكرة...' : 'Solution implemented by Tech Bokra...'] 
+    };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleUpdateProjectSolution = (idx: number, solIdx: number, text: string) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].solutions || [])];
+    existing[solIdx] = text;
+    currentList[idx] = { ...currentList[idx], solutions: existing };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleRemoveProjectSolution = (idx: number, solIdx: number) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].solutions || [])];
+    existing.splice(solIdx, 1);
+    currentList[idx] = { ...currentList[idx], solutions: existing };
+    handleConfigChange('projectsList', currentList);
+  };
+
+  const handleUpdateProjectStat = (idx: number, statIdx: number, field: 'label' | 'value', val: string) => {
+    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const existing = [...(currentList[idx].stats || [])];
+    while (existing.length <= statIdx) {
+      existing.push({ label: '', value: '' });
+    }
+    existing[statIdx] = { ...existing[statIdx], [field]: val };
+    currentList[idx] = { ...currentList[idx], stats: existing };
+    handleConfigChange('projectsList', currentList);
   };
 
   // Filtered Leads
@@ -1106,19 +1424,265 @@ export default function SecureAdminPortalPage() {
                 <div>
                   <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <ImageIcon className="w-5 h-5 text-[#00F2FE]" />
-                    <span>{isAr ? 'إدارة الصور والوسائط البصرية للموقع' : 'Media & Site Images CMS'}</span>
+                    <span>{isAr ? 'مركز الوسائط ورفع الصور واستخراج الروابط' : 'Media Vault & Image Link Generator'}</span>
                   </h3>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     {isAr 
-                      ? 'التحكم الكامل في صور الهيدر التفاعلي، بطاقات الأنظمة، وسابقة المشروعات (بروابط أو برفع صور مباشرة من جهازك أو باختيار مكتبة الصور الجاهزة)' 
-                      : 'Full control of Hero telemetry photos and project images with presets, URLs, or local file upload'}
+                      ? 'ارفع صور مشروعاتك أو شعاراتك من جهازك مباشرة، واحصل على رابط مباشر خاص بالمشروع لنسخه واستخدامه في أي مكان، أو تحكّم في صور واجهة الهيدر التفاعلي والمشروعات والخدمات.' 
+                      : 'Upload images from your device, get dedicated project URLs to copy and use anywhere, and manage all site media.'}
                   </p>
                 </div>
 
-                {/* 4 HERO TELEMETRY IMAGES CARDS */}
-                <div className="space-y-6">
-                  <h4 className="text-sm font-bold text-white border-b border-white/10 pb-2">
-                    {isAr ? '1. صور واجهة الهيدر التفاعلي (Hero Telemetry 4 Cards):' : '1. Hero Telemetry 4 Cards Images:'}
+                {/* SECTION 1: UPLOAD & GENERATE DIRECT LINK */}
+                <div className="p-5 rounded-2xl bg-[#071120] border border-[#00F2FE]/30 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#00F2FE]/15 text-[#00F2FE] flex items-center justify-center">
+                        <Upload className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">
+                          {isAr ? '1. رفع صورة جديدة واستخراج رابط مباشر خاص بالمشروع' : '1. Upload Image & Generate Direct URL'}
+                        </h4>
+                        <p className="text-[11px] text-slate-400">
+                          {isAr ? 'يدعم صور PNG, JPG, WEBP, SVG حتى 8 ميجابايت مع تخزين مشفر ودائم' : 'Supports PNG, JPG, WEBP, SVG up to 8MB'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dropzone / Upload Input */}
+                  <div className="border-2 border-dashed border-[#00F2FE]/30 hover:border-[#00F2FE] rounded-2xl p-6 text-center transition-colors bg-[#0B1A2F]/50">
+                    <input
+                      type="file"
+                      id="vault-file-upload-input"
+                      accept="image/*"
+                      multiple
+                      onChange={handleAssetUploaderChange}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="vault-file-upload-input"
+                      className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-[#10233D] text-[#00F2FE] flex items-center justify-center border border-[#00F2FE]/20 shadow-md">
+                        <FolderPlus className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-white">
+                        {isAr ? 'انقر هنا لاختيار صورة من جهازك، أو اسحب الملف وأفلته هنا' : 'Click to select image or drag & drop'}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {isAr ? 'سيتم توليد رابط مباشر فوري وحفظ الصورة تلقائياً في خزينة الوسائط' : 'Generates instant direct URL and saves to media vault'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Latest Uploaded Result Banner */}
+                  {uploadedAssetUrl && (
+                    <div className="p-4 rounded-xl bg-[#10233D] border border-emerald-500/30 space-y-3 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>{isAr ? 'تم رفع الصورة وتوليد الرابط بنجاح!' : 'Image uploaded & link generated!'}</span>
+                        </span>
+                        {uploadedAssetSize && (
+                          <span className="text-[10px] font-mono text-slate-300 px-2 py-0.5 rounded bg-white/5">
+                            {uploadedAssetName} ({uploadedAssetSize})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-slate-950 border border-white/10 shrink-0 relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={uploadedAssetUrl} alt="Uploaded preview" className="w-full h-full object-cover" />
+                        </div>
+
+                        <div className="flex-1 w-full space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={uploadedAssetUrl.substring(0, 120) + (uploadedAssetUrl.length > 120 ? '...' : '')}
+                              className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => copyAssetUrlToClipboard(uploadedAssetUrl, uploadedAssetName)}
+                              className="px-3.5 py-1.5 rounded-lg bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{copiedAssetUrl ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ الرابط' : 'Copy URL')}</span>
+                            </button>
+                          </div>
+
+                          {/* Quick Assign Dropdown */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                            <span className="text-slate-400 font-bold">{isAr ? 'تطبيق فوري كصورة لمشروع:' : 'Quick assign to project:'}</span>
+                            <select
+                              value={targetProjectForUpload}
+                              onChange={(e) => {
+                                setTargetProjectForUpload(e.target.value);
+                                if (e.target.value) {
+                                  handleApplyUploadedAssetToProject(e.target.value, uploadedAssetUrl);
+                                }
+                              }}
+                              className="bg-[#071120] border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-[#00F2FE]"
+                            >
+                              <option value="">{isAr ? '-- اختر المشروع لتحديث صورته مباشرة --' : '-- Choose project --'}</option>
+                              {(config.projectsList || contentAr.projects.list).map((p) => (
+                                <option key={p.id} value={p.id}>{p.title}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* SECTION 2: MEDIA ASSETS VAULT GALLERY */}
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <FolderPlus className="w-4 h-4 text-[#00F2FE]" />
+                        <span>{isAr ? '2. خزينة الوسائط والصور المرفوعة (Media Assets Vault):' : '2. Media Assets Vault:'}</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400">
+                        {isAr ? 'مكتبة الصور الدائمة المحفوظة للموقع - يمكنك نسخ رابط أي صورة بنقرة واحدة أو تعيينها لأي مشروع' : 'Permanent asset library - copy direct link or assign to project'}
+                      </p>
+                    </div>
+
+                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-[#10233D] text-[#00F2FE] border border-[#00F2FE]/20">
+                      {isAr ? `إجمالي الصور: ${(config.mediaVault || defaultEditableConfig.mediaVault || []).length}` : `Assets: ${(config.mediaVault || defaultEditableConfig.mediaVault || []).length}`}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {(config.mediaVault || defaultEditableConfig.mediaVault || []).map((item) => (
+                      <div 
+                        key={item.id}
+                        className="p-3.5 rounded-xl bg-[#071120] border border-white/10 hover:border-[#00F2FE]/40 transition space-y-2.5 flex flex-col justify-between"
+                      >
+                        <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-950 border border-white/5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                          {item.tag && (
+                            <span className="absolute top-2 right-2 rtl:right-2 rtl:left-auto ltr:left-2 ltr:right-auto px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 backdrop-blur-sm text-[#00F2FE] border border-white/10">
+                              {item.tag}
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <h5 className="text-xs font-bold text-white truncate" title={item.name}>
+                            {item.name}
+                          </h5>
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-1">
+                            <span>{item.size || 'HD Image'}</span>
+                            <span>{item.date}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/5 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => copyAssetUrlToClipboard(item.url, item.name)}
+                            className="flex-1 py-1.5 px-2 rounded-lg bg-[#10233D] hover:bg-[#00F2FE] text-slate-200 hover:text-[#071120] text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer border border-white/5"
+                            title={isAr ? 'نسخ الرابط المباشر' : 'Copy URL'}
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>{isAr ? 'نسخ الرابط' : 'Copy'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const projTitle = prompt(isAr ? 'أدخل اسم أو رقم المشروع لتطبيق الصورة عليه:' : 'Enter project title:');
+                              if (projTitle) {
+                                const currentList = [...(config.projectsList || contentAr.projects.list)];
+                                const found = currentList.find((p) => p.title.includes(projTitle) || p.id.includes(projTitle));
+                                if (found) {
+                                  handleApplyUploadedAssetToProject(found.id, item.url);
+                                } else {
+                                  alert(isAr ? 'لم يتم العثور على مشروع بهذا الاسم' : 'Project not found');
+                                }
+                              }
+                            }}
+                            className="py-1.5 px-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-[#00F2FE] text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer border border-[#00F2FE]/20"
+                            title={isAr ? 'تعيين لمشروع' : 'Assign'}
+                          >
+                            <Briefcase className="w-3 h-3" />
+                            <span>{isAr ? 'لمشروع' : 'Apply'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVaultItem(item.id)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                            title={isAr ? 'حذف من الخزينة' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SECTION 3: CURATED PROJECT CLOUD LINKS GENERATOR */}
+                <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>{isAr ? '3. مولد روابط الصور السحابية عالية الدقة للمشروعات والأنظمة' : '3. Curated Cloud Project Links Generator:'}</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {isAr ? 'روابط سحابية فائقة السرعة معتمدة وجاهزة للنسخ والاستخدام الفوري في مشروعاتك' : 'Ready-to-use high-resolution cloud links for projects'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { category: isAr ? 'كاميرات وأمن CCTV' : 'CCTV & Security', title: 'كاميرات 4K ومراقبة ليلية', url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'غرف مراقبة SOC' : 'Control Center', title: 'شاشات مراقبة مركزية Video Wall', url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'شبكات وفيبر Network' : 'Network & Fiber', title: 'كبائن خوادم وراك داتا سنتر', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'ألياف ضوئية Fiber' : 'Fiber Optics', title: 'مسارات كابلات فايبر أوبتك', url: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'بوابات ذكية Access' : 'Smart Gates', title: 'بوابات سرعة زجاجية Speed Gates', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'بصمة وجه Biometric' : 'Face Recognition', title: 'أجهزة بصمة وجه بيومترية بدون تلامس', url: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'منصات ERP وCloud' : 'Cloud & ERP', title: 'لوحات قيادة ERP وتحليلات بيانات', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'مباني وأبراج ذكية' : 'Smart Facilities', title: 'برج إداري وبنية تحتية ذكية', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80' },
+                    ].map((preset, idx) => (
+                      <div key={idx} className="p-2.5 rounded-lg bg-[#0B1A2F] border border-white/5 space-y-2">
+                        <div className="relative aspect-video rounded overflow-hidden bg-slate-950">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={preset.url} alt={preset.title} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1 right-1 rtl:right-1 rtl:left-auto ltr:left-1 ltr:right-auto px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/80 text-[#00F2FE]">
+                            {preset.category}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-bold text-white truncate" title={preset.title}>
+                          {preset.title}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => copyAssetUrlToClipboard(preset.url, preset.title)}
+                          className="w-full py-1 px-2 rounded bg-[#10233D] hover:bg-[#00F2FE] text-slate-300 hover:text-[#071120] text-[10px] font-bold flex items-center justify-center gap-1 transition cursor-pointer border border-white/5"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>{isAr ? 'نسخ الرابط' : 'Copy Link'}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SECTION 4: 4 HERO TELEMETRY IMAGES CARDS */}
+                <div className="space-y-6 pt-4 border-t border-white/10">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-sky-400" />
+                    <span>{isAr ? '4. صور واجهة الهيدر التفاعلي (Hero Telemetry 4 Cards):' : '4. Hero Telemetry 4 Cards Images:'}</span>
                   </h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1680,162 +2244,839 @@ export default function SecureAdminPortalPage() {
             )}
 
             {/* 6. PROJECTS PORTFOLIO CMS */}
-            {activeTab === 'projects' && (
-              <div className={`p-6 rounded-2xl border space-y-6 ${
-                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      <Briefcase className="w-5 h-5 text-[#00F2FE]" />
-                      <span>{isAr ? 'سابقة الأعمال والمشروعات والمنصات' : 'Projects Portfolio CMS'}</span>
-                    </h3>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {isAr ? 'التحكم في سابقة المشروعات، الروابط التفاعلية المباشرة، والصور' : 'Manage project portfolio, live demo links, and images'}
-                    </p>
+            {activeTab === 'projects' && (() => {
+              const allProjects = config.projectsList || contentAr.projects.list;
+              const totalCount = allProjects.length;
+              const publishedCount = allProjects.filter((p) => p.isDraft !== true).length;
+              const draftCount = allProjects.filter((p) => p.isDraft === true).length;
+              const upcomingCount = allProjects.filter((p) => p.isUpcoming === true).length;
+
+              const filteredProjectsList = allProjects.map((p, originalIdx) => ({ project: p, originalIdx })).filter(({ project }) => {
+                if (projectFilter === 'published' && project.isDraft === true) return false;
+                if (projectFilter === 'draft' && project.isDraft !== true) return false;
+                if (projectFilter === 'upcoming' && project.isUpcoming !== true) return false;
+                if (projectCategoryFilter !== 'all' && project.category !== projectCategoryFilter) return false;
+                if (projectSearch.trim()) {
+                  const q = projectSearch.toLowerCase();
+                  return (
+                    project.title?.toLowerCase().includes(q) ||
+                    project.client?.toLowerCase().includes(q) ||
+                    project.tag?.toLowerCase().includes(q) ||
+                    project.description?.toLowerCase().includes(q)
+                  );
+                }
+                return true;
+              });
+
+              return (
+                <div className={`p-6 rounded-2xl border space-y-6 ${
+                  isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  {/* Top Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                    <div>
+                      <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <Briefcase className="w-5 h-5 text-[#00F2FE]" />
+                        <span>{isAr ? 'سابقة الأعمال والمشروعات والمنصات (Project Portfolio CMS)' : 'Projects Portfolio CMS'}</span>
+                      </h3>
+                      <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {isAr 
+                          ? 'التحكم الكامل في سابقة المشروعات، نشرها أو جعلها مسودة، إضافة مشروعات جديدة، رفع الصور، وتعديل التفاصيل الهندسية' 
+                          : 'Complete control: publish or draft, add new projects, upload photos, and edit case studies'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleAddNewProject}
+                        className="px-4 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-2 cursor-pointer shadow-md transition"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{isAr ? '+ إضافة مشروع جديد' : '+ Add New Project'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(isAr ? 'هل تريد استعادة قائمة المشروعات الافتراضية؟' : 'Reset to default projects?')) {
+                            handleConfigChange('projectsList', defaultEditableConfig.projectsList);
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'استعادة الافتراضي' : 'Reset'}</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => handleConfigChange('projectsList', defaultEditableConfig.projectsList)}
-                    className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'استعادة المشروعات الافتراضية' : 'Reset Projects'}</span>
-                  </button>
-                </div>
-
-                {/* Live Platform Links Shortcuts */}
-                <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/20 space-y-3">
-                  <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الشقيقة التفاعلية:' : 'Live Platforms URLs:'}</span>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                        {isAr ? 'منصة هليو بروبرتي (Helio Property)' : 'Helio Property URL'}
-                      </label>
-                      <input
-                        type="url"
-                        value={config.helioPropertyUrl}
-                        onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
-                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                      />
+                  {/* Summary Metric Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] text-slate-400 block">{isAr ? 'إجمالي المشروعات' : 'Total Projects'}</span>
+                        <span className="text-xl font-black font-mono text-white">{totalCount}</span>
+                      </div>
+                      <Layers className="w-5 h-5 text-slate-500" />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                        {isAr ? 'منصة الرحلة التفاعلية (Al-Rehla)' : 'Al-Rehla Platform URL'}
-                      </label>
-                      <input
-                        type="url"
-                        value={config.alrehlaUrl}
-                        onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
-                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                      />
+
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-emerald-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] text-emerald-400 font-bold block">{isAr ? 'منشور للجمهور' : 'Published'}</span>
+                        <span className="text-xl font-black font-mono text-emerald-400">{publishedCount}</span>
+                      </div>
+                      <Eye className="w-5 h-5 text-emerald-400" />
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-amber-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] text-amber-400 font-bold block">{isAr ? 'مسودات (مخفي)' : 'Drafts'}</span>
+                        <span className="text-xl font-black font-mono text-amber-400">{draftCount}</span>
+                      </div>
+                      <EyeOff className="w-5 h-5 text-amber-400" />
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-sky-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] text-[#00F2FE] font-bold block">{isAr ? 'قيد التطوير' : 'Upcoming'}</span>
+                        <span className="text-xl font-black font-mono text-[#00F2FE]">{upcomingCount}</span>
+                      </div>
+                      <Sparkles className="w-5 h-5 text-[#00F2FE]" />
                     </div>
                   </div>
-                </div>
 
-                {/* Projects Cards List */}
-                <div className="space-y-4">
-                  {(config.projectsList || contentAr.projects.list).map((proj, idx) => (
-                    <div
-                      key={proj.id || idx}
-                      className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-lg bg-[#10233D] text-[#00F2FE] flex items-center justify-center font-mono text-[11px] font-bold">
-                            {idx + 1}
-                          </span>
-                          <span>{proj.title}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {proj.isUpcoming && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                              قيد التطوير
-                            </span>
+                  {/* Search and Filters Toolbar */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                      {/* Search Bar */}
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute top-3 left-3 rtl:left-auto rtl:right-3" />
+                        <input
+                          type="text"
+                          value={projectSearch}
+                          onChange={(e) => setProjectSearch(e.target.value)}
+                          placeholder={isAr ? 'بحث في سابقة الأعمال بالاسم، العميل، التصنيف...' : 'Search projects...'}
+                          className="w-full bg-[#071120] border border-white/10 rounded-xl py-2 px-9 text-xs text-white placeholder-slate-500 outline-none focus:border-[#00F2FE]"
+                        />
+                      </div>
+
+                      {/* Category Selector */}
+                      <select
+                        value={projectCategoryFilter}
+                        onChange={(e) => setProjectCategoryFilter(e.target.value as any)}
+                        className="bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00F2FE]"
+                      >
+                        <option value="all">{isAr ? '📂 جميع المجالات الهندسية' : 'All Categories'}</option>
+                        <option value="security">{isAr ? '🛡️ كاميرات وأنظمة مراقبة (Security)' : 'Security & CCTV'}</option>
+                        <option value="network">{isAr ? '🌐 شبكات وبنية تحتية (Network)' : 'Networks & Fiber'}</option>
+                        <option value="software">{isAr ? '💻 برمجيات ومنصات (Software)' : 'Software & Apps'}</option>
+                        <option value="erp">{isAr ? '📊 أنظمة إدارة موارد (ERP)' : 'ERP Systems'}</option>
+                      </select>
+                    </div>
+
+                    {/* Status Tabs */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {[
+                        { id: 'all', labelAr: `الكل (${totalCount})`, labelEn: `All (${totalCount})` },
+                        { id: 'published', labelAr: `🟢 منشور للجمهور (${publishedCount})`, labelEn: `Published (${publishedCount})` },
+                        { id: 'draft', labelAr: `🟡 مسودات (${draftCount})`, labelEn: `Drafts (${draftCount})` },
+                        { id: 'upcoming', labelAr: `🔵 قيد التطوير (${upcomingCount})`, labelEn: `Upcoming (${upcomingCount})` },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setProjectFilter(tab.id as typeof projectFilter)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                            projectFilter === tab.id
+                              ? 'bg-[#00F2FE] text-[#071120]'
+                              : 'bg-[#071120] text-slate-300 hover:bg-[#10233D] border border-white/5'
+                          }`}
+                        >
+                          {isAr ? tab.labelAr : tab.labelEn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live Platform Links Shortcuts */}
+                  <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/20 space-y-3">
+                    <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الشقيقة التفاعلية:' : 'Live Platforms URLs:'}</span>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                          {isAr ? 'منصة هليو بروبرتي (Helio Property)' : 'Helio Property URL'}
+                        </label>
+                        <input
+                          type="url"
+                          value={config.helioPropertyUrl}
+                          onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                          {isAr ? 'منصة الرحلة التفاعلية (Al-Rehla)' : 'Al-Rehla Platform URL'}
+                        </label>
+                        <input
+                          type="url"
+                          value={config.alrehlaUrl}
+                          onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Projects Cards List */}
+                  <div className="space-y-4">
+                    {filteredProjectsList.map(({ project: proj, originalIdx }) => {
+                      const isExpanded = expandedProjectIdx === originalIdx;
+                      const isDraft = proj.isDraft === true;
+
+                      return (
+                        <div
+                          key={proj.id || originalIdx}
+                          className={`rounded-2xl border transition-all overflow-hidden ${
+                            isDraft
+                              ? 'bg-[#071120]/95 border-amber-500/30'
+                              : 'bg-[#071120] border-white/10 hover:border-[#00F2FE]/40'
+                          }`}
+                        >
+                          {/* CARD HEADER (Collapsed view with key info & quick controls) */}
+                          <div className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#0B1A2F]/60 border-b border-white/5">
+                            <div className="flex items-center gap-3">
+                              {/* Reorder Up / Down */}
+                              <div className="flex flex-col gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveProject(originalIdx, 'up')}
+                                  disabled={originalIdx === 0}
+                                  className="p-1 rounded bg-[#10233D] hover:bg-[#152C4D] disabled:opacity-30 text-slate-300 hover:text-[#00F2FE] transition cursor-pointer"
+                                  title={isAr ? 'تقديم لأعلى' : 'Move Up'}
+                                >
+                                  <ArrowUp className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveProject(originalIdx, 'down')}
+                                  disabled={originalIdx === allProjects.length - 1}
+                                  className="p-1 rounded bg-[#10233D] hover:bg-[#152C4D] disabled:opacity-30 text-slate-300 hover:text-[#00F2FE] transition cursor-pointer"
+                                  title={isAr ? 'تأخير لأسفل' : 'Move Down'}
+                                >
+                                  <ArrowDown className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              {/* Index & Mini Image */}
+                              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-950 border border-white/10 shrink-0">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={proj.image || CURATED_IMAGE_PRESETS.cctv[0].url} alt={proj.title} className="w-full h-full object-cover" />
+                                <span className="absolute bottom-0 right-0 px-1 text-[9px] font-mono font-bold bg-black/80 text-[#00F2FE]">
+                                  #{originalIdx + 1}
+                                </span>
+                              </div>
+
+                              {/* Project Title & Client */}
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-bold text-sm text-white leading-tight">
+                                    {proj.title}
+                                  </h4>
+                                  
+                                  {/* Status Badges */}
+                                  {isDraft ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                      <EyeOff className="w-3 h-3" />
+                                      <span>{isAr ? 'مسودة (مخفي)' : 'Draft'}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                      <Eye className="w-3 h-3" />
+                                      <span>{isAr ? 'منشور للزوار' : 'Published'}</span>
+                                    </span>
+                                  )}
+
+                                  {proj.isUpcoming && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-[#00F2FE] border border-sky-500/40">
+                                      {isAr ? 'قيد التطوير' : 'Upcoming'}
+                                    </span>
+                                  )}
+
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                                    {proj.category}
+                                  </span>
+                                </div>
+
+                                <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                                  <span>{isAr ? 'العميل:' : 'Client:'} <strong className="text-slate-200">{proj.client}</strong></span>
+                                  <span>•</span>
+                                  <span className="text-[#00F2FE]">{proj.tag}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actions Toolbar */}
+                            <div className="flex items-center gap-2 flex-wrap pt-2 lg:pt-0">
+                              {/* Toggle Draft / Publish Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleProjectDraft(proj.id)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                                  isDraft
+                                    ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+                                }`}
+                                title={isDraft ? (isAr ? 'نشر المشروع للجمهور' : 'Publish') : (isAr ? 'جعل المشروع مسودة مخفية' : 'Make Draft')}
+                              >
+                                {isDraft ? (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>{isAr ? 'نشر المشروع' : 'Publish'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-3.5 h-3.5" />
+                                    <span>{isAr ? 'جعله مسودة' : 'Make Draft'}</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {/* Live Modal Preview Button */}
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalProject(proj)}
+                                className="px-3 py-1.5 rounded-xl bg-[#10233D] hover:bg-[#152C4D] text-[#00F2FE] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-[#00F2FE]/20"
+                                title={isAr ? 'معاينة كيف يظهر المشروع للعميل' : 'Preview Modal'}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>{isAr ? 'معاينة المشروع' : 'Preview'}</span>
+                              </button>
+
+                              {/* Duplicate Project Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicateProject(originalIdx)}
+                                className="p-2 rounded-xl bg-[#10233D] hover:bg-[#152C4D] text-slate-300 hover:text-white transition cursor-pointer border border-white/5"
+                                title={isAr ? 'استنساخ / تكرار المشروع' : 'Duplicate'}
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete Project Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProject(proj.id)}
+                                className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer border border-rose-500/20"
+                                title={isAr ? 'حذف المشروع نهائياً' : 'Delete'}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Expand / Collapse Toggle Button */}
+                              <button
+                                type="button"
+                                onClick={() => setExpandedProjectIdx(isExpanded ? null : originalIdx)}
+                                className="px-3 py-1.5 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 text-[#00F2FE] text-xs font-bold flex items-center gap-1 transition cursor-pointer border border-[#00F2FE]/30"
+                              >
+                                <span>{isExpanded ? (isAr ? 'طي التفاصيل' : 'Collapse') : (isAr ? 'تعديل كامل التفاصيل' : 'Edit Details')}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* EXPANDED FULL EDIT FORM */}
+                          {isExpanded && (
+                            <div className="p-5 space-y-6 bg-[#071120] animate-in fade-in">
+                              
+                              {/* 1. VISIBILITY & CLASSIFICATION */}
+                              <div className="p-4 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-3">
+                                <h5 className="text-xs font-bold text-[#00F2FE] flex items-center gap-2">
+                                  <Sliders className="w-4 h-4" />
+                                  <span>{isAr ? '1. حالة النشر والظهور والتصنيف الأساسي للمشروع:' : '1. Visibility & Categorization:'}</span>
+                                </h5>
+
+                                <div className="grid sm:grid-cols-3 gap-4 pt-1">
+                                  {/* Draft Switch */}
+                                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#071120] border border-white/5">
+                                    <input
+                                      type="checkbox"
+                                      id={`draft-toggle-${proj.id}`}
+                                      checked={isDraft}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'isDraft', e.target.checked)}
+                                      className="w-4 h-4 text-amber-400 rounded cursor-pointer"
+                                    />
+                                    <label htmlFor={`draft-toggle-${proj.id}`} className="text-xs font-bold text-slate-200 cursor-pointer">
+                                      {isAr ? 'تعيين كمسودة (مخفي من الموقع)' : 'Set as Draft (Hidden)'}
+                                    </label>
+                                  </div>
+
+                                  {/* Upcoming Switch */}
+                                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#071120] border border-white/5">
+                                    <input
+                                      type="checkbox"
+                                      id={`upcoming-toggle-${proj.id}`}
+                                      checked={proj.isUpcoming === true}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'isUpcoming', e.target.checked)}
+                                      className="w-4 h-4 text-[#00F2FE] rounded cursor-pointer"
+                                    />
+                                    <label htmlFor={`upcoming-toggle-${proj.id}`} className="text-xs font-bold text-slate-200 cursor-pointer">
+                                      {isAr ? 'مشروع قادم / قيد التطوير' : 'Upcoming / In Development'}
+                                    </label>
+                                  </div>
+
+                                  {/* Status Badge Text */}
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'شارة الحالة (Status Badge)' : 'Status Badge'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={proj.statusBadge || ''}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'statusBadge', e.target.value)}
+                                      placeholder={isAr ? 'مثال: مشروع مكتمل، قيد التدشين' : 'e.g. Completed'}
+                                      className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                    />
+                                  </div>
+
+                                  {/* Category Select */}
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'التصنيف الأساسي' : 'Category'}
+                                    </label>
+                                    <select
+                                      value={proj.category}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'category', e.target.value as any)}
+                                      className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                    >
+                                      <option value="security">{isAr ? '🛡️ أنظمة المراقبة والأمن (Security)' : 'Security'}</option>
+                                      <option value="network">{isAr ? '🌐 الشبكات والبنية التحتية (Network)' : 'Network'}</option>
+                                      <option value="software">{isAr ? '💻 البرمجيات والتطبيقات (Software)' : 'Software'}</option>
+                                      <option value="erp">{isAr ? '📊 حلول ERP وإدارة الموارد (ERP)' : 'ERP'}</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Tag Input */}
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'الوسم الفرعي (Tag)' : 'Tag'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={proj.tag}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'tag', e.target.value)}
+                                      placeholder={isAr ? 'مثال: مستودعات لوجستية، PropTech' : 'e.g. PropTech'}
+                                      className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                    />
+                                  </div>
+
+                                  {/* Icon Selection */}
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'أيقونة المشروع' : 'Icon'}
+                                    </label>
+                                    <select
+                                      value={proj.icon}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'icon', e.target.value)}
+                                      className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                    >
+                                      <option value="Building2">🏢 Building2 (مباني ومقرات)</option>
+                                      <option value="ShieldCheck">🛡️ ShieldCheck (حماية معتمدة)</option>
+                                      <option value="ShieldAlert">🚨 ShieldAlert (إنذار ومراقبة)</option>
+                                      <option value="Smartphone">📱 Smartphone (تطبيقات جوال)</option>
+                                      <option value="Home">🏠 Home (منازل ذكية)</option>
+                                      <option value="BarChart3">📊 BarChart3 (إحصاءات وERP)</option>
+                                      <option value="Cpu">⚡ Cpu (معالجات وبنية ذكية)</option>
+                                      <option value="Globe">🌐 Globe (منصات سحابية)</option>
+                                      <option value="Sparkles">✨ Sparkles (حلول متطورة)</option>
+                                      <option value="Radio">📡 Radio (اتصالات لاسلكية)</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 2. PROJECT IDENTITY & LIVE URL */}
+                              <div className="grid sm:grid-cols-3 gap-4">
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'اسم المشروع' : 'Project Title'}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={proj.title}
+                                    onChange={(e) => handleUpdateProjectField(originalIdx, 'title', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'الجهة أو العميل المنفذ له' : 'Client Organization'}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={proj.client}
+                                    onChange={(e) => handleUpdateProjectField(originalIdx, 'client', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'رابط المعاينة المباشرة أو زيارة المنصة' : 'Live Platform / Demo URL'}
+                                  </label>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="url"
+                                      value={proj.liveUrl || ''}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'liveUrl', e.target.value)}
+                                      placeholder="https://..."
+                                      className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                                    />
+                                    {proj.liveUrl && (
+                                      <a
+                                        href={proj.liveUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 rounded-lg bg-[#00F2FE]/20 hover:bg-[#00F2FE] text-[#00F2FE] hover:text-[#071120] transition shrink-0"
+                                        title={isAr ? 'اختبار وفتح الرابط' : 'Open URL'}
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 3. PROJECT IMAGE & DIRECT UPLOAD */}
+                              <div className="p-4 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-bold text-[#00F2FE] flex items-center gap-2">
+                                    <ImageIcon className="w-4 h-4" />
+                                    <span>{isAr ? '3. صورة المشروع والوسائط البصرية:' : '3. Project Image & Visuals:'}</span>
+                                  </label>
+                                  <span className="text-[10px] text-slate-400">
+                                    {isAr ? 'يدعم الرفع المباشر من جهازك أو وضع رابط URL أو الاختيار من الخزينة' : 'Direct upload, URL, or select from vault'}
+                                  </span>
+                                </div>
+
+                                <div className="grid sm:grid-cols-3 gap-4 items-center">
+                                  {/* Image Preview Box */}
+                                  <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-white/10 shadow-sm">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img 
+                                      src={proj.image || CURATED_IMAGE_PRESETS.cctv[0].url} 
+                                      alt={proj.title} 
+                                      className="w-full h-full object-cover" 
+                                    />
+                                  </div>
+
+                                  {/* Upload Controls & URL */}
+                                  <div className="sm:col-span-2 space-y-3">
+                                    <div>
+                                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                        {isAr ? 'رابط الصورة (URL)' : 'Image URL'}
+                                      </label>
+                                      <input
+                                        type="url"
+                                        value={proj.image || ''}
+                                        onChange={(e) => handleUpdateProjectField(originalIdx, 'image', e.target.value)}
+                                        placeholder="https://..."
+                                        className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                                      />
+                                    </div>
+
+                                    {/* Direct File Upload & Vault Buttons */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                      <label className="px-3 py-1.5 rounded-lg bg-[#00F2FE]/20 hover:bg-[#00F2FE] text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-[#00F2FE]/30">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>{isAr ? 'رفع صورة من جهازك' : 'Upload from device'}</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => handleProjectImageUpload(e, originalIdx)}
+                                          className="hidden"
+                                        />
+                                      </label>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setVaultPickerTargetProjectIdx(originalIdx)}
+                                        className="px-3 py-1.5 rounded-lg bg-[#10233D] hover:bg-[#152C4D] text-slate-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-white/10"
+                                      >
+                                        <FolderPlus className="w-3.5 h-3.5 text-[#00F2FE]" />
+                                        <span>{isAr ? 'اختر من خزينة الوسائط' : 'Pick from Vault'}</span>
+                                      </button>
+                                    </div>
+
+                                    {/* Curated Presets for Quick Selection */}
+                                    <div className="pt-2 border-t border-white/5">
+                                      <span className="text-[10px] text-slate-400 block mb-1">
+                                        {isAr ? 'أو اختر صورة جاهزة عالية الجودة:' : 'Or choose high-res preset:'}
+                                      </span>
+                                      <div className="grid grid-cols-2 gap-1.5">
+                                        {(CURATED_IMAGE_PRESETS[proj.category as keyof typeof CURATED_IMAGE_PRESETS] || CURATED_IMAGE_PRESETS.cctv).slice(0, 2).map((pst, pIdx) => (
+                                          <button
+                                            key={pIdx}
+                                            type="button"
+                                            onClick={() => handleUpdateProjectField(originalIdx, 'image', pst.url)}
+                                            className="text-[10px] p-1.5 rounded bg-[#071120] hover:bg-[#10233D] text-slate-300 hover:text-[#00F2FE] truncate text-start border border-white/5 cursor-pointer"
+                                            title={pst.title}
+                                          >
+                                            {pst.title}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 4. SUMMARY, DESCRIPTION & HIGHLIGHT */}
+                              <div className="space-y-4">
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'الملخص التنفيذي السريع (يظهر في الكارت الرئيسي)' : 'Summary (Card View)'}
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={proj.summary}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'summary', e.target.value)}
+                                      className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'أبرز إنجاز تقني / هايلايت (Highlight Metric)' : 'Highlight Metric'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={proj.highlight}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'highlight', e.target.value)}
+                                      placeholder={isAr ? 'مثال: +99.98% زمن تشغيل فعلي' : 'e.g. +99.9% Uptime'}
+                                      className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'الوصف الشامل ودراسة الحالة الهندسية (يظهر في نافذة التفاصيل)' : 'Detailed Case Study (Modal View)'}
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={proj.description}
+                                    onChange={(e) => handleUpdateProjectField(originalIdx, 'description', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* 5. STATS - 3 KEY METRICS */}
+                              <div className="p-4 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-3">
+                                <label className="text-xs font-bold text-[#00F2FE] block">
+                                  {isAr ? '5. المؤشرات والأرقام الإحصائية الثلاثة للمشروع:' : '5. Project Key Metrics (3 Stats):'}
+                                </label>
+
+                                <div className="grid sm:grid-cols-3 gap-3">
+                                  {[0, 1, 2].map((sIdx) => {
+                                    const stat = proj.stats?.[sIdx] || { label: '', value: '' };
+                                    return (
+                                      <div key={sIdx} className="p-3 rounded-lg bg-[#071120] border border-white/5 space-y-2">
+                                        <span className="text-[10px] font-mono font-bold text-slate-400 block">
+                                          {isAr ? `مؤشر رقم ${sIdx + 1}` : `Metric #${sIdx + 1}`}
+                                        </span>
+                                        <div>
+                                          <label className="block text-[10px] text-slate-400 mb-0.5">{isAr ? 'القيمة (Value)' : 'Value'}</label>
+                                          <input
+                                            type="text"
+                                            value={stat.value}
+                                            onChange={(e) => handleUpdateProjectStat(originalIdx, sIdx, 'value', e.target.value)}
+                                            placeholder={sIdx === 0 ? '+120 نقطة' : sIdx === 1 ? '10 Gbps' : '100%'}
+                                            className="w-full bg-[#0B1A2F] border border-white/10 rounded px-2 py-1 text-xs text-[#00F2FE] font-mono outline-none"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] text-slate-400 mb-0.5">{isAr ? 'الوصف (Label)' : 'Label'}</label>
+                                          <input
+                                            type="text"
+                                            value={stat.label}
+                                            onChange={(e) => handleUpdateProjectStat(originalIdx, sIdx, 'label', e.target.value)}
+                                            placeholder={sIdx === 0 ? (isAr ? 'كاميرات مراقبة' : 'Cameras') : (isAr ? 'السرعة' : 'Speed')}
+                                            className="w-full bg-[#0B1A2F] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none"
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* 6. TECHNOLOGIES USED */}
+                              <div className="p-4 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-3">
+                                <label className="text-xs font-bold text-[#00F2FE] block">
+                                  {isAr ? '6. التقنيات والمعدات الهندسية المستخدمة:' : '6. Technologies & Hardware:'}
+                                </label>
+
+                                <div className="flex flex-wrap gap-2">
+                                  {(proj.technologies || []).map((tech, tIdx) => (
+                                    <span
+                                      key={tIdx}
+                                      className="px-2.5 py-1 rounded-lg bg-[#071120] text-slate-200 border border-white/10 text-xs font-mono flex items-center gap-1.5"
+                                    >
+                                      <span>{tech}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveProjectTechnology(originalIdx, tIdx)}
+                                        className="text-slate-400 hover:text-rose-400 cursor-pointer"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1 max-w-md">
+                                  <input
+                                    type="text"
+                                    value={newTechTagInput[originalIdx] || ''}
+                                    onChange={(e) => setNewTechTagInput((prev) => ({ ...prev, [originalIdx]: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddProjectTechnology(originalIdx, newTechTagInput[originalIdx] || '');
+                                      }
+                                    }}
+                                    placeholder={isAr ? 'أدخل تقنية جديدة (مثال: Hikvision 4K) واضغط إضافة' : 'Add tech tag...'}
+                                    className="flex-1 bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddProjectTechnology(originalIdx, newTechTagInput[originalIdx] || '')}
+                                    className="px-3 py-1.5 rounded-lg bg-[#00F2FE] text-[#071120] text-xs font-bold cursor-pointer"
+                                  >
+                                    {isAr ? 'إضافة' : 'Add'}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* 7. CHALLENGES & SOLUTIONS */}
+                              <div className="grid sm:grid-cols-2 gap-4">
+                                {/* Challenges List */}
+                                <div className="p-4 rounded-xl bg-[#0B1A2F] border border-amber-500/20 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                      <AlertTriangle className="w-3.5 h-3.5" />
+                                      <span>{isAr ? 'التحديات الهندسية التي واجهت المشروع:' : 'Engineering Challenges:'}</span>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddProjectChallenge(originalIdx)}
+                                      className="text-[11px] font-bold text-amber-300 hover:text-amber-200 cursor-pointer"
+                                    >
+                                      + {isAr ? 'إضافة تحدٍ' : 'Add'}
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {(proj.challenges || []).map((ch, chIdx) => (
+                                      <div key={chIdx} className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={ch}
+                                          onChange={(e) => handleUpdateProjectChallenge(originalIdx, chIdx, e.target.value)}
+                                          className="flex-1 bg-[#071120] border border-white/10 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-amber-400"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveProjectChallenge(originalIdx, chIdx)}
+                                          className="text-slate-500 hover:text-rose-400 cursor-pointer p-1"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Solutions List */}
+                                <div className="p-4 rounded-xl bg-[#0B1A2F] border border-emerald-500/20 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                      <ShieldCheck className="w-3.5 h-3.5" />
+                                      <span>{isAr ? 'الحلول الهندسية المنفذة بواسطة تيك بكرة:' : 'Solutions Implemented:'}</span>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddProjectSolution(originalIdx)}
+                                      className="text-[11px] font-bold text-emerald-300 hover:text-emerald-200 cursor-pointer"
+                                    >
+                                      + {isAr ? 'إضافة حل' : 'Add'}
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {(proj.solutions || []).map((sol, solIdx) => (
+                                      <div key={solIdx} className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={sol}
+                                          onChange={(e) => handleUpdateProjectSolution(originalIdx, solIdx, e.target.value)}
+                                          className="flex-1 bg-[#071120] border border-white/10 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-emerald-400"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveProjectSolution(originalIdx, solIdx)}
+                                          className="text-slate-500 hover:text-rose-400 cursor-pointer p-1"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Save Changes Note */}
+                              <div className="pt-2 flex items-center justify-between text-xs text-slate-400 border-t border-white/5">
+                                <span>{isAr ? '✨ يتم حفظ التعديلات محلياً وتلقائياً، واضغط "حفظ ونشر التعديلات سحابياً" بأعلى اللوحة للمزامنة مع السحابة' : 'Saved locally automatically. Click Save All at top to sync to cloud.'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedProjectIdx(null)}
+                                  className="text-xs font-bold text-[#00F2FE] hover:underline cursor-pointer"
+                                >
+                                  {isAr ? 'إغلاق التفاصيل' : 'Close details'}
+                                </button>
+                              </div>
+
+                            </div>
                           )}
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
-                            {proj.category}
-                          </span>
                         </div>
+                      );
+                    })}
+
+                    {filteredProjectsList.length === 0 && (
+                      <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-3">
+                        <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
+                        <p className="text-sm font-bold text-slate-400">
+                          {isAr ? 'لا توجد مشروعات مطابقة لمعايير البحث أو الفلتر' : 'No projects found matching criteria'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleAddNewProject}
+                          className="px-4 py-2 rounded-xl bg-[#00F2FE] text-[#071120] text-xs font-black inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>{isAr ? 'إضافة مشروع جديد الآن' : 'Add New Project Now'}</span>
+                        </button>
                       </div>
-
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'اسم المشروع' : 'Project Title'}</label>
-                          <input
-                            type="text"
-                            value={proj.title}
-                            onChange={(e) => {
-                              const updated = [...(config.projectsList || contentAr.projects.list)];
-                              updated[idx] = { ...updated[idx], title: e.target.value };
-                              handleConfigChange('projectsList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'اسم العميل / القطاع' : 'Client'}</label>
-                          <input
-                            type="text"
-                            value={proj.client}
-                            onChange={(e) => {
-                              const updated = [...(config.projectsList || contentAr.projects.list)];
-                              updated[idx] = { ...updated[idx], client: e.target.value };
-                              handleConfigChange('projectsList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط صورة المشروع' : 'Project Image URL'}</label>
-                          <input
-                            type="url"
-                            value={proj.image || ''}
-                            onChange={(e) => {
-                              const updated = [...(config.projectsList || contentAr.projects.list)];
-                              updated[idx] = { ...updated[idx], image: e.target.value };
-                              handleConfigChange('projectsList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط المعاينة المباشرة (Live Demo)' : 'Live Demo URL'}</label>
-                          <input
-                            type="url"
-                            value={proj.liveUrl || ''}
-                            onChange={(e) => {
-                              const updated = [...(config.projectsList || contentAr.projects.list)];
-                              updated[idx] = { ...updated[idx], liveUrl: e.target.value };
-                              handleConfigChange('projectsList', updated);
-                            }}
-                            placeholder="https://..."
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'نبذة عن المشروع' : 'Description'}</label>
-                          <textarea
-                            rows={2}
-                            value={proj.description}
-                            onChange={(e) => {
-                              const updated = [...(config.projectsList || contentAr.projects.list)];
-                              updated[idx] = { ...updated[idx], description: e.target.value };
-                              handleConfigChange('projectsList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* 7. FAQ CMS */}
             {activeTab === 'faq' && (
@@ -2242,6 +3483,108 @@ export default function SecureAdminPortalPage() {
           </main>
         </div>
       </div>
+
+      {/* 1. LIVE PROJECT MODAL PREVIEW */}
+      {previewModalProject && (
+        <ProjectModal
+          project={previewModalProject}
+          onClose={() => setPreviewModalProject(null)}
+          lang={lang}
+          data={isAr ? contentAr : contentEn}
+          onConsultProject={() => {
+            alert(isAr ? 'زر استشارة المشروع يعمل بنجاح في الموقع الحقيقي ويحوّل العميل لنموذج التواصل مع تعبئة اسم المشروع تلقائياً.' : 'Consultation CTA triggers on live site.');
+            setPreviewModalProject(null);
+          }}
+        />
+      )}
+
+      {/* 2. MEDIA VAULT PICKER MODAL */}
+      {(vaultPickerTargetProjectIdx !== null || vaultPickerTargetHeroField !== null) && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+          onClick={() => {
+            setVaultPickerTargetProjectIdx(null);
+            setVaultPickerTargetHeroField(null);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-3xl rounded-3xl overflow-hidden p-6 bg-[#0B1A2F] border border-[#00F2FE]/40 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-[#00F2FE]" />
+                  <span>{isAr ? 'اختر صورة من خزينة الوسائط المحفوظة' : 'Choose Image from Vault'}</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {isAr 
+                    ? (vaultPickerTargetProjectIdx !== null 
+                        ? `تطبيق الصورة على مشروع "${(config.projectsList || contentAr.projects.list)[vaultPickerTargetProjectIdx]?.title}"` 
+                        : 'تطبيق الصورة على بطاقة الهيدر')
+                    : 'Click any image to apply instantly'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setVaultPickerTargetProjectIdx(null);
+                  setVaultPickerTargetHeroField(null);
+                }}
+                className="p-2 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Vault Grid */}
+            <div className="overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 p-1">
+              {(config.mediaVault || defaultEditableConfig.mediaVault || []).map((vaultItem) => (
+                <div
+                  key={vaultItem.id}
+                  onClick={() => {
+                    if (vaultPickerTargetProjectIdx !== null) {
+                      handleUpdateProjectField(vaultPickerTargetProjectIdx, 'image', vaultItem.url);
+                      setNotificationMsg(isAr ? 'تم تعيين وتحديث صورة المشروع بنجاح!' : 'Project image updated!');
+                      setTimeout(() => setNotificationMsg(''), 3000);
+                    } else if (vaultPickerTargetHeroField !== null) {
+                      handleConfigChange(vaultPickerTargetHeroField, vaultItem.url);
+                      setNotificationMsg(isAr ? 'تم تعيين صورة الهيدر بنجاح!' : 'Hero image updated!');
+                      setTimeout(() => setNotificationMsg(''), 3000);
+                    }
+                    setVaultPickerTargetProjectIdx(null);
+                    setVaultPickerTargetHeroField(null);
+                  }}
+                  className="group relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-white/10 hover:border-[#00F2FE] hover:shadow-[0_0_20px_rgba(0,242,254,0.3)] transition cursor-pointer flex flex-col justify-end"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={vaultItem.url} alt={vaultItem.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                  <div className="relative p-2 z-10">
+                    <p className="text-[11px] font-bold text-white truncate">{vaultItem.name}</p>
+                    <span className="text-[9px] text-[#00F2FE] font-mono">{vaultItem.size || 'HD'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+              <span>{isAr ? 'انقر على أي صورة لتطبيقها فورياً' : 'Click any image to apply'}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setVaultPickerTargetProjectIdx(null);
+                  setVaultPickerTargetHeroField(null);
+                }}
+                className="px-4 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition cursor-pointer text-xs font-bold"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

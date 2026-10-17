@@ -60,7 +60,9 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
     }
   };
 
-  const activeProjects = customProjects && customProjects.length > 0 ? customProjects : data.projects.list;
+  const rawProjects = customProjects && customProjects.length > 0 ? customProjects : data.projects.list;
+  // Exclude projects marked as draft so only published projects appear to clients
+  const activeProjects = rawProjects.filter((p) => p.isDraft !== true);
 
   const filteredProjects = activeProjects.filter((p) => {
     if (filter === 'all') return true;
@@ -233,37 +235,39 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                   </p>
 
                   {/* 3 Quick Stat Badges */}
-                  <div 
-                    className={`grid grid-cols-3 gap-2 py-3 border-t mb-5 text-center ${
-                      isDark ? 'border-white/5' : 'border-slate-100'
-                    }`}
-                  >
-                    {project.stats.map((st, sIdx) => (
-                      <div 
-                        key={sIdx} 
-                        className={`p-2 rounded-lg border ${
-                          isDark 
-                            ? 'bg-[#10233D]/60 border-white/5' 
-                            : 'bg-slate-50 border-slate-200/80'
-                        }`}
-                      >
+                  {project.stats && project.stats.length > 0 && (
+                    <div 
+                      className={`grid grid-cols-3 gap-2 py-3 border-t mb-5 text-center ${
+                        isDark ? 'border-white/5' : 'border-slate-100'
+                      }`}
+                    >
+                      {project.stats.map((st, sIdx) => (
                         <div 
-                          className={`text-[10px] truncate ${
-                            isDark ? 'text-slate-400' : 'text-slate-500'
+                          key={sIdx} 
+                          className={`p-2 rounded-lg border ${
+                            isDark 
+                              ? 'bg-[#10233D]/60 border-white/5' 
+                              : 'bg-slate-50 border-slate-200/80'
                           }`}
                         >
-                          {st.label}
+                          <div 
+                            className={`text-[10px] truncate ${
+                              isDark ? 'text-slate-400' : 'text-slate-500'
+                            }`}
+                          >
+                            {st.label}
+                          </div>
+                          <div 
+                            className={`text-xs font-bold font-mono mt-0.5 truncate ${
+                              isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                            }`}
+                          >
+                            {st.value}
+                          </div>
                         </div>
-                        <div 
-                          className={`text-xs font-bold font-mono mt-0.5 truncate ${
-                            isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
-                          }`}
-                        >
-                          {st.value}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Inspect Details & Live Preview Buttons */}

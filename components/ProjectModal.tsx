@@ -96,29 +96,31 @@ export default function ProjectModal({ project, onClose, lang, data, onConsultPr
         <div className="p-6 sm:p-8 space-y-6 max-h-[55vh] overflow-y-auto">
           
           {/* Key Metrics Strip */}
-          <div className="grid grid-cols-3 gap-3">
-            {project.stats.map((st, idx) => (
-              <div 
-                key={idx} 
-                className={`p-3.5 rounded-xl text-center border ${
-                  isDark 
-                    ? 'bg-[#071120] border-white/5' 
-                    : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {st.label}
-                </div>
+          {project.stats && project.stats.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {project.stats.map((st, idx) => (
                 <div 
-                  className={`text-lg sm:text-xl font-bold font-mono mt-0.5 ${
-                    isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                  key={idx} 
+                  className={`p-3.5 rounded-xl text-center border ${
+                    isDark 
+                      ? 'bg-[#071120] border-white/5' 
+                      : 'bg-slate-50 border-slate-200'
                   }`}
                 >
-                  {st.value}
+                  <div className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {st.label}
+                  </div>
+                  <div 
+                    className={`text-lg sm:text-xl font-bold font-mono mt-0.5 ${
+                      isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                    }`}
+                  >
+                    {st.value}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Description */}
           <div>
@@ -126,99 +128,105 @@ export default function ProjectModal({ project, onClose, lang, data, onConsultPr
               {isAr ? 'نظرة عامة على المشروع:' : 'Project Overview:'}
             </h3>
             <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              {project.description}
+              {project.description || project.summary}
             </p>
           </div>
 
           {/* Engineering Challenges */}
-          <div 
-            className={`p-4 rounded-2xl border ${
-              isDark 
-                ? 'bg-[#071120]/80 border-amber-500/20' 
-                : 'bg-amber-50/60 border-amber-200'
-            }`}
-          >
-            <h4 
-              className={`text-xs font-bold mb-3 flex items-center gap-2 ${
-                isDark ? 'text-amber-400' : 'text-amber-800'
+          {project.challenges && project.challenges.length > 0 && (
+            <div 
+              className={`p-4 rounded-2xl border ${
+                isDark 
+                  ? 'bg-[#071120]/80 border-amber-500/20' 
+                  : 'bg-amber-50/60 border-amber-200'
               }`}
             >
-              <AlertTriangle className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-              <span>{data.projects.challengeTitle}</span>
-            </h4>
-            <div className="space-y-2">
-              {project.challenges.map((ch, idx) => (
-                <div 
-                  key={idx} 
-                  className={`text-xs flex items-start gap-2 ${
-                    isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}
-                >
-                  <span className={`font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>•</span>
-                  <span>{ch}</span>
-                </div>
-              ))}
+              <h4 
+                className={`text-xs font-bold mb-3 flex items-center gap-2 ${
+                  isDark ? 'text-amber-400' : 'text-amber-800'
+                }`}
+              >
+                <AlertTriangle className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                <span>{data.projects.challengeTitle}</span>
+              </h4>
+              <div className="space-y-2">
+                {project.challenges.map((ch, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`text-xs flex items-start gap-2 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
+                    <span className={`font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>•</span>
+                    <span>{ch}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Tech Bokra Implemented Solutions */}
-          <div 
-            className={`p-4 rounded-2xl border ${
-              isDark 
-                ? 'bg-[#071120]/80 border-emerald-500/20' 
-                : 'bg-emerald-50/60 border-emerald-200'
-            }`}
-          >
-            <h4 
-              className={`text-xs font-bold mb-3 flex items-center gap-2 ${
-                isDark ? 'text-emerald-400' : 'text-emerald-800'
+          {project.solutions && project.solutions.length > 0 && (
+            <div 
+              className={`p-4 rounded-2xl border ${
+                isDark 
+                  ? 'bg-[#071120]/80 border-emerald-500/20' 
+                  : 'bg-emerald-50/60 border-emerald-200'
               }`}
             >
-              <ShieldCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-              <span>{data.projects.solutionTitle}</span>
-            </h4>
-            <div className="space-y-2">
-              {project.solutions.map((sol, idx) => (
-                <div 
-                  key={idx} 
-                  className={`text-xs flex items-start gap-2 ${
-                    isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}
-                >
-                  <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
-                    isDark ? 'text-emerald-400' : 'text-emerald-600'
-                  }`} />
-                  <span>{sol}</span>
-                </div>
-              ))}
+              <h4 
+                className={`text-xs font-bold mb-3 flex items-center gap-2 ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-800'
+                }`}
+              >
+                <ShieldCheck className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                <span>{data.projects.solutionTitle}</span>
+              </h4>
+              <div className="space-y-2">
+                {project.solutions.map((sol, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`text-xs flex items-start gap-2 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
+                    <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
+                      isDark ? 'text-emerald-400' : 'text-emerald-600'
+                    }`} />
+                    <span>{sol}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Hardware & Technologies */}
-          <div>
-            <h4 
-              className={`text-xs font-bold mb-2.5 flex items-center gap-1.5 ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
-              }`}
-            >
-              <Cpu className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
-              <span>{data.projects.techTitle}</span>
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {project.technologies.map((t, idx) => (
-                <span
-                  key={idx}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono border ${
-                    isDark
-                      ? 'bg-[#152C4D] text-slate-200 border-white/5'
-                      : 'bg-slate-100 text-slate-800 border-slate-200'
-                  }`}
-                >
-                  {t}
-                </span>
-              ))}
+          {project.technologies && project.technologies.length > 0 && (
+            <div>
+              <h4 
+                className={`text-xs font-bold mb-2.5 flex items-center gap-1.5 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
+                <Cpu className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                <span>{data.projects.techTitle}</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {project.technologies.map((t, idx) => (
+                  <span
+                    key={idx}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono border ${
+                      isDark
+                        ? 'bg-[#152C4D] text-slate-200 border-white/5'
+                        : 'bg-slate-100 text-slate-800 border-slate-200'
+                    }`}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 

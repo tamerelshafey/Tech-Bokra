@@ -19,8 +19,7 @@ import { MessageSquare, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lu
 import { useTheme } from '@/components/ThemeProvider';
 import { testConnection } from '@/lib/firebase';
 import { subscribeSiteSettings } from '@/lib/dbService';
-
-const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v2';
+import { safeLoadConfigFromStorage } from '@/lib/storageHelper';
 
 export default function HomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
@@ -29,19 +28,8 @@ export default function HomePage() {
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
 
-  const [customConfig, setCustomConfig] = useState<EditableConfig>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (saved) {
-          return { ...defaultEditableConfig, ...JSON.parse(saved) };
-        }
-      } catch {
-        // Fallback to default
-      }
-    }
-    return defaultEditableConfig;
-  });
+  // Initialize with deterministic default configuration for 100% hydration match
+  const [customConfig, setCustomConfig] = useState<EditableConfig>(defaultEditableConfig);
 
   const isAr = lang === 'ar';
   const data = isAr ? contentAr : contentEn;
@@ -78,17 +66,28 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    // 1. Validate connection on boot as mandated by Firebase integration guidelines
+    // 1. Sync local cache after mount safely without causing SSR mismatch
+    const timer = setTimeout(() => {
+      const saved = safeLoadConfigFromStorage();
+      if (saved) {
+        setCustomConfig((prev) => ({ ...prev, ...saved }));
+      }
+    }, 0);
+
+    // 2. Validate connection on boot as mandated by Firebase integration guidelines
     testConnection();
 
-    // 2. Real-time subscription to global cloud settings from Firestore
+    // 3. Real-time subscription to global cloud settings from Firestore
     const unsubscribe = subscribeSiteSettings((cloudConfig) => {
       if (cloudConfig) {
         setCustomConfig((prev) => ({ ...prev, ...cloudConfig }));
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 
   const toggleLanguage = () => {

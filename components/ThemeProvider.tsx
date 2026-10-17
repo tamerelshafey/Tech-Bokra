@@ -10,30 +10,38 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   isDark: boolean;
   isLight: boolean;
+  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_STORAGE_KEY = 'tech_bokra_theme_mode';
 
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark';
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-  } catch {
-    // Ignore storage errors
-  }
-  return 'dark';
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  // Always initialize to 'dark' on both SSR and client initial render to ensure 100% hydration match
+  const [theme, setThemeState] = useState<Theme>('dark');
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  // Sync client saved preference safely after hydration mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') {
+          setThemeState(stored);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          setThemeState('light');
+        }
+      } catch {
+        // Ignore storage errors
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.remove('light');
@@ -52,7 +60,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Storage unavailable
     }
-  }, [theme]);
+  }, [theme, mounted]);
 
   const toggleTheme = () => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -70,6 +78,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setTheme,
         isDark: theme === 'dark',
         isLight: theme === 'light',
+        mounted,
       }}
     >
       {children}
@@ -86,6 +95,7 @@ export function useTheme() {
       setTheme: () => {},
       isDark: true,
       isLight: false,
+      mounted: false,
     };
   }
   return context;

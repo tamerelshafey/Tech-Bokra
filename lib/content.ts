@@ -16,6 +16,7 @@ export interface Project {
   liveUrl?: string;
   statusBadge?: string;
   isUpcoming?: boolean;
+  isDraft?: boolean;
 }
 
 export interface ServiceItem {

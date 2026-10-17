@@ -57,6 +57,7 @@ import {
   deleteInquiry, 
   saveSiteSettingsToCloud 
 } from '@/lib/dbService';
+import { compressImageFile } from '@/lib/storageHelper';
 
 export interface EditableConfig {
   // Logo & Branding
@@ -123,6 +124,18 @@ export interface EditableConfig {
   brandBioEn?: string;
   commercialRegister?: string;
   taxId?: string;
+
+  // Media Vault (Uploaded Assets Library)
+  mediaVault?: MediaVaultItem[];
+}
+
+export interface MediaVaultItem {
+  id: string;
+  name: string;
+  url: string;
+  size?: string;
+  date: string;
+  tag?: string;
 }
 
 export const defaultEditableConfig: EditableConfig = {
@@ -190,6 +203,58 @@ export const defaultEditableConfig: EditableConfig = {
   brandBioEn: contentEn.footer.brandBio,
   commercialRegister: defaultSiteConfig.commercialRegister,
   taxId: defaultSiteConfig.taxId,
+
+  // Media Vault default items
+  mediaVault: [
+    {
+      id: 'vault-1',
+      name: 'كاميرات المراقبة والذكاء الاصطناعي CCTV',
+      url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80',
+      size: '180 KB',
+      date: '2025-01-10',
+      tag: 'CCTV'
+    },
+    {
+      id: 'vault-2',
+      name: 'كابلات الفايبر وراك السيرفرات Network',
+      url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+      size: '210 KB',
+      date: '2025-01-12',
+      tag: 'Network'
+    },
+    {
+      id: 'vault-3',
+      name: 'بوابات الدخول الذكية والتحكم البيومتري Access',
+      url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80',
+      size: '195 KB',
+      date: '2025-01-14',
+      tag: 'Access'
+    },
+    {
+      id: 'vault-4',
+      name: 'منصات البرمجيات السحابية ولوحات التحكم Cloud ERP',
+      url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+      size: '220 KB',
+      date: '2025-01-15',
+      tag: 'Cloud'
+    },
+    {
+      id: 'vault-5',
+      name: 'برمجيات العقارات PropTech وإدارة الأصول',
+      url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+      size: '240 KB',
+      date: '2025-01-18',
+      tag: 'PropTech'
+    },
+    {
+      id: 'vault-6',
+      name: 'منظومة إدارة رحلات وعمليات سياحية تفاعلية',
+      url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+      size: '190 KB',
+      date: '2025-01-20',
+      tag: 'Tourism'
+    }
+  ],
 };
 
 interface AdminSettingsModalProps {
@@ -920,15 +985,17 @@ export const siteConfig = ${JSON.stringify(
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const dataUrl = event.target?.result as string;
-                            handleChange('customLogoUrl', dataUrl);
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressImageFile(file, 600, 600, 0.82);
+                            if (compressed) {
+                              handleChange('customLogoUrl', compressed);
+                            }
+                          } catch (err) {
+                            console.error('Logo upload error:', err);
+                          }
                         }
                       }}
                     />
