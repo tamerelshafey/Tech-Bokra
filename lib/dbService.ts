@@ -34,13 +34,13 @@ const INQUIRIES_COLLECTION_PATH = 'inquiries';
 /**
  * Save Site Settings to Firestore (Requires Admin login)
  */
-export async function saveSiteSettingsToCloud(config: EditableConfig, user: User | null): Promise<void> {
+export async function saveSiteSettingsToCloud(config: EditableConfig, user?: User | null): Promise<void> {
   const settingsDocRef = doc(db, 'settings', 'general');
   try {
     await setDoc(settingsDocRef, {
       ...config,
       updatedAt: new Date().toISOString(),
-      updatedBy: user?.email || 'admin@tech-bokra.com',
+      updatedBy: user?.email || auth?.currentUser?.email || 'admin@tech-bokra.com',
     }, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, SETTINGS_DOC_PATH);

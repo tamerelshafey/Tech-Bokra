@@ -209,7 +209,7 @@ export default function HomePage() {
 
       {/* Main Content Sections */}
       <main>
-        {/* Hero Section with customizable messaging */}
+        {/* Hero Section with customizable messaging and images */}
         <Hero
           lang={lang}
           data={data}
@@ -220,6 +220,10 @@ export default function HomePage() {
             titleLine1: isAr ? customConfig.heroTitleLine1Ar : customConfig.heroTitleLine1En,
             titleLine2: isAr ? customConfig.heroTitleLine2Ar : customConfig.heroTitleLine2En,
             sub: isAr ? customConfig.heroSubAr : customConfig.heroSubEn,
+            cctvImage: customConfig.heroCctvImage,
+            networkImage: customConfig.heroNetworkImage,
+            accessImage: customConfig.heroAccessImage,
+            cloudImage: customConfig.heroCloudImage,
           }}
         />
 
@@ -235,11 +239,12 @@ export default function HomePage() {
           }}
         />
 
-        {/* Comprehensive Engineering Solutions */}
+        {/* Comprehensive Engineering Solutions with CMS override */}
         <ServicesSection
           lang={lang}
           data={data}
           onSelectService={handleSelectServiceForQuote}
+          customServices={customConfig.servicesList}
         />
 
         {/* Interactive Architecture & Network Visualizer */}
@@ -258,7 +263,7 @@ export default function HomePage() {
           email={customConfig.email}
         />
 
-        {/* Featured Real Projects & Case Studies with live dynamic links */}
+        {/* Featured Real Projects & Case Studies with live dynamic links and CMS */}
         <ProjectsSection
           lang={lang}
           data={data}
@@ -267,6 +272,7 @@ export default function HomePage() {
             'helio-property': customConfig.helioPropertyUrl,
             'alrehla': customConfig.alrehlaUrl,
           }}
+          customProjects={customConfig.projectsList}
         />
 
         {/* 4-Step Engineering Lifecycle */}
@@ -279,8 +285,12 @@ export default function HomePage() {
         {/* Hardware & Cloud Vendors Ecosystem */}
         <TechPartners lang={lang} data={data} />
 
-        {/* Frequently Asked Questions */}
-        <FaqSection lang={lang} data={data} />
+        {/* Frequently Asked Questions with CMS */}
+        <FaqSection
+          lang={lang}
+          data={data}
+          customFaq={customConfig.faqList}
+        />
 
         {/* Smart Quote & Inquiry Request with live custom contacts */}
         <ContactSection
@@ -295,7 +305,7 @@ export default function HomePage() {
         />
       </main>
 
-      {/* Corporate Footer with live custom contacts */}
+      {/* Corporate Footer with live custom contacts and CMS bio */}
       <Footer
         lang={lang}
         data={data}
@@ -307,6 +317,9 @@ export default function HomePage() {
         facebookUrl={customConfig.facebookUrl}
         logoEmblemStyle={customConfig.logoEmblemStyle}
         customLogoUrl={customConfig.customLogoUrl}
+        brandBio={isAr ? customConfig.brandBioAr : customConfig.brandBioEn}
+        commercialRegister={customConfig.commercialRegister}
+        taxId={customConfig.taxId}
       />
 
       {/* Floating Action Buttons */}

@@ -41,18 +41,24 @@ import {
   AlertTriangle,
   Fingerprint,
   CheckCircle2,
-  Terminal
+  Terminal,
+  HelpCircle,
+  Layers,
+  FileText,
+  Sliders,
+  SlidersHorizontal,
+  Edit3,
+  Camera,
+  Network
 } from 'lucide-react';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
-import { siteConfig as defaultSiteConfig, contentAr, contentEn } from '@/lib/content';
+import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
 import { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
 import { 
   auth, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged, 
-  User,
   testConnection 
 } from '@/lib/firebase';
 import { 
@@ -73,60 +79,69 @@ const BRUTE_FORCE_KEY = 'tb_failed_attempts_count_v1';
 const DEFAULT_MASTER_KEY = 'TechBokra@Secure9482';
 const BOOTSTRAP_ADMIN_EMAIL = 'tam.elshafey@gmail.com';
 
+// Curated high-res presets for surveillance, server rooms, smart access & cloud dashboards
+const CURATED_IMAGE_PRESETS = {
+  cctv: [
+    { title: 'كاميرات 4K مراقبة ذكية نهارية/ليلية', url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'غرفة تحكم ومراقبة مركزية SOC Video Wall', url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'كاميرا دوم ذكية بتقنية الذكاء الاصطناعي', url: 'https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'حماية وتأمين محيط المنشآت الحيوية', url: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32b?auto=format&fit=crop&w=1200&q=80' }
+  ],
+  network: [
+    { title: 'كبائن خوادم وشبكات مهيكلة فائقة الدقة', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'ألياف ضوئية فايبر أوبتك عالية السرعة', url: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'سويتشات راوتر ومسارات كابلات Cat6A/7', url: 'https://images.unsplash.com/photo-1520869562399-e772f342b00a?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'ممرات مراكز البيانات Data Center Cold Aisle', url: 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?auto=format&fit=crop&w=1200&q=80' }
+  ],
+  access: [
+    { title: 'بوابات مرور ذكية Speed Gates زجاجية', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'أجهزة بصمة وجه بيومترية بدون تلامس', url: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'أنظمة بطاقات RFID وقفل كهرومغناطيسي', url: 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'مداخل برج إداري ذكية متكاملة', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80' }
+  ],
+  cloud: [
+    { title: 'بنية سحابية سيبرانية وأنظمة تحليلات ERP', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'لوحات قيادة مالية وإدارية تفاعلية', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'منظومات ذكاء الأعمال BI ومؤشرات الأداء', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'تطبيقات الجوال وحلول المنشآت المترابطة', url: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1200&q=80' }
+  ]
+};
+
+function getFutureTimestamp(durationMs: number): number {
+  return Date.now() + durationMs;
+}
+
+function checkTimestampValid(timestamp: number): boolean {
+  return timestamp > Date.now();
+}
+
+function getSessionPayload(token: string) {
+  return {
+    authenticated: true,
+    token,
+    expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+    grantedAt: new Date().toISOString()
+  };
+}
+
 export default function SecureAdminPortalPage() {
   const { theme, toggleTheme, isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'leads' | 'branding' | 'contacts' | 'hero' | 'projects' | 'security' | 'vercel'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'leads' | 'media' | 'content' | 'services' | 'projects' | 'faq' | 'branding' | 'contacts' | 'security' | 'vercel'
+  >('overview');
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const isAr = lang === 'ar';
 
   // Security Gate State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const session = sessionStorage.getItem(SESSION_AUTH_KEY);
-      if (session) {
-        try {
-          const parsed = JSON.parse(session);
-          if (parsed.expiresAt && parsed.expiresAt > Date.now()) {
-            return true;
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-    return false;
-  });
-  const [isCheckingSession] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [adminEmailInput, setAdminEmailInput] = useState<string>(BOOTSTRAP_ADMIN_EMAIL);
   const [adminPasswordInput, setAdminPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
-  const [lockoutUntil, setLockoutUntil] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const attemptsData = JSON.parse(localStorage.getItem(BRUTE_FORCE_KEY) || '{}');
-        if (attemptsData.lockoutUntil && attemptsData.lockoutUntil > Date.now()) {
-          return attemptsData.lockoutUntil;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return 0;
-  });
-  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const attemptsData = JSON.parse(localStorage.getItem(BRUTE_FORCE_KEY) || '{}');
-        return attemptsData.count || 0;
-      } catch {
-        // ignore
-      }
-    }
-    return 0;
-  });
-  const [isLockedOut, setIsLockedOut] = useState<boolean>(false);
+  const [lockoutUntil, setLockoutUntil] = useState<number>(0);
+  const [failedAttempts, setFailedAttempts] = useState<number>(0);
+  const isLockedOut = lockoutUntil > 0;
 
   // Password Management State
   const [currentMasterKey, setCurrentMasterKey] = useState<string>(() => {
@@ -152,300 +167,293 @@ export default function SecureAdminPortalPage() {
     return defaultEditableConfig;
   });
 
-  // Auth & Cloud State
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  // Leads & CRM State
   const [inquiries, setInquiries] = useState<FirestoreInquiry[]>([]);
-  const [inquiriesLoading, setInquiriesLoading] = useState(true);
-  const [leadsFilter, setLeadsFilter] = useState<string>('all');
-  const [leadsSearch, setLeadsSearch] = useState('');
-  
-  // UI Feedback State
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [cloudSuccess, setCloudSuccess] = useState(false);
-  const [notificationMsg, setNotificationMsg] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [leadsFilter, setLeadsFilter] = useState<'all' | 'new' | 'contacted' | 'survey_scheduled' | 'contracted'>('all');
+  const [searchLeads, setSearchLeads] = useState<string>('');
 
-  // Listeners & timers
+  // UI Feedback State
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [notificationMsg, setNotificationMsg] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
+
+  // Check Session and Brute Force on Client Mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const session = sessionStorage.getItem(SESSION_AUTH_KEY);
+        if (session) {
+          try {
+            const parsed = JSON.parse(session);
+            if (parsed.expiresAt && checkTimestampValid(parsed.expiresAt)) {
+              setIsAuthenticated(true);
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        try {
+          const attemptsData = JSON.parse(localStorage.getItem(BRUTE_FORCE_KEY) || '{}');
+          if (attemptsData.lockoutUntil && checkTimestampValid(attemptsData.lockoutUntil)) {
+            setLockoutUntil(attemptsData.lockoutUntil);
+          }
+          if (attemptsData.count) {
+            setFailedAttempts(attemptsData.count);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Timer to clear lockout countdown
+  useEffect(() => {
+    if (lockoutUntil > 0) {
+      const remaining = Math.max(0, lockoutUntil - Date.now());
+      const timer = setTimeout(() => {
+        setLockoutUntil(0);
+        setFailedAttempts(0);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(BRUTE_FORCE_KEY);
+        }
+      }, remaining);
+      return () => clearTimeout(timer);
+    }
+  }, [lockoutUntil]);
+
+  // Cloud Sync & Leads Subscription
   useEffect(() => {
     testConnection();
 
-    const checkLock = () => {
-      setIsLockedOut(lockoutUntil > Date.now());
-    };
-    checkLock();
-    const interval = setInterval(checkLock, 1000);
-
-    // Auth listener for Firebase
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setFirebaseUser(currentUser);
-      if (currentUser && currentUser.email === BOOTSTRAP_ADMIN_EMAIL) {
-        setIsAuthenticated(true);
+    const unsubSettings = subscribeSiteSettings((cloudConfig) => {
+      if (cloudConfig) {
+        setConfig((prev) => ({ ...prev, ...cloudConfig }));
       }
     });
 
-    // Realtime settings
-    const unsubscribeSettings = subscribeSiteSettings((cloudSettings) => {
-      if (cloudSettings) {
-        setConfig((prev) => ({ ...prev, ...cloudSettings }));
-      }
+    const unsubInquiries = subscribeInquiries((items) => {
+      setInquiries(items);
     });
 
     return () => {
-      clearInterval(interval);
-      unsubscribeAuth();
-      unsubscribeSettings();
+      unsubSettings();
+      unsubInquiries();
     };
-  }, [lockoutUntil]);
+  }, []);
 
-  // Inquiries listener (only when authenticated)
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const unsubscribe = subscribeInquiries(
-      (data) => {
-        setInquiries(data);
-        setInquiriesLoading(false);
-      },
-      (err) => {
-        console.warn('Inquiries sync error:', err.message);
-        setInquiriesLoading(false);
-      }
-    );
-    return () => unsubscribe();
-  }, [isAuthenticated, firebaseUser]);
-
-  // Handle Security Gate Login
+  // Secure Login Handler
   const handleSecureLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    if (lockoutUntil > Date.now()) {
-      const minutesLeft = Math.ceil((lockoutUntil - Date.now()) / (1000 * 60));
-      setLoginError(isAr 
-        ? `البوابة مقفلة أمنياً بسبب تكرار المحاولات الخاطئة. يرجى الانتظار ${minutesLeft} دقيقة.` 
-        : `Gate is locked due to multiple failed attempts. Please wait ${minutesLeft} minutes.`);
-      return;
-    }
-
-    const trimmedEmail = adminEmailInput.trim().toLowerCase();
-    const enteredPassword = adminPasswordInput.trim();
-
-    if (!enteredPassword) {
-      setLoginError(isAr ? 'يرجى إدخال كلمة المرور الأمنية.' : 'Please enter security password.');
+    if (isLockedOut) {
+      setLoginError(isAr ? 'البوابة مغلقة مؤقتاً لتكرار المحاولات الخاطئة. يرجى الانتظار.' : 'Console locked due to multiple failed attempts.');
       return;
     }
 
     setIsLoggingIn(true);
 
-    try {
-      let isSuccess = false;
+    const enteredEmail = adminEmailInput.trim().toLowerCase();
+    const enteredPassword = adminPasswordInput.trim();
 
-      // Method 1: Check Master Key / Direct Credentials
-      const activeMasterKey = localStorage.getItem(MASTER_KEY_STORAGE) || DEFAULT_MASTER_KEY;
-      if (
-        (trimmedEmail === BOOTSTRAP_ADMIN_EMAIL || trimmedEmail === 'admin') &&
-        (enteredPassword === activeMasterKey || enteredPassword === DEFAULT_MASTER_KEY)
-      ) {
-        isSuccess = true;
-      }
+    // Check Master Key Authorization
+    const isMasterKeyMatch = enteredPassword === currentMasterKey;
+    const isMasterEmailMatch = enteredEmail === BOOTSTRAP_ADMIN_EMAIL || enteredEmail === 'admin' || enteredEmail === 'techbokra';
 
-      // Method 2: Check Firebase Auth Email & Password
-      if (!isSuccess && trimmedEmail.includes('@')) {
-        try {
-          await signInWithEmailAndPassword(auth, trimmedEmail, enteredPassword);
-          isSuccess = true;
-        } catch (firebaseErr: unknown) {
-          const errCode = (firebaseErr as { code?: string })?.code;
-          // If master key didn't match and Firebase failed
-          console.warn('Firebase email/password sign-in attempted:', errCode);
-        }
-      }
-
-      if (isSuccess) {
-        // Reset failed attempts
-        localStorage.removeItem(BRUTE_FORCE_KEY);
-        setFailedAttempts(0);
-        setLockoutUntil(0);
-
-        // Store secure session (expires in 4 hours)
-        const sessionPayload = {
-          authenticated: true,
-          email: trimmedEmail,
-          loggedInAt: Date.now(),
-          expiresAt: Date.now() + 4 * 60 * 60 * 1000,
-        };
-        sessionStorage.setItem(SESSION_AUTH_KEY, JSON.stringify(sessionPayload));
-
-        setIsAuthenticated(true);
-        setAdminPasswordInput('');
-        setNotificationMsg(isAr ? 'تم التحقق بنجاح! مرحباً بك في بوابة الإدارة الآمنة.' : 'Identity verified! Welcome to Secure Console.');
-        setTimeout(() => setNotificationMsg(''), 4000);
-      } else {
-        // Increment failed attempts
-        const newCount = failedAttempts + 1;
-        setFailedAttempts(newCount);
-
-        if (newCount >= 5) {
-          const lockTime = Date.now() + 15 * 60 * 1000; // 15 mins
-          setLockoutUntil(lockTime);
-          localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: lockTime }));
-          setLoginError(isAr 
-            ? 'تم قفل البوابة أمنياً لمدة 15 دقيقة لتكرار إدخال كلمة مرور خاطئة.' 
-            : 'Access locked for 15 minutes due to multiple failed attempts.');
-        } else {
-          localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount }));
-          setLoginError(isAr 
-            ? `بيانات الدخول غير صحيحة! متبقي ${5 - newCount} محاولات قبل القفل المؤقت.` 
-            : `Invalid credentials! ${5 - newCount} attempts remaining before lockout.`);
-        }
-      }
-    } finally {
+    if (isMasterKeyMatch && isMasterEmailMatch) {
+      // Successful Master Key Access
+      grantAccess('master_key');
       setIsLoggingIn(false);
+      return;
     }
+
+    // Try Firebase Email/Password Authentication
+    try {
+      if (auth) {
+        const userCredential = await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
+        if (userCredential.user) {
+          grantAccess(userCredential.user.uid);
+          setIsLoggingIn(false);
+          return;
+        }
+      }
+    } catch {
+      // Firebase auth failed, increment brute force counter
+    }
+
+    // Handle Failed Attempt
+    const newCount = failedAttempts + 1;
+    setFailedAttempts(newCount);
+
+    if (newCount >= 5) {
+      const lockDuration = 10 * 60 * 1000; // 10 minutes lock
+      const until = getFutureTimestamp(lockDuration);
+      setLockoutUntil(until);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: until }));
+      }
+      setLoginError(
+        isAr 
+          ? 'تم تجاوز الحد الأقصى للمحاولات (5 محاولات). تم قفل البوابة المشفرة لمدة 10 دقائق.' 
+          : 'Max attempts reached. Security lockout active for 10 minutes.'
+      );
+    } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: 0 }));
+      }
+      setLoginError(
+        isAr 
+          ? `بيانات الدخول غير صحيحة. محاولة ${newCount} من 5 محاولات مصرح بها.` 
+          : `Invalid credentials. Attempt ${newCount} of 5 authorized.`
+      );
+    }
+
+    setIsLoggingIn(false);
+  };
+
+  const grantAccess = (token: string) => {
+    const sessionData = getSessionPayload(token);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(SESSION_AUTH_KEY, JSON.stringify(sessionData));
+      localStorage.removeItem(BRUTE_FORCE_KEY);
+    }
+    setFailedAttempts(0);
+    setLockoutUntil(0);
+    setIsAuthenticated(true);
   };
 
   const handleSecureLogout = async () => {
-    try {
+    if (typeof window !== 'undefined') {
       sessionStorage.removeItem(SESSION_AUTH_KEY);
-      await signOut(auth);
+    }
+    try {
+      if (auth) {
+        await signOut(auth);
+      }
     } catch {
       // ignore
     }
     setIsAuthenticated(false);
     setAdminPasswordInput('');
-    setNotificationMsg(isAr ? 'تم إنهاء الجلسة وتسجيل الخروج بنجاح.' : 'Session terminated successfully.');
-    setTimeout(() => setNotificationMsg(''), 3000);
+    setNotificationMsg(isAr ? 'تم قفل اللوحة وإنهاء الجلسة بنجاح.' : 'Session locked successfully.');
   };
 
   const handleUpdateMasterPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    setKeyChangeError('');
     setKeyChangeSuccess(false);
+    setKeyChangeError('');
 
-    if (newMasterKeyInput.trim().length < 8) {
-      setKeyChangeError(isAr ? 'يجب أن تكون كلمة المرور 8 أحرف على الأقل.' : 'Password must be at least 8 characters.');
+    if (newMasterKeyInput.length < 8) {
+      setKeyChangeError(isAr ? 'يجب أن لا تقل كلمة المرور عن 8 أحرف وأرقام معقدة.' : 'Password must be at least 8 characters.');
       return;
     }
 
-    try {
-      const newKey = newMasterKeyInput.trim();
-      localStorage.setItem(MASTER_KEY_STORAGE, newKey);
-      setCurrentMasterKey(newKey);
-      setNewMasterKeyInput('');
-      setKeyChangeSuccess(true);
-      setTimeout(() => setKeyChangeSuccess(false), 5000);
-    } catch {
-      setKeyChangeError(isAr ? 'تعذر حفظ كلمة المرور الجديدة محلياً.' : 'Failed to save password.');
+    setCurrentMasterKey(newMasterKeyInput);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(MASTER_KEY_STORAGE, newMasterKeyInput);
     }
+    setKeyChangeSuccess(true);
+    setNewMasterKeyInput('');
   };
 
   const handleConfigChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
+    setConfig((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
   };
 
   const handleSaveAll = async () => {
     setIsSaving(true);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3500);
+    setNotificationMsg('');
 
-    // 1. Local Storage fallback
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(config));
-    } catch {
-      // ignore
-    }
+      // 1. Local Cache
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(config));
+      }
 
-    // 2. Cloud Firestore Save
-    try {
-      await saveSiteSettingsToCloud(config, firebaseUser);
-      setCloudSuccess(true);
-      setTimeout(() => setCloudSuccess(false), 4000);
-      setNotificationMsg(isAr ? 'تم حفظ التعديلات سحابياً وتطبيقها فوراً!' : 'Settings synced to Firebase live!');
-    } catch (err: unknown) {
-      console.warn('Cloud save notice:', err);
-      setNotificationMsg(isAr ? 'تم الحفظ محلياً بنجاح!' : 'Saved locally.');
+      // 2. Cloud Firestore Real-time Persistence
+      await saveSiteSettingsToCloud(config, auth?.currentUser || null);
+
+      setNotificationMsg(
+        isAr 
+          ? 'تم حفظ وتحديث كافة بيانات الموقع والصور في سحابة Firebase بنجاح!' 
+          : 'All site content, media, and settings saved to Firebase cloud successfully!'
+      );
+    } catch (err) {
+      console.error('Save error:', err);
+      setNotificationMsg(
+        isAr 
+          ? 'تم الحفظ محلياً وجاري المزامنة مع السحابة...' 
+          : 'Saved locally, syncing to cloud...'
+      );
     } finally {
       setIsSaving(false);
-      setTimeout(() => setNotificationMsg(''), 4000);
+      setTimeout(() => setNotificationMsg(''), 5000);
     }
-  };
-
-  const handleExportCSV = () => {
-    if (inquiries.length === 0) return;
-    const headers = ['ID', 'Client Name', 'Phone', 'Facility', 'Systems', 'Status', 'Date', 'Notes'];
-    const rows = inquiries.map((inq) => [
-      inq.id,
-      `"${inq.clientName.replace(/"/g, '""')}"`,
-      `"${inq.phone}"`,
-      `"${(inq.facilityType || '').replace(/"/g, '""')}"`,
-      `"${(inq.selectedSystems || []).join('; ')}"`,
-      inq.status,
-      `"${inq.createdAt}"`,
-      `"${(inq.notes || '').replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `tech_bokra_leads_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleCopySecretLink = () => {
     if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(`${window.location.origin}/tb-portal-9482x`);
       setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
+
+  // Helper: File to base64 Data URL
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof EditableConfig) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        if (result) {
+          handleConfigChange(fieldName, result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   // Filtered Leads
-  const filteredLeads = inquiries.filter((inq) => {
-    const matchesFilter = leadsFilter === 'all' || inq.status === leadsFilter;
-    const matchesSearch = 
-      !leadsSearch ||
-      inq.clientName.toLowerCase().includes(leadsSearch.toLowerCase()) ||
-      inq.phone.includes(leadsSearch) ||
-      (inq.facilityType || '').toLowerCase().includes(leadsSearch.toLowerCase()) ||
-      (inq.notes || '').toLowerCase().includes(leadsSearch.toLowerCase());
-    return matchesFilter && matchesSearch;
+  const filteredLeads = inquiries.filter((lead) => {
+    if (leadsFilter !== 'all' && lead.status !== leadsFilter) return false;
+    if (searchLeads) {
+      const q = searchLeads.toLowerCase();
+      return (
+        lead.clientName?.toLowerCase().includes(q) ||
+        lead.phone?.includes(q) ||
+        lead.facilityType?.toLowerCase().includes(q)
+      );
+    }
+    return true;
   });
 
   const newLeadsCount = inquiries.filter((i) => i.status === 'new').length;
 
   // ----------------------------------------------------
-  // VIEW 1: LOADING STATE
-  // ----------------------------------------------------
-  if (isCheckingSession) {
-    return (
-      <div className="min-h-screen bg-[#071120] flex items-center justify-center text-[#00F2FE]">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-[#00F2FE]" />
-          <span className="font-mono text-xs tracking-widest uppercase">Initializing Secure Environment...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // ----------------------------------------------------
-  // VIEW 2: HIGH-SECURITY LOGIN GATE (If not authenticated)
+  // VIEW 1: ENCRYPTED SECURITY GATE LOGIN SCREEN
   // ----------------------------------------------------
   if (!isAuthenticated) {
     return (
       <div 
-        className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
-          isDark ? 'bg-[#050C16] text-slate-100' : 'bg-slate-900 text-slate-100'
-        } ${isAr ? 'font-cairo' : 'font-inter'}`}
+        className="min-h-screen bg-[#071120] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-cairo select-none"
         dir={isAr ? 'rtl' : 'ltr'}
       >
-        {/* Background Cyber Grid Effect */}
-        <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+        {/* Futuristic Cyber Security Grid Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
+        <div className="absolute top-1/4 -right-24 w-96 h-96 bg-[#00F2FE]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -left-24 w-96 h-96 bg-[#0284C7]/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-md relative z-10">
+        <div className="max-w-md w-full relative z-10">
           
           {/* Card Container */}
           <div className="p-8 rounded-3xl bg-[#0B1A2F]/90 border border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl space-y-6">
@@ -492,7 +500,7 @@ export default function SecureAdminPortalPage() {
             {/* Lockout Notice */}
             {isLockedOut && (
               <div className="p-4 rounded-xl bg-amber-950/50 border border-amber-500/40 text-amber-200 text-xs text-center font-mono">
-                {isAr ? 'البوابة مغلقة مؤقتاً لحماية النظام' : 'Gate is temporarily locked for security'}
+                {isAr ? 'البوابة مغلقة مؤقتاً لحماية النظام من الهجمات التكرارية' : 'Gate temporarily locked for security'}
               </div>
             )}
 
@@ -587,7 +595,7 @@ export default function SecureAdminPortalPage() {
   }
 
   // ----------------------------------------------------
-  // VIEW 3: AUTHENTICATED SECURE CONTROL PANEL
+  // VIEW 2: AUTHENTICATED SECURE CONTROL PANEL
   // ----------------------------------------------------
   return (
     <div 
@@ -596,7 +604,7 @@ export default function SecureAdminPortalPage() {
       } ${isAr ? 'font-cairo' : 'font-inter'}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      {/* Top Navigation Bar */}
+      {/* Top Header */}
       <header className={`sticky top-0 z-40 border-b backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 ${
         isDark 
           ? 'bg-[#071120]/90 border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.4)]' 
@@ -620,7 +628,7 @@ export default function SecureAdminPortalPage() {
                 ? 'bg-[#10233D] text-[#00F2FE] border-[#00F2FE]/30' 
                 : 'bg-sky-50 text-[#0284C7] border-sky-200'
             }`}>
-              {isAr ? 'لوحة التحكم المشفرة' : 'Encrypted Console'}
+              {isAr ? 'لوحة التحكم والمحتوى الشاملة' : 'Full CMS & Admin Console'}
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -650,7 +658,7 @@ export default function SecureAdminPortalPage() {
             }`}
             title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
           >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
 
           {/* Back to Site Button */}
@@ -715,19 +723,22 @@ export default function SecureAdminPortalPage() {
               <span className={`text-[11px] font-bold uppercase tracking-wider block mb-3 px-2 ${
                 isDark ? 'text-slate-400' : 'text-slate-500'
               }`}>
-                {isAr ? 'أقسام لوحة التحكم المشفرة' : 'Secure Management Sections'}
+                {isAr ? 'أقسام لوحة التحكم الشاملة' : 'CMS & Control Sections'}
               </span>
 
               <nav className="space-y-1">
                 {[
-                  { id: 'overview', labelAr: 'نظرة عامة والنشاط', labelEn: 'Overview & Stats', icon: LayoutDashboard },
+                  { id: 'overview', labelAr: 'نظرة عامة والنشاط', labelEn: 'Overview & Activity', icon: LayoutDashboard },
                   { id: 'leads', labelAr: 'طلبات العملاء والمعاينات', labelEn: 'Customer Leads CRM', icon: Inbox, badge: newLeadsCount },
-                  { id: 'branding', labelAr: 'الشعار وهوية الشركة', labelEn: 'Brand & Logo CMS', icon: ImageIcon },
+                  { id: 'media', labelAr: 'إدارة الصور والوسائط', labelEn: 'Media & Site Images', icon: ImageIcon },
+                  { id: 'content', labelAr: 'المحتوى والنصوص الرئيسية', labelEn: 'Content & Copywriting', icon: FileText },
+                  { id: 'services', labelAr: 'الخدمات والحلول الهندسية', labelEn: 'Services & Solutions', icon: Layers },
+                  { id: 'projects', labelAr: 'سابقة الأعمال والمنصات', labelEn: 'Projects Portfolio', icon: Briefcase },
+                  { id: 'faq', labelAr: 'الأسئلة الشائعة والأجوبة', labelEn: 'FAQ Manager', icon: HelpCircle },
+                  { id: 'branding', labelAr: 'الهوية والشعار والخطوط', labelEn: 'Brand & Logo CMS', icon: Sparkles },
                   { id: 'contacts', labelAr: 'بيانات الاتصال ومقر العمل', labelEn: 'Contact & Addresses', icon: Phone },
-                  { id: 'hero', labelAr: 'الهيدر وشريط الإعلانات', labelEn: 'Hero & Announcements', icon: Megaphone },
-                  { id: 'projects', labelAr: 'المشاريع وسابقة الأعمال', labelEn: 'Projects Portfolio', icon: Briefcase },
                   { id: 'security', labelAr: 'الأمان وكلمات المرور', labelEn: 'Security & Access Keys', icon: ShieldCheck },
-                  { id: 'vercel', labelAr: 'دليل النشر (Vercel & Cloud)', labelEn: 'Vercel Deployment', icon: Settings },
+                  { id: 'vercel', labelAr: 'دليل النشر (Vercel & Domains)', labelEn: 'Vercel Deployment', icon: Settings },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -768,7 +779,7 @@ export default function SecureAdminPortalPage() {
                 <span className="text-slate-400">{isAr ? 'حالة البوابة:' : 'Gate Status:'}</span>
                 <span className="font-mono text-emerald-400 font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Obfuscated & Locked</span>
+                  <span>Hidden & Locked</span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -785,7 +796,7 @@ export default function SecureAdminPortalPage() {
           {/* Main Workspace (9 Cols) */}
           <main className="lg:col-span-9 space-y-6">
 
-            {/* 1. OVERVIEW & QUICK STATS */}
+            {/* 1. OVERVIEW & ACTIVITY */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div>
@@ -793,7 +804,7 @@ export default function SecureAdminPortalPage() {
                     {isAr ? 'نظرة عامة على منظومة Tech Bokra' : 'Tech Bokra Executive Overview'}
                   </h3>
                   <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {isAr ? 'متابعة حية للطلبات، سابقة الأعمال، وحالة التكامل السحابي' : 'Real-time monitoring for leads, portfolio, and cloud integration'}
+                    {isAr ? 'متابعة حية للطلبات، سابقة الأعمال، الصور والتحكم بالمحتوى' : 'Live leads, portfolio, images, and cloud synchronization'}
                   </p>
                 </div>
 
@@ -821,6 +832,50 @@ export default function SecureAdminPortalPage() {
                     <span className="text-2xl font-mono font-black text-emerald-400">
                       {inquiries.filter((i) => i.status === 'contracted').length}
                     </span>
+                  </div>
+                </div>
+
+                {/* Quick Actions Panel */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+                  <h4 className={`text-sm font-bold mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {isAr ? 'إجراءات سريعة ومباشرة' : 'Quick Actions'}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button
+                      onClick={() => setActiveTab('media')}
+                      className="p-3 rounded-xl border border-white/10 hover:border-[#00F2FE] bg-[#071120] text-start transition cursor-pointer"
+                    >
+                      <ImageIcon className="w-4 h-4 text-[#00F2FE] mb-1.5" />
+                      <span className="text-xs font-bold block text-white">{isAr ? 'تغيير صور الهيدر' : 'Change Hero Images'}</span>
+                      <span className="text-[10px] text-slate-400">{isAr ? 'تعديل صور الكاميرات والشبكات' : 'Surveillance & Fiber photos'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('content')}
+                      className="p-3 rounded-xl border border-white/10 hover:border-[#00F2FE] bg-[#071120] text-start transition cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 text-emerald-400 mb-1.5" />
+                      <span className="text-xs font-bold block text-white">{isAr ? 'تعديل نصوص الهيدر' : 'Edit Hero Text'}</span>
+                      <span className="text-[10px] text-slate-400">{isAr ? 'العناوين والأرقام والشريط' : 'Headlines & statistics'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('projects')}
+                      className="p-3 rounded-xl border border-white/10 hover:border-[#00F2FE] bg-[#071120] text-start transition cursor-pointer"
+                    >
+                      <Briefcase className="w-4 h-4 text-amber-400 mb-1.5" />
+                      <span className="text-xs font-bold block text-white">{isAr ? 'تحديث سابقة الأعمال' : 'Update Projects'}</span>
+                      <span className="text-[10px] text-slate-400">{isAr ? 'إضافة أو تعديل مشاريع' : 'Add or edit projects'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('contacts')}
+                      className="p-3 rounded-xl border border-white/10 hover:border-[#00F2FE] bg-[#071120] text-start transition cursor-pointer"
+                    >
+                      <Phone className="w-4 h-4 text-sky-400 mb-1.5" />
+                      <span className="text-xs font-bold block text-white">{isAr ? 'تعديل أرقام التواصل' : 'Edit Contacts'}</span>
+                      <span className="text-[10px] text-slate-400">{isAr ? 'الواتساب والهاتف والإيميل' : 'Phone & WhatsApp'}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -899,92 +954,69 @@ export default function SecureAdminPortalPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {isAr ? 'إدارة طلبات المعاينة والعملاء (Leads & CRM)' : 'Customer Leads & Inquiries CRM'}
+                      {isAr ? 'إدارة طلبات المعاينة واستفسارات العملاء' : 'Customer Inquiries & Leads CRM'}
                     </h3>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {isAr ? 'مزامنة لحظية مباشرة مع قاعدة بيانات Firebase' : 'Live real-time sync directly with Firebase'}
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {isAr ? 'متابعة لحظية ومحدثة من قاعدة بيانات Firebase Firestore Enterprise' : 'Real-time synchronized with Firestore'}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleExportCSV}
-                      disabled={inquiries.length === 0}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{isAr ? 'تصدير إكسيل (CSV)' : 'Export CSV'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Search & Filter Toolbar */}
-                <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                  isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 absolute top-3 right-3 text-slate-400 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto" />
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute top-3 left-3 rtl:left-auto rtl:right-3" />
                     <input
                       type="text"
-                      value={leadsSearch}
-                      onChange={(e) => setLeadsSearch(e.target.value)}
-                      placeholder={isAr ? 'ابحث بالاسم، رقم الهاتف، أو المنشأة...' : 'Search leads by name, phone, notes...'}
-                      className={`w-full rounded-xl py-2 px-9 text-xs outline-none border transition ${
-                        isDark 
-                          ? 'bg-[#071120] border-white/10 text-white focus:border-[#00F2FE]' 
-                          : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0284C7]'
-                      }`}
+                      value={searchLeads}
+                      onChange={(e) => setSearchLeads(e.target.value)}
+                      placeholder={isAr ? 'بحث بالاسم، الهاتف...' : 'Search leads...'}
+                      className="bg-[#071120] border border-white/10 rounded-xl py-2 px-9 text-xs text-white placeholder-slate-500 outline-none focus:border-[#00F2FE]"
                     />
-                  </div>
-
-                  <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 sm:pb-0">
-                    {[
-                      { id: 'all', labelAr: 'الكل', labelEn: 'All' },
-                      { id: 'new', labelAr: '🔴 جديد', labelEn: 'New' },
-                      { id: 'contacted', labelAr: '🟡 تم التواصل', labelEn: 'Contacted' },
-                      { id: 'survey_scheduled', labelAr: '🔵 حجز معاينة', labelEn: 'Survey' },
-                      { id: 'contracted', labelAr: '🟢 تم التعاقد', labelEn: 'Contracted' },
-                    ].map((btn) => (
-                      <button
-                        key={btn.id}
-                        onClick={() => setLeadsFilter(btn.id)}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer border ${
-                          leadsFilter === btn.id
-                            ? isDark
-                              ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE]'
-                              : 'bg-[#0284C7] text-white border-[#0284C7]'
-                            : isDark
-                            ? 'bg-[#071120] border-white/10 text-slate-300'
-                            : 'bg-slate-100 border-slate-300 text-slate-700'
-                        }`}
-                      >
-                        {isAr ? btn.labelAr : btn.labelEn}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
-                {/* Leads Cards Grid */}
+                {/* Filters Row */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { id: 'all', labelAr: 'الكل', labelEn: 'All' },
+                    { id: 'new', labelAr: 'جديد (لم يتم الرد)', labelEn: 'New' },
+                    { id: 'contacted', labelAr: 'تم التواصل', labelEn: 'Contacted' },
+                    { id: 'survey_scheduled', labelAr: 'معاينة محجوزة', labelEn: 'Survey Scheduled' },
+                    { id: 'contracted', labelAr: 'تم التعاقد', labelEn: 'Contracted' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setLeadsFilter(f.id as typeof leadsFilter)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        leadsFilter === f.id
+                          ? 'bg-[#00F2FE] text-[#071120]'
+                          : 'bg-[#10233D] text-slate-300 hover:bg-[#152C4D]'
+                      }`}
+                    >
+                      {isAr ? f.labelAr : f.labelEn}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Leads Cards List */}
                 <div className="space-y-3">
                   {filteredLeads.map((inq) => (
                     <div
                       key={inq.id}
-                      className={`p-5 rounded-2xl border transition ${
-                        isDark ? 'bg-[#0B1A2F] border-white/10 hover:border-white/20' : 'bg-white border-slate-200 shadow-sm'
+                      className={`p-5 rounded-2xl border transition space-y-3 ${
+                        isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3 mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{inq.clientName}</h4>
+                            <span className="font-black text-sm text-white">{inq.clientName}</span>
                             <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-[#00F2FE]/15 text-[#00F2FE]">
-                              {inq.source === 'estimator' ? (isAr ? 'حاسبة التكلفة' : 'Cost Estimator') : (isAr ? 'نموذج الاتصال' : 'Contact Form')}
+                              {inq.source === 'estimator' ? (isAr ? 'حاسبة التكلفة' : 'Estimator') : (isAr ? 'نموذج الاتصال' : 'Contact')}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 font-mono">
-                            <span>{inq.phone}</span>
-                            {inq.email && <span>&bull; {inq.email}</span>}
-                            <span>&bull; {new Date(inq.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}</span>
+                          <div className="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-3">
+                            <span>📞 {inq.phone}</span>
+                            {inq.email && <span>✉️ {inq.email}</span>}
                           </div>
                         </div>
 
@@ -1066,7 +1098,826 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* 3. BRANDING & LOGO */}
+            {/* 3. MEDIA & SITE IMAGES CMS (COMPREHENSIVE) */}
+            {activeTab === 'media' && (
+              <div className={`p-6 rounded-2xl border space-y-8 ${
+                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div>
+                  <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <ImageIcon className="w-5 h-5 text-[#00F2FE]" />
+                    <span>{isAr ? 'إدارة الصور والوسائط البصرية للموقع' : 'Media & Site Images CMS'}</span>
+                  </h3>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {isAr 
+                      ? 'التحكم الكامل في صور الهيدر التفاعلي، بطاقات الأنظمة، وسابقة المشروعات (بروابط أو برفع صور مباشرة من جهازك أو باختيار مكتبة الصور الجاهزة)' 
+                      : 'Full control of Hero telemetry photos and project images with presets, URLs, or local file upload'}
+                  </p>
+                </div>
+
+                {/* 4 HERO TELEMETRY IMAGES CARDS */}
+                <div className="space-y-6">
+                  <h4 className="text-sm font-bold text-white border-b border-white/10 pb-2">
+                    {isAr ? '1. صور واجهة الهيدر التفاعلي (Hero Telemetry 4 Cards):' : '1. Hero Telemetry 4 Cards Images:'}
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Card 1: CCTV Surveillance */}
+                    <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-1.5">
+                          <Camera className="w-4 h-4" />
+                          <span>{isAr ? 'صورة كاميرات المراقبة (CCTV)' : 'CCTV Surveillance Photo'}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">HERO TAB 1</span>
+                      </div>
+
+                      {/* Image Preview */}
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-slate-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={config.heroCctvImage || CURATED_IMAGE_PRESETS.cctv[0].url} 
+                          alt="CCTV Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+
+                      {/* URL Input */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط الصورة (URL)' : 'Image URL'}</label>
+                        <input
+                          type="url"
+                          value={config.heroCctvImage || ''}
+                          onChange={(e) => handleConfigChange('heroCctvImage', e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      {/* Local File Upload */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'أو رفع ملف من جهازك مباشرة:' : 'Or Upload File:'}</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileUpload(e, 'heroCctvImage')}
+                          className="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00F2FE]/20 file:text-[#00F2FE] cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Curated Presets Buttons */}
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[10px] text-slate-400 block mb-1.5">{isAr ? 'مكتبة صور جاهزة عالية الدقة:' : 'Curated HD Presets:'}</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_IMAGE_PRESETS.cctv.map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleConfigChange('heroCctvImage', preset.url)}
+                              className="text-[10px] p-1.5 rounded bg-[#10233D] hover:bg-[#152C4D] text-slate-300 hover:text-[#00F2FE] text-start truncate border border-white/5 cursor-pointer"
+                              title={preset.title}
+                            >
+                              {preset.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Structured Network & Fiber */}
+                    <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-1.5">
+                          <Network className="w-4 h-4" />
+                          <span>{isAr ? 'صورة الشبكات والفيبر (Network & Fiber)' : 'Network & Cabling Photo'}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">HERO TAB 2</span>
+                      </div>
+
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-slate-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={config.heroNetworkImage || CURATED_IMAGE_PRESETS.network[0].url} 
+                          alt="Network Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط الصورة (URL)' : 'Image URL'}</label>
+                        <input
+                          type="url"
+                          value={config.heroNetworkImage || ''}
+                          onChange={(e) => handleConfigChange('heroNetworkImage', e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'أو رفع ملف من جهازك مباشرة:' : 'Or Upload File:'}</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileUpload(e, 'heroNetworkImage')}
+                          className="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00F2FE]/20 file:text-[#00F2FE] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[10px] text-slate-400 block mb-1.5">{isAr ? 'مكتبة صور جاهزة عالية الدقة:' : 'Curated HD Presets:'}</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_IMAGE_PRESETS.network.map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleConfigChange('heroNetworkImage', preset.url)}
+                              className="text-[10px] p-1.5 rounded bg-[#10233D] hover:bg-[#152C4D] text-slate-300 hover:text-[#00F2FE] text-start truncate border border-white/5 cursor-pointer"
+                              title={preset.title}
+                            >
+                              {preset.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Access Control & Biometrics */}
+                    <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-1.5">
+                          <Lock className="w-4 h-4" />
+                          <span>{isAr ? 'صورة بوابات الدخول والبصمة (Access Control)' : 'Smart Access & Turnstiles Photo'}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">HERO TAB 3</span>
+                      </div>
+
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-slate-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={config.heroAccessImage || CURATED_IMAGE_PRESETS.access[0].url} 
+                          alt="Access Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط الصورة (URL)' : 'Image URL'}</label>
+                        <input
+                          type="url"
+                          value={config.heroAccessImage || ''}
+                          onChange={(e) => handleConfigChange('heroAccessImage', e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'أو رفع ملف من جهازك مباشرة:' : 'Or Upload File:'}</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileUpload(e, 'heroAccessImage')}
+                          className="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00F2FE]/20 file:text-[#00F2FE] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[10px] text-slate-400 block mb-1.5">{isAr ? 'مكتبة صور جاهزة عالية الدقة:' : 'Curated HD Presets:'}</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_IMAGE_PRESETS.access.map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleConfigChange('heroAccessImage', preset.url)}
+                              className="text-[10px] p-1.5 rounded bg-[#10233D] hover:bg-[#152C4D] text-slate-300 hover:text-[#00F2FE] text-start truncate border border-white/5 cursor-pointer"
+                              title={preset.title}
+                            >
+                              {preset.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 4: Cloud ERP & Apps */}
+                    <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-1.5">
+                          <Globe className="w-4 h-4" />
+                          <span>{isAr ? 'صورة الأنظمة السحابية والـ ERP' : 'Cloud ERP & Software Photo'}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">HERO TAB 4</span>
+                      </div>
+
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-slate-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={config.heroCloudImage || CURATED_IMAGE_PRESETS.cloud[0].url} 
+                          alt="Cloud Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط الصورة (URL)' : 'Image URL'}</label>
+                        <input
+                          type="url"
+                          value={config.heroCloudImage || ''}
+                          onChange={(e) => handleConfigChange('heroCloudImage', e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'أو رفع ملف من جهازك مباشرة:' : 'Or Upload File:'}</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileUpload(e, 'heroCloudImage')}
+                          className="text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-[#00F2FE]/20 file:text-[#00F2FE] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[10px] text-slate-400 block mb-1.5">{isAr ? 'مكتبة صور جاهزة عالية الدقة:' : 'Curated HD Presets:'}</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {CURATED_IMAGE_PRESETS.cloud.map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleConfigChange('heroCloudImage', preset.url)}
+                              className="text-[10px] p-1.5 rounded bg-[#10233D] hover:bg-[#152C4D] text-slate-300 hover:text-[#00F2FE] text-start truncate border border-white/5 cursor-pointer"
+                              title={preset.title}
+                            >
+                              {preset.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. CONTENT & COPYWRITING CMS (COMPREHENSIVE) */}
+            {activeTab === 'content' && (
+              <div className={`p-6 rounded-2xl border space-y-6 ${
+                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div>
+                  <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <FileText className="w-5 h-5 text-[#00F2FE]" />
+                    <span>{isAr ? 'إدارة المحتوى والنصوص الرئيسية للموقع' : 'Content & Copywriting CMS'}</span>
+                  </h3>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {isAr ? 'التحكم الكامل في عناوين الهيدر، الأرقام والإحصائيات، شريط الإعلانات، ونبذة الفوتر' : 'Full control over Hero headlines, trust stats, banners, and footer bio'}
+                  </p>
+                </div>
+
+                {/* Hero Headlines */}
+                <div className="space-y-4 border-b border-white/10 pb-6">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#00F2FE]" />
+                    <span>{isAr ? 'عناوين وشعارات الهيدر الرئيسي (Hero Section):' : 'Hero Section Headlines:'}</span>
+                  </h4>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'السطر الأول من العنوان (عربي)' : 'Title Line 1 (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.heroTitleLine1Ar}
+                        onChange={(e) => handleConfigChange('heroTitleLine1Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'السطر الثاني الملون بالنيون (عربي)' : 'Title Line 2 Neon (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.heroTitleLine2Ar}
+                        onChange={(e) => handleConfigChange('heroTitleLine2Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-[#00F2FE] font-bold text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'الوصف التوضيحي للهيدر (عربي)' : 'Hero Subtitle (Arabic)'}</label>
+                      <textarea
+                        rows={2}
+                        value={config.heroSubAr}
+                        onChange={(e) => handleConfigChange('heroSubAr', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'شارة الهيدر العلوية (عربي)' : 'Badge (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.heroBadgeAr}
+                        onChange={(e) => handleConfigChange('heroBadgeAr', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'شارة الهيدر العلوية (إنجليزي)' : 'Badge (English)'}</label>
+                      <input
+                        type="text"
+                        value={config.heroBadgeEn}
+                        onChange={(e) => handleConfigChange('heroBadgeEn', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trust Stats Numbers */}
+                <div className="space-y-4 border-b border-white/10 pb-6">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
+                    <span>{isAr ? 'الأرقام والإحصائيات الرئيسية (Trust Stats):' : 'Key Metrics & Statistics:'}</span>
+                  </h4>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-3 rounded-xl bg-[#071120] border border-white/10">
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">{isAr ? 'المشروعات المنفذة' : 'Projects Done'}</label>
+                      <input
+                        type="text"
+                        value={config.stat1Val}
+                        onChange={(e) => handleConfigChange('stat1Val', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold text-sm text-center focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#071120] border border-white/10">
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">{isAr ? 'دقة واستجابة المعاينة' : 'Survey Precision'}</label>
+                      <input
+                        type="text"
+                        value={config.stat2Val}
+                        onChange={(e) => handleConfigChange('stat2Val', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold text-sm text-center focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#071120] border border-white/10">
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">{isAr ? 'سرعة استجابة الطوارئ' : 'Emergency Latency'}</label>
+                      <input
+                        type="text"
+                        value={config.stat3Val}
+                        onChange={(e) => handleConfigChange('stat3Val', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold text-sm text-center focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#071120] border border-white/10">
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">{isAr ? 'ضمان الأعمال المعتمد' : 'Warranty Guarantee'}</label>
+                      <input
+                        type="text"
+                        value={config.stat4Val}
+                        onChange={(e) => handleConfigChange('stat4Val', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold text-sm text-center focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Announcement Banner */}
+                <div className="space-y-4 border-b border-white/10 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Megaphone className="w-4 h-4 text-amber-400" />
+                        <span>{isAr ? 'شريط الإعلانات الترويجي العلوي:' : 'Announcement Top Bar:'}</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{isAr ? 'يظهر في أعلى كل صفحات الموقع لإبراز المشروعات الجديدة والعروض' : 'Shows above navbar'}</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.showAnnouncement}
+                        onChange={(e) => handleConfigChange('showAnnouncement', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00F2FE]"></div>
+                    </label>
+                  </div>
+
+                  {config.showAnnouncement && (
+                    <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'شارة الإعلان (عربي)' : 'Badge (Arabic)'}</label>
+                        <input
+                          type="text"
+                          value={config.announcementBadgeAr}
+                          onChange={(e) => handleConfigChange('announcementBadgeAr', e.target.value)}
+                          className="w-full bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط الإعلان عند النقر (URL)' : 'Target Link'}</label>
+                        <input
+                          type="url"
+                          value={config.announcementLink}
+                          onChange={(e) => handleConfigChange('announcementLink', e.target.value)}
+                          className="w-full bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'نص الإعلان (عربي)' : 'Announcement Text'}</label>
+                        <input
+                          type="text"
+                          value={config.announcementTextAr}
+                          onChange={(e) => handleConfigChange('announcementTextAr', e.target.value)}
+                          className="w-full bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Bio & Legal */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-sky-400" />
+                    <span>{isAr ? 'نبذة الشركة القانونية وبيانات الفوتر:' : 'Brand Bio & Legal Footer Information:'}</span>
+                  </h4>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'نبذة الشركة في الفوتر (عربي)' : 'Brand Bio (Arabic)'}</label>
+                      <textarea
+                        rows={2}
+                        value={config.brandBioAr || ''}
+                        onChange={(e) => handleConfigChange('brandBioAr', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رقم السجل التجاري' : 'Commercial Register'}</label>
+                      <input
+                        type="text"
+                        value={config.commercialRegister || ''}
+                        onChange={(e) => handleConfigChange('commercialRegister', e.target.value)}
+                        placeholder="182940"
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رقم البطاقة الضريبية' : 'Tax Card ID'}</label>
+                      <input
+                        type="text"
+                        value={config.taxId || ''}
+                        onChange={(e) => handleConfigChange('taxId', e.target.value)}
+                        placeholder="714-389-201"
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. SERVICES CMS */}
+            {activeTab === 'services' && (
+              <div className={`p-6 rounded-2xl border space-y-6 ${
+                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <Layers className="w-5 h-5 text-[#00F2FE]" />
+                      <span>{isAr ? 'إدارة الخدمات والحلول الهندسية' : 'Services & Engineering Solutions CMS'}</span>
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {isAr ? 'تعديل وتخصيص كافة خدمات الشركة المعروضة بالموقع والمواصفات الفنية' : 'Manage service cards, descriptions, and features'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleConfigChange('servicesList', defaultEditableConfig.servicesList)}
+                    className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'استعادة الخدمات الافتراضية' : 'Reset Services'}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {(config.servicesList || contentAr.services.list).map((srv, idx) => (
+                    <div 
+                      key={srv.id || idx}
+                      className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-[#10233D] flex items-center justify-center font-mono text-[11px] font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>{srv.title}</span>
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                          {srv.category}
+                        </span>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'عنوان الخدمة' : 'Service Title'}</label>
+                          <input
+                            type="text"
+                            value={srv.title}
+                            onChange={(e) => {
+                              const updated = [...(config.servicesList || contentAr.services.list)];
+                              updated[idx] = { ...updated[idx], title: e.target.value };
+                              handleConfigChange('servicesList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط صورة الخدمة' : 'Image URL'}</label>
+                          <input
+                            type="url"
+                            value={srv.image || ''}
+                            onChange={(e) => {
+                              const updated = [...(config.servicesList || contentAr.services.list)];
+                              updated[idx] = { ...updated[idx], image: e.target.value };
+                              handleConfigChange('servicesList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'الوصف المختصر' : 'Short Description'}</label>
+                          <textarea
+                            rows={2}
+                            value={srv.shortDesc}
+                            onChange={(e) => {
+                              const updated = [...(config.servicesList || contentAr.services.list)];
+                              updated[idx] = { ...updated[idx], shortDesc: e.target.value };
+                              handleConfigChange('servicesList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 6. PROJECTS PORTFOLIO CMS */}
+            {activeTab === 'projects' && (
+              <div className={`p-6 rounded-2xl border space-y-6 ${
+                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <Briefcase className="w-5 h-5 text-[#00F2FE]" />
+                      <span>{isAr ? 'سابقة الأعمال والمشروعات والمنصات' : 'Projects Portfolio CMS'}</span>
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {isAr ? 'التحكم في سابقة المشروعات، الروابط التفاعلية المباشرة، والصور' : 'Manage project portfolio, live demo links, and images'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleConfigChange('projectsList', defaultEditableConfig.projectsList)}
+                    className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'استعادة المشروعات الافتراضية' : 'Reset Projects'}</span>
+                  </button>
+                </div>
+
+                {/* Live Platform Links Shortcuts */}
+                <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/20 space-y-3">
+                  <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الشقيقة التفاعلية:' : 'Live Platforms URLs:'}</span>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        {isAr ? 'منصة هليو بروبرتي (Helio Property)' : 'Helio Property URL'}
+                      </label>
+                      <input
+                        type="url"
+                        value={config.helioPropertyUrl}
+                        onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        {isAr ? 'منصة الرحلة التفاعلية (Al-Rehla)' : 'Al-Rehla Platform URL'}
+                      </label>
+                      <input
+                        type="url"
+                        value={config.alrehlaUrl}
+                        onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Projects Cards List */}
+                <div className="space-y-4">
+                  {(config.projectsList || contentAr.projects.list).map((proj, idx) => (
+                    <div
+                      key={proj.id || idx}
+                      className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-[#10233D] text-[#00F2FE] flex items-center justify-center font-mono text-[11px] font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>{proj.title}</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {proj.isUpcoming && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                              قيد التطوير
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                            {proj.category}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'اسم المشروع' : 'Project Title'}</label>
+                          <input
+                            type="text"
+                            value={proj.title}
+                            onChange={(e) => {
+                              const updated = [...(config.projectsList || contentAr.projects.list)];
+                              updated[idx] = { ...updated[idx], title: e.target.value };
+                              handleConfigChange('projectsList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'اسم العميل / القطاع' : 'Client'}</label>
+                          <input
+                            type="text"
+                            value={proj.client}
+                            onChange={(e) => {
+                              const updated = [...(config.projectsList || contentAr.projects.list)];
+                              updated[idx] = { ...updated[idx], client: e.target.value };
+                              handleConfigChange('projectsList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط صورة المشروع' : 'Project Image URL'}</label>
+                          <input
+                            type="url"
+                            value={proj.image || ''}
+                            onChange={(e) => {
+                              const updated = [...(config.projectsList || contentAr.projects.list)];
+                              updated[idx] = { ...updated[idx], image: e.target.value };
+                              handleConfigChange('projectsList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط المعاينة المباشرة (Live Demo)' : 'Live Demo URL'}</label>
+                          <input
+                            type="url"
+                            value={proj.liveUrl || ''}
+                            onChange={(e) => {
+                              const updated = [...(config.projectsList || contentAr.projects.list)];
+                              updated[idx] = { ...updated[idx], liveUrl: e.target.value };
+                              handleConfigChange('projectsList', updated);
+                            }}
+                            placeholder="https://..."
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'نبذة عن المشروع' : 'Description'}</label>
+                          <textarea
+                            rows={2}
+                            value={proj.description}
+                            onChange={(e) => {
+                              const updated = [...(config.projectsList || contentAr.projects.list)];
+                              updated[idx] = { ...updated[idx], description: e.target.value };
+                              handleConfigChange('projectsList', updated);
+                            }}
+                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 7. FAQ CMS */}
+            {activeTab === 'faq' && (
+              <div className={`p-6 rounded-2xl border space-y-6 ${
+                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <HelpCircle className="w-5 h-5 text-[#00F2FE]" />
+                      <span>{isAr ? 'إدارة الأسئلة الشائعة والأجوبة (FAQ CMS)' : 'FAQ & Knowledge Base CMS'}</span>
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {isAr ? 'تعديل وحذف وإضافة الأسئلة المتكررة التي يراها زوار الموقع' : 'Edit, delete, and add questions and answers'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const updated = [
+                        ...(config.faqList || contentAr.faq.items),
+                        { q: isAr ? 'سؤال جديد هنا...' : 'New Question...', a: isAr ? 'إجابة واضحة ومفصلة هنا...' : 'Clear answer here...' }
+                      ];
+                      handleConfigChange('faqList', updated);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isAr ? 'إضافة سؤال جديد' : 'Add FAQ'}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(config.faqList || contentAr.faq.items).map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-md bg-[#10233D] text-[#00F2FE] flex items-center justify-center font-mono text-[10px] font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>{item.q}</span>
+                        </span>
+                        <button
+                          onClick={() => {
+                            const updated = (config.faqList || contentAr.faq.items).filter((_, i) => i !== idx);
+                            handleConfigChange('faqList', updated);
+                          }}
+                          className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                          title="حذف السؤال"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={item.q}
+                        onChange={(e) => {
+                          const updated = [...(config.faqList || contentAr.faq.items)];
+                          updated[idx] = { ...updated[idx], q: e.target.value };
+                          handleConfigChange('faqList', updated);
+                        }}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
+                      />
+
+                      <textarea
+                        rows={2}
+                        value={item.a}
+                        onChange={(e) => {
+                          const updated = [...(config.faqList || contentAr.faq.items)];
+                          updated[idx] = { ...updated[idx], a: e.target.value };
+                          handleConfigChange('faqList', updated);
+                        }}
+                        className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 8. BRANDING & LOGO */}
             {activeTab === 'branding' && (
               <div className={`p-6 rounded-2xl border space-y-6 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
@@ -1136,11 +1987,11 @@ export default function SecureAdminPortalPage() {
                       <div className="flex items-center justify-between pt-2">
                         <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
                           <Check className="w-4 h-4" />
-                          <span>{isAr ? 'تم تطبيق الشعار المخصص' : 'Custom logo active'}</span>
+                          <span>{isAr ? 'تم تطبيق الشعار المخصص بنجاح' : 'Custom logo active'}</span>
                         </span>
                         <button
                           onClick={() => handleConfigChange('customLogoUrl', '')}
-                          className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold"
+                          className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold cursor-pointer"
                         >
                           {isAr ? 'إلغاء واستعادة الشعار الفيكتور' : 'Reset to Vector Logo'}
                         </button>
@@ -1151,7 +2002,7 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* 4. CONTACTS & LOCATION */}
+            {/* 9. CONTACTS & LOCATION */}
             {activeTab === 'contacts' && (
               <div className={`p-6 rounded-2xl border space-y-5 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
@@ -1219,130 +2070,7 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* 5. HERO & ANNOUNCEMENTS */}
-            {activeTab === 'hero' && (
-              <div className={`p-6 rounded-2xl border space-y-5 ${
-                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <div>
-                  <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'الهيدر وشريط الإعلانات' : 'Hero Headlines & Announcements'}
-                  </h3>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {isAr ? 'التحكم في العناوين والشريط الترويجي العلوي' : 'Customize hero text and banner'}
-                  </p>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">
-                      {isAr ? 'السطر الأول من العنوان الرئيسي' : 'Headline Line 1'}
-                    </label>
-                    <input
-                      type="text"
-                      value={config.heroTitleLine1Ar}
-                      onChange={(e) => handleConfigChange('heroTitleLine1Ar', e.target.value)}
-                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">
-                      {isAr ? 'السطر الثاني الملون بالنيون' : 'Headline Line 2 Glowing'}
-                    </label>
-                    <input
-                      type="text"
-                      value={config.heroTitleLine2Ar}
-                      onChange={(e) => handleConfigChange('heroTitleLine2Ar', e.target.value)}
-                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-[#00F2FE] font-bold text-xs focus:border-[#00F2FE] outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Announcement Banner */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="block text-xs font-bold text-white">{isAr ? 'تفعيل شريط التنبيهات العلوي' : 'Top Banner Active'}</span>
-                      <span className="text-[11px] text-slate-400">{isAr ? 'يظهر أعلى النافبار للإعلان عن المشروعات والعروض' : 'Announcement strip'}</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={config.showAnnouncement}
-                      onChange={(e) => handleConfigChange('showAnnouncement', e.target.checked)}
-                      className="w-5 h-5 accent-[#00F2FE] cursor-pointer"
-                    />
-                  </div>
-
-                  {config.showAnnouncement && (
-                    <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'شارة الإعلان' : 'Banner Badge'}</label>
-                        <input
-                          type="text"
-                          value={config.announcementBadgeAr}
-                          onChange={(e) => handleConfigChange('announcementBadgeAr', e.target.value)}
-                          className="w-full bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'نص الإعلان' : 'Banner Text'}</label>
-                        <input
-                          type="text"
-                          value={config.announcementTextAr}
-                          onChange={(e) => handleConfigChange('announcementTextAr', e.target.value)}
-                          className="w-full bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 6. PROJECTS PORTFOLIO */}
-            {activeTab === 'projects' && (
-              <div className={`p-6 rounded-2xl border space-y-5 ${
-                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <div>
-                  <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'سابقة الأعمال والمنصات الشقيقة' : 'Sister Platforms & Projects'}
-                  </h3>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {isAr ? 'تعديل الروابط المباشرة لسابقة المشروعات والمنصات' : 'Manage live project demo links'}
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-[#071120] border border-white/10">
-                    <label className="block text-xs font-bold text-white mb-1">
-                      {isAr ? 'رابط منصة هليو بروبرتي العقارية (Helio Property)' : 'Helio Property URL'}
-                    </label>
-                    <input
-                      type="url"
-                      value={config.helioPropertyUrl}
-                      onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
-                      className="w-full bg-[#0B1A2F] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
-                    />
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#071120] border border-white/10">
-                    <label className="block text-xs font-bold text-white mb-1">
-                      {isAr ? 'رابط منصة الرحلة التفاعلية (Al-Rehla Platform)' : 'Al-Rehla URL'}
-                    </label>
-                    <input
-                      type="url"
-                      value={config.alrehlaUrl}
-                      onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
-                      className="w-full bg-[#0B1A2F] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 7. SECURITY & ACCESS KEYS (NEW) */}
+            {/* 10. SECURITY & ACCESS KEYS */}
             {activeTab === 'security' && (
               <div className={`p-6 rounded-2xl border space-y-6 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
@@ -1443,14 +2171,14 @@ export default function SecureAdminPortalPage() {
                   </span>
                   <p className="text-[11px] text-slate-400">
                     {isAr 
-                      ? 'تم تعطيل أي نافذة أو زر تسجيل دخول عام عبر Google لحماية الموقع من محاولات التطفل. الدخول مقتصر على كلمات المرور المعتمدة.'
+                      ? 'تم تعطيل أي نافذة أو زر تسجيل دخول عام عبر Google لحماية الموقع من محاولات التطفل. الدخول مقتصر على كلمات المرور المعتمدة.' 
                       : 'Public Google login popups have been completely removed to prevent unauthorized entry.'}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* 8. VERCEL DEPLOYMENT & CLOUD GUIDE */}
+            {/* 11. VERCEL DEPLOYMENT & CLOUD GUIDE */}
             {activeTab === 'vercel' && (
               <div className={`p-6 rounded-2xl border space-y-6 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'

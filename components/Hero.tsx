@@ -29,6 +29,10 @@ interface HeroProps {
     titleLine1?: string;
     titleLine2?: string;
     sub?: string;
+    cctvImage?: string;
+    networkImage?: string;
+    accessImage?: string;
+    cloudImage?: string;
   };
 }
 
@@ -45,7 +49,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       titleEn: 'Centralized Surveillance & AI Video Analytics',
       status: 'ONLINE & SECURED',
       uptime: '99.98%',
-      image: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
+      image: heroOverrides?.cctvImage || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'كاميرات 4K متصلة', labelEn: '4K Active Cameras', val: '128 Node' },
         { labelAr: 'تحليل الذكاء الاصطناعي', labelEn: 'AI Perimeter Guard', val: 'Active 24/7' },
@@ -61,7 +65,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       titleEn: 'Structured Network & Fiber Backbone',
       status: 'HIGH-SPEED LINK',
       uptime: '100.0%',
-      image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+      image: heroOverrides?.networkImage || 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'سرعة الربط الأساسي', labelEn: 'Backbone Throughput', val: '10 Gbps' },
         { labelAr: 'كبائن الخوادم المجهزة', labelEn: 'Rack Enclosures', val: '12 Rack' },
@@ -77,7 +81,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       titleEn: 'Smart Access Control & Turnstiles',
       status: 'MONITORED',
       uptime: '99.99%',
-      image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
+      image: heroOverrides?.accessImage || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'بوابات ذكية مجهزة', labelEn: 'Access Turnstiles', val: '16 Gates' },
         { labelAr: 'سعة التعرف على الوجه', labelEn: 'Facial Capacity', val: '50,000 ID' },
@@ -93,7 +97,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       titleEn: 'Enterprise Cloud ERP & Mobile Apps',
       status: 'SYNCED & BACKED UP',
       uptime: '99.95%',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+      image: heroOverrides?.cloudImage || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'الفاتورة الإلكترونية (ETA)', labelEn: 'Egypt Tax Compliance', val: '100% Valid' },
         { labelAr: 'تطبيق الجوال المتصل', labelEn: 'Active App Users', val: '+8,000' },

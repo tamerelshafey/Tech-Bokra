@@ -18,6 +18,9 @@ interface FooterProps {
   facebookUrl?: string;
   logoEmblemStyle?: LogoEmblemStyle;
   customLogoUrl?: string;
+  brandBio?: string;
+  commercialRegister?: string;
+  taxId?: string;
 }
 
 export default function Footer({ 
@@ -32,6 +35,9 @@ export default function Footer({
   facebookUrl = siteConfig.facebookUrl,
   logoEmblemStyle = 'modern-tb',
   customLogoUrl,
+  brandBio,
+  commercialRegister,
+  taxId,
 }: FooterProps) {
   const isAr = lang === 'ar';
   const { theme, toggleTheme, isDark } = useTheme();
@@ -96,11 +102,14 @@ export default function Footer({
             </button>
 
             <p className={`text-xs sm:text-sm leading-relaxed max-w-md ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              {data.footer.brandBio}
+              {brandBio || data.footer.brandBio}
             </p>
 
-            <div className={`pt-2 text-xs font-mono ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-              {data.footer.taxId}
+            <div className={`pt-2 text-xs font-mono space-y-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              <div>{taxId ? `${isAr ? 'البطاقة الضريبية: ' : 'Tax ID: '}${taxId}` : data.footer.taxId}</div>
+              {commercialRegister && (
+                <div>{isAr ? 'السجل التجاري: ' : 'Commercial Reg: '}{commercialRegister}</div>
+              )}
             </div>
           </div>
 
