@@ -28,7 +28,7 @@ interface ServicesSectionProps {
 }
 
 export default function ServicesSection({ lang, data, onSelectService, customServices }: ServicesSectionProps) {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
   const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
@@ -50,6 +50,8 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
         return Layers;
       case 'Headphones':
         return Headphones;
+      case 'FileCheck':
+        return FileCheck;
       default:
         return Sparkles;
     }
@@ -59,7 +61,8 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
     setExpandedSpecs((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const activeList = customServices && customServices.length > 0 ? customServices : data.services.list;
+  // Ensure all 6 specialized engineering solutions are always displayed with full fidelity
+  const activeList = (lang === 'ar' && customServices && customServices.length >= 6) ? customServices : data.services.list;
 
   const filteredServices = activeList.filter((s) => {
     if (activeFilter === 'all') return true;
@@ -121,6 +124,7 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
             { id: 'network', label: data.services.netTab },
             { id: 'software', label: data.services.softTab },
             { id: 'erp', label: data.services.erpTab },
+            { id: 'consulting', label: data.services.consultTab || (isAr ? 'استشارات واعتمادات فنية' : 'Technical Submittals') },
           ].map((tab) => {
             const isActive = activeFilter === tab.id;
             return (

@@ -81,7 +81,7 @@ import {
   compressImageFile 
 } from '@/lib/storageHelper';
 
-const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v2';
+const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v4';
 const MASTER_KEY_STORAGE = 'tech_bokra_master_key_v1';
 const SESSION_AUTH_KEY = 'tb_secure_session_token_v1';
 const BRUTE_FORCE_KEY = 'tb_failed_attempts_count_v1';

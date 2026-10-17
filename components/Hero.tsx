@@ -14,7 +14,10 @@ import {
   Radio, 
   Calculator,
   Lock,
-  Headphones
+  Headphones,
+  FileCheck,
+  Globe,
+  Server
 } from 'lucide-react';
 import { SiteLanguageData } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
@@ -37,7 +40,7 @@ interface HeroProps {
 }
 
 export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroOverrides }: HeroProps) {
-  const [activeTab, setActiveTab] = useState<'cctv' | 'network' | 'access' | 'cloud'>('cctv');
+  const [activeTab, setActiveTab] = useState<'cctv' | 'network' | 'software' | 'erp' | 'consulting' | 'access'>('cctv');
   const [heroImageError, setHeroImageError] = useState(false);
   const { isDark } = useTheme();
   const isAr = lang === 'ar';
@@ -45,7 +48,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
   const telemetryData = {
     cctv: {
-      titleAr: 'منظومة المراقبة المركزية والتحليل الذكي',
+      titleAr: 'منظومة المراقبة المركزية والذكاء الاصطناعي (CCTV & AI Video)',
       titleEn: 'Centralized Surveillance & AI Video Analytics',
       status: 'ONLINE & SECURED',
       uptime: '99.98%',
@@ -53,32 +56,80 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       metrics: [
         { labelAr: 'كاميرات 4K متصلة', labelEn: '4K Active Cameras', val: '128 Node' },
         { labelAr: 'تحليل الذكاء الاصطناعي', labelEn: 'AI Perimeter Guard', val: 'Active 24/7' },
-        { labelAr: 'تخزين سحابي ومحلي', labelEn: 'RAID 6 Storage', val: '60 Days Loop' },
+        { labelAr: 'تخزين سحابي ومحلي', labelEn: 'RAID 6 Storage', val: '90-180 Days' },
         { labelAr: 'زمن استجابة التنبيه', labelEn: 'Alarm Response Latency', val: '0.4 sec' },
       ],
-      descAr: 'بث فائق الدقة 4K مع تتبع فوري للأجسام، قراءة لوحات السيارات، وكشف التسلل الليلي الملون.',
-      descEn: 'Ultra HD 4K video feeds with edge AI tracking, ANPR plate recognition, and 24/7 Full-Color night vision.',
+      descAr: 'بث فائق الدقة 4K مع تتبع فوري للأجسام، قراءة لوحات السيارات (LPR)، كشف التسلل الليلي، وحسابات سعات التخزين الهندسية المعتمدة.',
+      descEn: 'Ultra HD 4K video feeds with edge AI tracking, ANPR plate recognition, 24/7 Full-Color night vision, and certified storage sizing.',
       icon: Camera,
     },
     network: {
-      titleAr: 'البنية التحتية والشبكة المهيكلة',
-      titleEn: 'Structured Network & Fiber Backbone',
+      titleAr: 'كابلات UTP والفايبر وتجهيز مراكز البيانات (DCIM & Mini Data Centers)',
+      titleEn: 'UTP/Fiber Cabling, Data Center Fit-out & DCIM',
       status: 'HIGH-SPEED LINK',
       uptime: '100.0%',
-      image: heroOverrides?.networkImage || 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+      image: heroOverrides?.networkImage || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
       metrics: [
-        { labelAr: 'سرعة الربط الأساسي', labelEn: 'Backbone Throughput', val: '10 Gbps' },
-        { labelAr: 'كبائن الخوادم المجهزة', labelEn: 'Rack Enclosures', val: '12 Rack' },
-        { labelAr: 'نقاط الشبكة الفعالة', labelEn: 'Terminated Drops', val: '1,450 Node' },
-        { labelAr: 'زمن الفقد بالفيبر', labelEn: 'Fiber Attenuation', val: '< 0.15 dB' },
+        { labelAr: 'كابلات UTP المهيكلة', labelEn: 'UTP Cat6A/7/8', val: '+2,400 Drop' },
+        { labelAr: 'مسار الألياف الضوئية', labelEn: 'Fiber Backbone', val: '10/40/100G' },
+        { labelAr: 'تجهيزات الداتا سنتر', labelEn: 'Data Center Fit-out', val: '42U & Cooling' },
+        { labelAr: 'مراقبة بيئية ذكية', labelEn: 'DCIM & Mini Centers', val: 'Active Telemetry' },
       ],
-      descAr: 'تمديدات فايبر أوبتك وكابلات Cat6A/Cat7 معتمدة، كبائن سيرفرات معزولة، ومفاتيح شبكة مدارة بالكامل.',
-      descEn: 'Enterprise Cat6A/Cat7 structured cabling, certified fiber optic links, and high-availability core routing.',
-      icon: Network,
+      descAr: 'تمديدات كابلات نحاسية UTP/STP وفايبر معتمدة، كبائن خوادم 42U/48U، تبريد دقيق In-Row، مراقبة بيئية ذكية DCIM، ومراكز بيانات مصغرة (Mini Data Centers).',
+      descEn: 'Structured UTP/STP & optical fiber cabling, full server room fit-out, In-Row precision cooling, DCIM environmental telemetry, and modular mini data centers.',
+      icon: Server,
+    },
+    software: {
+      titleAr: 'المواقع والمنصات المتخصصة ذات العمليات المتراكمة',
+      titleEn: 'Specialized Web Platforms with Complex Workflows',
+      status: 'CLOUD ACTIVE',
+      uptime: '99.99%',
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+      metrics: [
+        { labelAr: 'منصات عقارية PropTech', labelEn: 'PropTech Portals', val: 'Helio Property' },
+        { labelAr: 'منصات حجز وسياحة', labelEn: 'Logistics & Booking', val: 'Al-Rehla Platform' },
+        { labelAr: 'بوابات معاملات B2B/B2C', labelEn: 'Transactional Logic', val: 'Complex Engine' },
+        { labelAr: 'معمارية سحابية متقدمة', labelEn: 'Next.js 15 & Redis', val: 'Ultra Fast' },
+      ],
+      descAr: 'تطوير المنصات متعددة الأطراف وبوابات الويب التي تدير عمليات حسابية ومالية ولوجستية متراكمة ومعقدة مع لوحات تحكم ومؤشرات لحظية.',
+      descEn: 'Engineering complex multi-sided web platforms and enterprise portals with accumulated business logic, real-time analytics, and high concurrency resilience.',
+      icon: Globe,
+    },
+    erp: {
+      titleAr: 'التطبيقات المتخصصة ومنظومات ERP والربط الضريبي ETA',
+      titleEn: 'Specialized Enterprise Apps & Custom ERP',
+      status: 'ETA CERTIFIED',
+      uptime: '99.95%',
+      image: heroOverrides?.cloudImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
+      metrics: [
+        { labelAr: 'الفاتورة الإلكترونية ETA', labelEn: 'Egypt Tax API', val: '100% Direct' },
+        { labelAr: 'تطبيقات الجوال الميدانية', labelEn: 'Mobile Apps (iOS/And)', val: 'Mahyay & Helio' },
+        { labelAr: 'إدارة المخازن وسلاسل الإمداد', labelEn: 'Barcode & RFID POS', val: 'Full Inventory' },
+        { labelAr: 'تخصيص محركات الـ ERP', labelEn: 'Odoo & Tailored Core', val: 'Custom Workflow' },
+      ],
+      descAr: 'تطبيقات هواتف ذكية متخصصة لفرق العمل وخدمة العملاء، مع تخصيص أنظمة ERP للمخازن والحسابات والربط الرسمي مع بوابة الضرائب المصرية.',
+      descEn: 'Field team mobile applications combined with customized ERP modules for inventory, general ledger, and certified Egyptian Tax Authority e-invoicing.',
+      icon: Layers,
+    },
+    consulting: {
+      titleAr: 'الاستشارات الهندسية والاعتمادات الفنية (Technical Submittals)',
+      titleEn: 'Technical Submittals & Engineering Consultation',
+      status: 'VERIFIED & AUDITED',
+      uptime: '100%',
+      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
+      metrics: [
+        { labelAr: 'اعتمادات فنية للمواد', labelEn: 'Material Submittals', val: 'Consultant Ready' },
+        { labelAr: 'جداول مطابقة الشروط', labelEn: 'Compliance Sheets', val: 'Line-by-Line' },
+        { labelAr: 'مخططات تنفيذية', labelEn: 'Shop / As-Built CAD', val: 'Full Sets' },
+        { labelAr: 'فحص واستلام الأجهزة', labelEn: 'Fluke DSX & OTDR', val: 'Certified Reports' },
+      ],
+      descAr: 'إعداد ومراجعة ملفات الاعتماد الفني للمواد، صياغة جداول المطابقة الفنية لكراسات شروط المناقصات، إعداد Shop Drawings، واختبارات فلوك المعتمدة.',
+      descEn: 'Formulation and review of technical submittals, line-by-line compliance sheets for RFPs, CAD shop drawings, and certified Fluke DSX/OTDR commissioning.',
+      icon: FileCheck,
     },
     access: {
-      titleAr: 'التحكم بالأبواب والبوابات الذكية',
-      titleEn: 'Smart Access Control & Turnstiles',
+      titleAr: 'بوابات المرور السريعة والتحكم في الدخول البيومتري',
+      titleEn: 'Smart Access Control & Speed Gates',
       status: 'MONITORED',
       uptime: '99.99%',
       image: heroOverrides?.accessImage || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
@@ -88,25 +139,9 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
         { labelAr: 'سرعة التحقق البيومتري', labelEn: 'Auth Latency', val: '0.2 sec' },
         { labelAr: 'تكامل إنذار الحريق', labelEn: 'Fire Alarm Fail-Safe', val: 'Integrated' },
       ],
-      descAr: 'أجهزة بصمة وجه وبصمة إصبع لا تلامسية، بوابات دخول الموظفين، وقفل مغناطيسي مرتبط بنظام الإخلاء.',
-      descEn: 'Biometric face recognition readers, tripod turnstiles, and emergency fail-safe magnetic locks.',
+      descAr: 'أجهزة بصمة وجه وبصمة إصبع لا تلامسية، بوابات مرور أفراد زجاجية، بوابات سيارات آلية، وقفل مغناطيسي مرتبط بنظام الإخلاء.',
+      descEn: 'Biometric face recognition readers, motorized optical speed gates, automated vehicle boom barriers, and fire alarm interlock.',
       icon: Lock,
-    },
-    cloud: {
-      titleAr: 'تطبيقات الجوال وحلول ERP السحابية',
-      titleEn: 'Enterprise Cloud ERP & Mobile Apps',
-      status: 'SYNCED & BACKED UP',
-      uptime: '99.95%',
-      image: heroOverrides?.cloudImage || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-      metrics: [
-        { labelAr: 'الفاتورة الإلكترونية (ETA)', labelEn: 'Egypt Tax Compliance', val: '100% Valid' },
-        { labelAr: 'تطبيق الجوال المتصل', labelEn: 'Active App Users', val: '+8,000' },
-        { labelAr: 'زمن استجابة قواعد البيانات', labelEn: 'Database Response', val: '18 ms' },
-        { labelAr: 'النسخ الاحتياطي التلقائي', labelEn: 'Offsite Cloud Backup', val: 'Every 6 hrs' },
-      ],
-      descAr: 'إدارة متكاملة للمخازن، الحسابات، نقاط البيع، والموارد البشرية مع ربط معتمد لمصلحة الضرائب المصرية.',
-      descEn: 'Unified warehouse, POS, accounting, and HR management integrated with official Egyptian Tax APIs.',
-      icon: Layers,
     },
   };
 
@@ -252,61 +287,101 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
               </div>
 
               {/* Sub-system Selector Tabs */}
-              <div className="grid grid-cols-4 gap-1.5 py-4">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 py-4">
                 <button
+                  type="button"
                   onClick={() => setActiveTab('cctv')}
-                  className={`p-2 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'cctv'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
                       : isDark
                         ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
                         : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                   }`}
+                  title={isAr ? 'كاميرات المراقبة والذكاء الاصطناعي' : 'CCTV & AI Video'}
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-4 h-4 shrink-0" />
                   <span className="truncate">{isAr ? 'كاميرات' : 'CCTV'}</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('network')}
-                  className={`p-2 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'network'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
                       : isDark
                         ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
                         : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                   }`}
+                  title={isAr ? 'كابلات UTP وفايبر وتجهيز مراكز البيانات DCIM' : 'UTP, Fiber & Data Center / DCIM'}
                 >
-                  <Network className="w-4 h-4" />
-                  <span className="truncate">{isAr ? 'الشبكة' : 'Network'}</span>
+                  <Server className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isAr ? 'UTP وداتا سنتر' : 'UTP & DC'}</span>
                 </button>
 
                 <button
+                  type="button"
+                  onClick={() => setActiveTab('software')}
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    activeTab === 'software'
+                      ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
+                      : isDark
+                        ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                  title={isAr ? 'المواقع والمنصات المتخصصة ذات العمليات المتراكمة' : 'Specialized Web Platforms'}
+                >
+                  <Globe className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isAr ? 'منصات متخصصة' : 'Portals'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('erp')}
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    activeTab === 'erp'
+                      ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
+                      : isDark
+                        ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                  title={isAr ? 'تطبيقات الجوال الميدانية ومنظومات ERP والربط الضريبي' : 'Mobile Apps & Custom ERP'}
+                >
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isAr ? 'تطبيقات & ERP' : 'ERP & Apps'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('consulting')}
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                    activeTab === 'consulting'
+                      ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
+                      : isDark
+                        ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                  title={isAr ? 'الاستشارات الهندسية والاعتمادات الفنية Technical Submittals' : 'Technical Submittals & Consulting'}
+                >
+                  <FileCheck className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isAr ? 'اعتمادات فنية' : 'Submittals'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setActiveTab('access')}
-                  className={`p-2 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'access'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
                       : isDark
                         ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
                         : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                   }`}
+                  title={isAr ? 'بوابات المرور السريعة والتحكم في الدخول البيومتري' : 'Speed Gates & Access'}
                 >
-                  <Lock className="w-4 h-4" />
-                  <span className="truncate">{isAr ? 'البصمة' : 'Access'}</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('cloud')}
-                  className={`p-2 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                    activeTab === 'cloud'
-                      ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
-                      : isDark
-                        ? 'bg-[#152C4D]/60 text-slate-400 hover:text-slate-200 hover:bg-[#152C4D]'
-                        : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-                  }`}
-                >
-                  <Layers className="w-4 h-4" />
-                  <span className="truncate">{isAr ? 'ERP' : 'ERP'}</span>
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isAr ? 'بوابات وبصمة' : 'Access'}</span>
                 </button>
               </div>
 

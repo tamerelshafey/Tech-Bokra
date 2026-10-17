@@ -52,11 +52,12 @@ export default function ContactSection({
   if (prefilledService !== prevPrefilledService) {
     setPrevPrefilledService(prefilledService);
     if (prefilledService) {
-      if (prefilledService.includes('CCTV') || prefilledService.includes('مراقبة')) setService('cctv');
-      else if (prefilledService.includes('ألياف') || prefilledService.includes('شبك')) setService('network');
+      if (prefilledService.includes('CCTV') || prefilledService.includes('مراقبة') || prefilledService.includes('تخزين')) setService('cctv');
+      else if (prefilledService.includes('ألياف') || prefilledService.includes('شبك') || prefilledService.includes('UTP') || prefilledService.includes('داتا سنتر') || prefilledService.includes('DCIM')) setService('network');
       else if (prefilledService.includes('بصمة') || prefilledService.includes('بوابات') || prefilledService.includes('Access')) setService('access');
-      else if (prefilledService.includes('ERP') || prefilledService.includes('فاتورة')) setService('erp');
-      else if (prefilledService.includes('تطبيق') || prefilledService.includes('Mobile')) setService('mobile');
+      else if (prefilledService.includes('منص') || prefilledService.includes('مواقع') || prefilledService.includes('Platform') || prefilledService.includes('PropTech')) setService('software');
+      else if (prefilledService.includes('ERP') || prefilledService.includes('تطبيق') || prefilledService.includes('فاتورة')) setService('erp');
+      else if (prefilledService.includes('اعتماد') || prefilledService.includes('استشار') || prefilledService.includes('Submittal') || prefilledService.includes('مناقص')) setService('consulting');
       else setService('consulting');
     }
   }
@@ -80,11 +81,11 @@ export default function ContactSection({
 
   const serviceOptions = [
     { id: 'cctv', labelAr: 'كاميرات المراقبة الذكية 4K وتحليلات AI', labelEn: '4K CCTV & AI Analytics' },
-    { id: 'network', labelAr: 'بنية الشبكات المتطورة وكوابل الفايبر والراكات', labelEn: 'Structured Cabling & Fiber' },
+    { id: 'network', labelAr: 'كابلات UTP والفايبر وتجهيز داتا سنتر و DCIM ومراكز مصغرة', labelEn: 'UTP/Fiber, Data Center Fit-out & DCIM' },
     { id: 'access', labelAr: 'بوابات المرور السريعة والتحكم في الدخول البيومتري', labelEn: 'Biometric Access & Turnstiles' },
-    { id: 'erp', labelAr: 'منظومات تخطيط الموارد ERP والربط الضريبي ETA', labelEn: 'Odoo ERP & Egyptian Tax API' },
-    { id: 'mobile', labelAr: 'برمجيات ومنصات الويب وتطبيقات الجوال المخصصة', labelEn: 'Custom Software & Mobile Apps' },
-    { id: 'consulting', labelAr: 'استشارة فنية متكاملة وتوريدات مشاريع عامة', labelEn: 'Full Integrated Engineering Scope' },
+    { id: 'software', labelAr: 'المواقع والمنصات المتخصصة ذات العمليات المتراكمة', labelEn: 'Specialized Web Platforms with Complex Workflows' },
+    { id: 'erp', labelAr: 'التطبيقات المتخصصة ومنظومات ERP والربط الضريبي ETA', labelEn: 'Specialized Enterprise Apps & Custom ERP' },
+    { id: 'consulting', labelAr: 'الاستشارات الهندسية وإعداد الاعتمادات الفنية (Technical Submittals)', labelEn: 'Technical Submittals & Engineering Consultation' },
   ];
 
   const validate = () => {

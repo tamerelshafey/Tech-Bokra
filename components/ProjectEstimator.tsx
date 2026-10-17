@@ -17,7 +17,9 @@ import {
   Camera,
   Network,
   Lock,
-  Smartphone
+  Smartphone,
+  FileCheck,
+  Globe
 } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
@@ -55,10 +57,11 @@ export default function ProjectEstimator({
 
   const systemsList = [
     { id: 'cctv', labelAr: 'كاميرات مراقبة 4K وتحليل ذكي', labelEn: '4K CCTV & AI Analytics', icon: Camera },
-    { id: 'network', labelAr: 'بنية شبكات وراكات وألياف ضوئية', labelEn: 'Structured Cabling & Fiber', icon: Network },
-    { id: 'access', labelAr: 'بوابات دخول وبصمة حضور', labelEn: 'Speed Gates & Biometrics', icon: Lock },
-    { id: 'erp', labelAr: 'نظام ERP وفاتورة إلكترونية (ETA)', labelEn: 'ERP System & Egypt Tax', icon: Layers },
-    { id: 'mobile', labelAr: 'تطبيقات جوال ومنصات مخصصة', labelEn: 'Custom Mobile App / Portal', icon: Smartphone },
+    { id: 'network', labelAr: 'كابلات UTP وفايبر وتجهيز داتا سنتر و DCIM ومراكز مصغرة', labelEn: 'UTP & Fiber, Data Center Fit-out & DCIM', icon: Network },
+    { id: 'access', labelAr: 'بوابات مرور إلكترونية وبصمة حضور', labelEn: 'Speed Gates & Biometrics', icon: Lock },
+    { id: 'software', labelAr: 'مواقع ومنصات متخصصة ذات تفاصيل وعمليات متراكمة', labelEn: 'Specialized Portals with Complex Logic', icon: Globe },
+    { id: 'erp', labelAr: 'تطبيقات متخصصة ومنظومة ERP وفاتورة إلكترونية (ETA)', labelEn: 'Custom ERP & Specialized Apps (ETA)', icon: Layers },
+    { id: 'consulting', labelAr: 'استشارات فنية وإعداد ومراجعة اعتمادات (Technical Submittal)', labelEn: 'Technical Submittals & Engineering Consulting', icon: FileCheck },
   ];
 
   const toggleSystem = (id: string) => {
@@ -77,7 +80,8 @@ export default function ProjectEstimator({
     if (scale === 'medium') days = 8;
     if (scale === 'enterprise') days = 16;
     if (selectedSystems.length >= 3) days += 5;
-    if (selectedSystems.includes('erp') || selectedSystems.includes('mobile')) days += 7;
+    if (selectedSystems.includes('erp') || selectedSystems.includes('software')) days += 7;
+    if (selectedSystems.includes('consulting')) days = Math.max(3, days - 2);
     return `${days} - ${days + 6} ${isAr ? 'يوم عمل' : 'business days'}`;
   };
 

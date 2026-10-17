@@ -58,9 +58,22 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
     (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
+        // Defensive check: if cloud doc has old/stale services (< 6 items), preserve new 6 services
+        const resolvedServicesList = (Array.isArray(data.servicesList) && data.servicesList.length >= 6)
+          ? data.servicesList
+          : defaultEditableConfig.servicesList;
+
+        // Defensive check: if cloud doc has old hero sub, preserve new hero sub
+        const resolvedHeroSubAr = (data.heroSubAr && data.heroSubAr.includes('UTP'))
+          ? data.heroSubAr
+          : defaultEditableConfig.heroSubAr;
+
         onUpdate({
           ...defaultEditableConfig,
           ...data,
+          servicesList: resolvedServicesList,
+          heroSubAr: resolvedHeroSubAr,
         });
       }
     },

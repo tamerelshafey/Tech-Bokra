@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import TrustStats from '@/components/TrustStats';
 import ServicesSection from '@/components/ServicesSection';
-import NetworkVisualizer from '@/components/NetworkVisualizer';
+import EngineeringHub from '@/components/EngineeringHub';
 import ProjectEstimator from '@/components/ProjectEstimator';
 import ProjectsSection from '@/components/ProjectsSection';
 import ProcessSection from '@/components/ProcessSection';
@@ -246,11 +246,17 @@ export default function HomePage() {
           customServices={customConfig.servicesList}
         />
 
-        {/* Interactive Architecture & Network Visualizer */}
-        <NetworkVisualizer
+        {/* Practical Engineering Hub, CCTV Storage & Bandwidth Calculator & Tenders Radar */}
+        <EngineeringHub
           lang={lang}
           data={data}
-          onOpenConsultation={scrollToContact}
+          onOpenConsultation={(scopeSummary?: string) => {
+            if (scopeSummary) {
+              handleBookSurveyWithScope(scopeSummary);
+            } else {
+              scrollToContact();
+            }
+          }}
         />
 
         {/* Interactive Project Cost & Scope Estimator */}
