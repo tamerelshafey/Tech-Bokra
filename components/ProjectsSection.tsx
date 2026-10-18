@@ -1,7 +1,6 @@
-'use client';
-
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { 
   Building2, 
   ShieldAlert, 
@@ -13,10 +12,14 @@ import {
   Sparkles,
   Layers,
   Globe,
-  Radio
+  Radio,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { Project, SiteLanguageData } from '@/lib/content';
-import ProjectModal from '@/components/ProjectModal';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface ProjectsSectionProps {
@@ -31,7 +34,7 @@ type FilterCategory = 'all' | 'upcoming' | 'security' | 'network' | 'software' |
 
 export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides, customProjects }: ProjectsSectionProps) {
   const [filter, setFilter] = useState<FilterCategory>('all');
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
 
@@ -268,55 +271,97 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                       ))}
                     </div>
                   )}
+
+                  {/* INLINE EXPANDED CASE STUDY DRAWER (NO POPUP!) */}
+                  {expandedProjectId === project.id && (
+                    <div className={`p-4 rounded-2xl border space-y-3 mb-4 animate-fadeIn ${
+                      isDark ? 'bg-[#071120] border-[#00F2FE]/30' : 'bg-sky-50/70 border-sky-200'
+                    }`}>
+                      {project.challenges && project.challenges.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-rose-400 mb-1 flex items-center gap-1.5">
+                            <span>⚠️</span>
+                            <span>{isAr ? 'التحدي التقني والهندسي:' : 'The Challenge:'}</span>
+                          </h4>
+                          <ul className="space-y-1 text-xs text-slate-300">
+                            {project.challenges.map((ch, chIdx) => (
+                              <li key={chIdx} className="leading-relaxed">• {ch}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {project.solutions && project.solutions.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                            <span>💡</span>
+                            <span>{isAr ? 'الحل الهندسي المنفذ:' : 'The Engineering Solution:'}</span>
+                          </h4>
+                          <ul className="space-y-1 text-xs text-slate-300">
+                            {project.solutions.map((sol, solIdx) => (
+                              <li key={solIdx} className="flex items-start gap-1.5 leading-relaxed">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                <span>{sol}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Inspect Details & Live Preview Buttons */}
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => setSelectedProject({
-                      ...project,
-                      liveUrl: (projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl,
-                    })}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border ${
-                      isDark
-                        ? 'bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] border-transparent'
-                        : 'bg-sky-50 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border-sky-200 hover:border-[#0284C7]'
-                    }`}
-                  >
-                    <span>{data.projects.viewDetails}</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
-
-                  {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
-                    <a
-                      href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
-                        isDark
-                          ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
-                          : 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white'
+                {/* Inline Toggle Details & Live Preview Buttons */}
+                <div className="space-y-2 pt-2 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedProjectId(expandedProjectId === project.id ? null : project.id)}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border ${
+                        expandedProjectId === project.id
+                          ? isDark ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE]' : 'bg-[#0284C7] text-white border-[#0284C7]'
+                          : isDark
+                            ? 'bg-[#152C4D] hover:bg-[#00F2FE] text-white hover:text-[#071120] border-transparent'
+                            : 'bg-sky-50 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border-sky-200 hover:border-[#0284C7]'
                       }`}
-                      title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
-                    </a>
-                  )}
+                      <span>{expandedProjectId === project.id ? (isAr ? 'إخفاء التفاصيل' : 'Hide Case Study') : (isAr ? 'عرض دراسة الحالة كاملة' : 'View Case Study')}</span>
+                      {expandedProjectId === project.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
+                      <a
+                        href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
+                          isDark
+                            ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
+                            : 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white'
+                        }`}
+                        title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Modal Viewer */}
-        <ProjectModal
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-          lang={lang}
-          data={data}
-          onConsultProject={onConsultProject}
-        />
+        {/* Link to Dedicated Full Projects Page */}
+        <div className="mt-14 text-center">
+          <Link
+            href="/projects"
+            className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:brightness-110 text-[#071120] font-black text-sm shadow-xl transition-all transform hover:scale-105 active:scale-95"
+          >
+            <span>{isAr ? 'استعرض كافة المشاريع وسابقة الأعمال المتكاملة' : 'Explore All Verified Projects & Case Studies'}</span>
+            {isAr ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+          </Link>
+        </div>
 
       </div>
     </section>

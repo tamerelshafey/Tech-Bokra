@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Shield, MessageSquare, Menu, X, Globe, Sun, Moon } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
@@ -28,6 +30,8 @@ export default function Navbar({
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
+  const pathname = usePathname();
+  const isAr = lang === 'ar';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,36 +41,14 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNavClick = (sectionId: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
-    setMobileMenuOpen(false);
-
-    if (sectionId === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
-    // Clean hash symbol completely from the URL bar without reloading
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
-  };
-
   const navLinks = [
-    { id: 'home', label: data.nav.home },
-    { id: 'services', label: data.nav.services },
-    { id: 'projects', label: data.nav.projects },
-    { id: 'architecture', label: data.nav.architecture },
-    { id: 'estimator', label: data.nav.estimator },
-    { id: 'process', label: data.nav.process },
-    { id: 'faq', label: data.nav.faq },
-    { id: 'contact', label: data.nav.contact },
+    { id: 'home', href: '/', label: data.nav.home },
+    { id: 'services', href: '/services', label: data.nav.services },
+    { id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' },
+    { id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' },
+    { id: 'projects', href: '/projects', label: data.nav.projects },
+    { id: 'estimator', href: '/estimator', label: data.nav.estimator },
+    { id: 'contact', href: '/contact', label: data.nav.contact },
   ];
 
   return (
@@ -83,10 +65,9 @@ export default function Navbar({
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Official Straightened Brand Logo - Scrolls to top without adding # to URL */}
-          <button 
-            type="button"
-            onClick={(e) => handleNavClick('home', e)} 
+          {/* Official Straightened Brand Logo linking to Home */}
+          <Link 
+            href="/"
             className="flex items-center group focus:outline-none cursor-pointer"
             aria-label="Tech Bokra Home"
           >
@@ -98,29 +79,38 @@ export default function Navbar({
               emblemStyle={logoEmblemStyle}
               customImageUrl={customLogoUrl}
             />
-          </button>
+          </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden xl:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                type="button"
-                onClick={(e) => handleNavClick(link.id, e)}
-                className={`text-sm font-medium transition-colors relative py-1 group cursor-pointer ${
-                  isDark
-                    ? 'text-slate-300 hover:text-[#00F2FE]'
-                    : 'text-slate-700 hover:text-[#0284C7]'
-                }`}
-              >
-                {link.label}
-                <span
-                  className={`absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                    isDark ? 'bg-[#00F2FE]' : 'bg-[#0284C7]'
+          {/* Desktop Navigation Links (Routes & Internal Pages) */}
+          <div className="hidden xl:flex items-center gap-4 2xl:gap-6 mx-3 sm:mx-6">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+
+              return (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  className={`text-xs sm:text-sm transition-colors relative py-1 group ${
+                    isActive
+                      ? isDark
+                        ? 'text-[#00F2FE] font-black'
+                        : 'text-[#0284C7] font-black'
+                      : isDark
+                        ? 'text-slate-200 hover:text-[#00F2FE] font-bold'
+                        : 'text-slate-900 hover:text-[#0284C7] font-bold'
                   }`}
-                />
-              </button>
-            ))}
+                >
+                  {link.label}
+                  <span
+                    className={`absolute bottom-0 left-0 h-0.5 transition-all duration-300 ${
+                      isActive 
+                        ? 'w-full ' + (isDark ? 'bg-[#00F2FE]' : 'bg-[#0284C7]') 
+                        : 'w-0 group-hover:w-full ' + (isDark ? 'bg-[#00F2FE]' : 'bg-[#0284C7]')
+                    }`}
+                  />
+                </Link>
+              );
+            })}
           </div>
 
           {/* Right Action Controls */}
@@ -187,15 +177,14 @@ export default function Navbar({
               <span>{lang === 'ar' ? 'واتساب' : 'WhatsApp'}</span>
             </a>
 
-            {/* Primary CTA - Smooth scroll without hash */}
-            <button
-              type="button"
-              onClick={(e) => handleNavClick('contact', e)}
+            {/* Primary CTA button linking to /contact */}
+            <Link
+              href="/contact"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#0369A1] text-[#071120] font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_25px_rgba(0,242,254,0.45)] transition-all transform active:scale-95 cursor-pointer"
             >
               <Shield className="w-4 h-4" />
               <span>{data.nav.surveyCta}</span>
-            </button>
+            </Link>
           </div>
 
           {/* Mobile Menu Controls */}
@@ -210,7 +199,7 @@ export default function Navbar({
               }`}
               aria-label="Toggle dark/light theme"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
             {/* Language Toggle Mobile */}
@@ -252,31 +241,39 @@ export default function Navbar({
           }`}
         >
           <div className="grid grid-cols-2 gap-2 pt-2">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                type="button"
-                onClick={(e) => handleNavClick(link.id, e)}
-                className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition text-start cursor-pointer ${
-                  isDark
-                    ? 'bg-[#10233D]/60 hover:bg-[#10233D] border-white/5 text-slate-200 hover:text-[#00F2FE] hover:border-[#00F2FE]/30'
-                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-[#0284C7] hover:border-[#0284C7]/30'
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+
+              return (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2.5 rounded-lg border text-xs sm:text-sm font-bold transition text-start ${
+                    isActive
+                      ? isDark
+                        ? 'bg-[#00F2FE]/20 border-[#00F2FE]/40 text-[#00F2FE]'
+                        : 'bg-sky-100 border-sky-300 text-[#0284C7]'
+                      : isDark
+                        ? 'bg-[#10233D]/60 hover:bg-[#10233D] border-white/5 text-slate-200 hover:text-[#00F2FE]'
+                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-[#0284C7]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
 
           <div className="pt-2 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={(e) => handleNavClick('contact', e)}
-              className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold text-sm shadow-[0_0_15px_rgba(0,242,254,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+            <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-black text-sm shadow-[0_0_15px_rgba(0,242,254,0.3)] flex items-center justify-center gap-2 cursor-pointer"
             >
               <Shield className="w-4 h-4" />
               <span>{data.nav.surveyCta}</span>
-            </button>
+            </Link>
 
             <a
               href={`https://wa.me/${whatsappNumber}`}

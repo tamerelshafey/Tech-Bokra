@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { ArrowUp, Phone, Mail, MapPin, Sun, Moon } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
@@ -118,72 +119,66 @@ export default function Footer({
             <h4 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {data.footer.quickLinksTitle}
             </h4>
-            <ul className={`space-y-2 text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <ul className={`space-y-2.5 text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('services', e)}
-                  className={`transition text-start cursor-pointer ${
+                <Link
+                  href="/services"
+                  className={`transition text-start block ${
                     isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                   }`}
                 >
                   {data.nav.services}
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('projects', e)}
-                  className={`transition text-start cursor-pointer ${
+                <Link
+                  href="/engineering-hub"
+                  className={`transition text-start block ${
+                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                  }`}
+                >
+                  {isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub & Tools'}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/tenders"
+                  className={`transition text-start block ${
+                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                  }`}
+                >
+                  {isAr ? 'مرصد أحدث المناقصات' : 'Tenders Radar'}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/projects"
+                  className={`transition text-start block ${
                     isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                   }`}
                 >
                   {data.nav.projects}
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('architecture', e)}
-                  className={`transition text-start cursor-pointer ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {data.nav.architecture}
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('estimator', e)}
-                  className={`transition text-start cursor-pointer ${
+                <Link
+                  href="/estimator"
+                  className={`transition text-start block ${
                     isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                   }`}
                 >
                   {data.nav.estimator}
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('process', e)}
-                  className={`transition text-start cursor-pointer ${
+                <Link
+                  href="/contact"
+                  className={`transition text-start block ${
                     isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                   }`}
                 >
-                  {data.nav.process}
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={(e) => handleNavClick('faq', e)}
-                  className={`transition text-start cursor-pointer ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {data.nav.faq}
-                </button>
+                  {data.nav.contact}
+                </Link>
               </li>
             </ul>
           </div>

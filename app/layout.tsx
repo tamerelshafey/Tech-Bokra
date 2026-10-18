@@ -3,6 +3,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tech-bokra.com'),
   title: 'تيك بكرة | Tech Bokra - حلول الأنظمة الأمنية، البنية التحتية، وبرمجيات الشركات',
   description: 'شركة تيك بكرة (Tech Bokra): رواد تأسيس البنية التحتية للشبكات، كاميرات المراقبة الذكية (CCTV)، أنظمة التيار الخفيف، وتطوير برمجيات الشركات وحلول ERP في مصر والشرق الأوسط.',
   icons: {

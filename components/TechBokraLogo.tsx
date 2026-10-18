@@ -322,8 +322,8 @@ export default function TechBokraLogo({
             <span
               className={`rounded font-bold font-cairo border ${dimensions.badge} ${
                 isLight
-                  ? 'bg-sky-50 text-sky-700 border-sky-200'
-                  : 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30'
+                  ? 'bg-sky-100 text-sky-950 border-sky-300 font-black'
+                  : 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40 font-bold'
               }`}
             >
               تيك بكرة
@@ -370,8 +370,8 @@ export default function TechBokraLogo({
           <span
             className={`rounded font-bold font-cairo border shrink-0 ${dimensions.badge} ${
               isLight
-                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                : 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30'
+                ? 'bg-sky-100 text-sky-950 border-sky-300 font-black'
+                : 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40 font-bold'
             }`}
           >
             تيك بكرة
