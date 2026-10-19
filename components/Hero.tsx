@@ -400,6 +400,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                     src={currentTel.image}
                     alt={isAr ? currentTel.titleAr : currentTel.titleEn}
                     fill
+                    priority
                     className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     referrerPolicy="no-referrer"
                     sizes="(max-width: 768px) 100vw, 500px"

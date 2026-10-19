@@ -12,7 +12,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, User } from '@/lib/firebase';
-import { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
+import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
 
 export interface FirestoreInquiry {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { EditableConfig, defaultEditableConfig } from '@/components/AdminSettingsModal';
+import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
 import { safeLoadConfigFromStorage } from '@/lib/storageHelper';
 import { subscribeSiteSettings } from '@/lib/dbService';
 
