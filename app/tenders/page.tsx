@@ -43,10 +43,6 @@ export default function TendersPage() {
   const [tenderCategoryFilter, setTenderCategoryFilter] = useState<string>('all');
   const [tenderSearch, setTenderSearch] = useState<string>('');
   const [expandedTenderId, setExpandedTenderId] = useState<string | null>(null);
-  const [showMechanismDetails, setShowMechanismDetails] = useState<boolean>(true);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [syncNotice, setSyncNotice] = useState<string>('');
-  const [lastSyncTime, setLastSyncTime] = useState<string>('اليوم - متصل ببوابة التعاقدات الحكومية');
   const [alertPhone, setAlertPhone] = useState<string>('');
   const [alertCategory, setAlertCategory] = useState<string>('all');
   const [alertSubscribed, setAlertSubscribed] = useState<boolean>(false);
@@ -70,23 +66,6 @@ export default function TendersPage() {
 
   const toggleLanguage = () => {
     setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
-
-  const handleSyncRadar = () => {
-    setIsSyncing(true);
-    setSyncNotice('');
-    setTimeout(() => {
-      setIsSyncing(false);
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-      setLastSyncTime(isAr ? `اليوم في تمام الساعة ${timeStr} (تحديث دوري نشط)` : `Today at ${timeStr} (Active Feed)`);
-      setSyncNotice(
-        isAr 
-          ? 'تم التحقق ومزامنة كافة الطروحات مع بوابة التعاقدات العامة وهيئة المجتمعات العمرانية بنجاح!'
-          : 'Successfully synced all live tenders with the Public Procurement Portal!'
-      );
-      setTimeout(() => setSyncNotice(''), 6000);
-    }, 1100);
   };
 
   const handleSubscribeAlerts = async (e: React.FormEvent) => {
@@ -159,98 +138,65 @@ export default function TendersPage() {
             </div>
 
             <h1 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <span>{isAr ? 'فرص حية للمقاولين والتضامن الفني' : 'Live RFPs, Joint Venture &'}</span>{' '}
+              <span>{isAr ? 'مرصد المناقصات ومتابعة المشروعات' : 'Tender Observatory &'}</span>{' '}
               <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>
-                {isAr ? 'والاعتمادات الهندسية' : 'Technical Submittals'}
+                {isAr ? 'والاعتمادات الهندسية' : 'Engineering Submittals'}
               </span>
             </h1>
 
             <p className={`text-sm sm:text-base md:text-lg mt-3 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               {isAr
-                ? 'رصد آلي وتغذية مستمرة لأحدث عمليات وممارسات التيار الخفيف، شبكات كابلات UTP والفايبر، وتجهيز مراكز البيانات DCIM بمصر، مع إمكانية التحالف الرسمي (Joint Venture) وطلب إعداد المظروف الفني المعتمد.'
-                : 'Automated tracking of active Egyptian low-current, fiber cabling, and data center tenders with official Joint Venture consortiums and consultant-approved submittals.'}
+                ? 'مرصد تخصصي لمتابعة وتأهيل كراسات الشروط والمناقصات لمشروعات التيار الخفيف، شبكات كابلات UTP والفايبر، وتجهيز مراكز البيانات DCIM بمصر، مع تقديم خدمات التضامن وإعداد المظاريف الفنية وجداول المطابقة المعتمدة.'
+                : 'Specialized advisory for monitoring, qualifying, and preparing tender submittals for Egyptian low-current, fiber cabling, and data center infrastructure projects with certified compliance sheets.'}
             </p>
           </div>
 
-          {/* Live Gateway Connection & Sync Status Banner */}
+          {/* Transparent Observatory Information Banner */}
           <div className={`p-4 sm:p-5 rounded-2xl border-2 flex flex-col md:flex-row items-center justify-between gap-4 ${
             isDark 
               ? 'bg-gradient-to-r from-[#071120] via-[#0B1A2F] to-[#0E2038] border-white/10' 
               : 'bg-white border-slate-300 shadow-md'
           }`}>
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-emerald-400 shrink-0" />
               <div className="text-xs">
                 <div className="font-bold flex items-center gap-2">
                   <span className={isDark ? 'text-white' : 'text-slate-950 font-black'}>
-                    {isAr ? 'بوابة التعاقدات العامة المصرية (etenders.gov.eg) والقطاعات التخصصية' : 'Egyptian Public Procurement Portal & Enterprise RFPs'}
+                    {isAr ? 'مرصد كراسات الشروط والمناقصات الهندسية' : 'Engineering Tenders & RFP Advisory'}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
                     isDark 
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
                       : 'bg-emerald-100 text-emerald-950 border-emerald-400'
                   }`}>
-                    {isAr ? 'ربط آلي نشط 🟢' : 'Live Gateway Active'}
+                    {isAr ? 'فحص ومراجعة هندسية' : 'Verified Engineering Review'}
                   </span>
                 </div>
                 <div className={`mt-0.5 flex flex-wrap items-center gap-3 font-medium ${
                   isDark ? 'text-slate-300' : 'text-slate-700'
                 }`}>
-                  <span>{isAr ? 'آخر مزامنة عبر الـ API:' : 'Last Synced:'} <strong className={`font-mono font-bold ${isDark ? 'text-[#00F2FE]' : 'text-sky-900'}`}>{lastSyncTime}</strong></span>
-                  <span>•</span>
-                  <span>{isAr ? 'دورة التحديث: كل 6 ساعات آلياً' : 'Refresh Cycle: Auto 6-hours'}</span>
+                  <span>{isAr ? 'يتم نشر الفرص بعد التحقق الهندسي والمستندي المباشر من جهات الطرح' : 'Opportunities published after direct technical qualification'}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-              <button
-                type="button"
-                onClick={handleSyncRadar}
-                disabled={isSyncing}
-                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer border ${
-                  isSyncing
-                    ? 'bg-slate-700 text-slate-300 border-transparent cursor-not-allowed'
-                    : isDark
-                      ? 'bg-[#10233D] hover:bg-[#152C4D] text-[#00F2FE] border-[#00F2FE]/40'
-                      : 'bg-sky-50 hover:bg-sky-100 text-[#0284C7] border-sky-300 shadow-xs'
+              <Link
+                href="/contact?type=submittal"
+                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer border shadow-sm ${
+                  isDark
+                    ? 'bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] border-[#00F2FE]'
+                    : 'bg-[#0284C7] hover:bg-[#0369A1] text-white border-[#0284C7]'
                 }`}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? (isAr ? 'جاري التحقق والمزامنة...' : 'Syncing Gateway...') : (isAr ? 'مزامنة الطروحات الآن' : 'Sync Radar Now')}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowMechanismDetails(!showMechanismDetails)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer border ${
-                  showMechanismDetails
-                    ? isDark ? 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/50' : 'bg-sky-100 text-[#0284C7] border-sky-400'
-                    : isDark ? 'bg-[#071120] text-slate-200 border-white/15' : 'bg-slate-100 text-slate-800 border-slate-300'
-                }`}
-              >
-                <Info className="w-3.5 h-3.5" />
-                <span>{isAr ? 'آلية عمل المرصد' : 'Operational Mechanism'}</span>
-                {showMechanismDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>{isAr ? 'طلب إعداد اعتماد فني لمناقصة' : 'Request Submittal Preparation'}</span>
+              </Link>
             </div>
           </div>
 
-          {/* Sync Notification Banner */}
-          {syncNotice && (
-            <div className={`p-3.5 rounded-xl border text-xs font-bold flex items-center gap-2 animate-fadeIn ${
-              isDark 
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200' 
-                : 'bg-emerald-50 border-emerald-400 text-emerald-950'
-            }`}>
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <span>{syncNotice}</span>
-            </div>
-          )}
-
           {/* Operational Mechanism Panel */}
-          {showMechanismDetails && (
-            <div className={`p-6 sm:p-8 rounded-3xl border-2 space-y-6 ${
+          <div className={`p-6 sm:p-8 rounded-3xl border-2 space-y-6 ${
               isDark 
                 ? 'bg-gradient-to-b from-[#0B1A2F] to-[#071120] border-[#00F2FE]/20 shadow-[0_0_30px_rgba(0,242,254,0.06)]' 
                 : 'bg-white border-sky-300 shadow-md'
@@ -279,12 +225,12 @@ export default function TendersPage() {
                     1
                   </div>
                   <h3 className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                    {isAr ? 'الرصد والتغذية الآلية (API Ingestion)' : 'Automated Ingestion'}
+                    {isAr ? 'الرصد والمتابعة الفنية (RFP Sourcing)' : 'Tender Sourcing & Monitoring'}
                   </h3>
                   <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-800 font-medium'}`}>
                     {isAr 
-                      ? 'ربط مباشر مع بوابة التعاقدات العامة المصرية (etenders)، هيئة المجتمعات العمرانية، وشركات البترول لسحب الطروحات والتحديثات كل 6 ساعات آلياً.' 
-                      : 'Direct Webhook integration with Egyptian Procurement Portal, NUCA, and EGAS pulling RFPs and addendums every 6 hours.'}
+                      ? 'متابعة دورية وفحص لكراسات الشروط والمواصفات المطروحة لمشروعات التيار الخفيف، كابلات UTP والفايبر، وتجهيز مراكز البيانات.' 
+                      : 'Structured tracking and review of public and enterprise RFPs covering low-current surveillance, structured cabling, and data centers.'}
                   </p>
                 </div>
 
@@ -388,7 +334,6 @@ export default function TendersPage() {
                 </div>
               </form>
             </div>
-          )}
 
           {/* Filter Tabs & Search Bar */}
           <div className={`p-6 rounded-3xl border-2 space-y-4 ${
@@ -442,9 +387,54 @@ export default function TendersPage() {
             </div>
           </div>
 
-          {/* Tenders Cards Grid with INLINE Expandable Drawers (NO POPUPS!) */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {filteredTenders.map((tnd) => {
+          {/* Tenders Cards Grid */}
+          {filteredTenders.length === 0 ? (
+            <div className={`p-8 sm:p-14 rounded-3xl border-2 text-center space-y-5 ${
+              isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-300 shadow-md'
+            }`}>
+              <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center ${
+                isDark ? 'bg-sky-500/10 text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+              }`}>
+                <FileCheck className="w-8 h-8" />
+              </div>
+
+              <div className="max-w-2xl mx-auto space-y-3">
+                <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {isAr ? 'مرصد المناقصات والاعتمادات الفنية المعتمدة' : 'Verified Tender Opportunities Observatory'}
+                </h3>
+                <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {isAr
+                    ? 'يتم نشر وإتاحة الفرص والممارسات بعد التحقق الهندسي المباشر ومراجعة كراسات الشروط والمواصفات الرسمية. يمكنك الاشتراك في التنبيهات لتصلك الفرص المعتمدة فور نشرها، أو التواصل مباشرة مع فريقنا الهندسي لطلب إعداد المظروف الفني والاعتماد لكراسة شروط خاصة بشركتكم.'
+                    : 'Verified tender opportunities are published following technical verification with contracting authorities. Subscribe to receive verified opportunity alerts, or contact our engineering team directly for custom RFP submittal preparation.'}
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/contact?type=submittal"
+                  className={`px-6 py-3 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer shadow-md active:scale-95 ${
+                    isDark 
+                      ? 'bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120]' 
+                      : 'bg-[#0284C7] hover:bg-[#0369A1] text-white'
+                  }`}
+                >
+                  {isAr ? 'طلب إعداد مظروف فني أو اعتماد كراسة شروط' : 'Request Technical Submittal Advisory'}
+                </Link>
+                <Link
+                  href="/engineering-hub"
+                  className={`px-6 py-3 rounded-xl text-xs sm:text-sm font-bold transition border-2 ${
+                    isDark
+                      ? 'bg-[#10233D] hover:bg-[#152C4D] text-slate-200 border-white/10'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  {isAr ? 'أدوات وحاسبات المهندسين' : 'Engineering Tools & Sizing'}
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {filteredTenders.map((tnd) => {
               const isExpanded = expandedTenderId === tnd.id;
 
               return (
@@ -787,6 +777,7 @@ export default function TendersPage() {
               );
             })}
           </div>
+          )}
 
         </div>
       </main>

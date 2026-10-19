@@ -2003,10 +2003,26 @@ export default function SecureAdminPortalPage() {
 
                 {/* Trust Stats Numbers */}
                 <div className="space-y-4 border-b border-white/10 pb-6">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
-                    <span>{isAr ? 'الأرقام والإحصائيات الرئيسية (Trust Stats):' : 'Key Metrics & Statistics:'}</span>
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
+                        <span>{isAr ? 'قسم الإحصائيات والأرقام (Trust Stats):' : 'Key Metrics & Statistics Section:'}</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {isAr ? 'التحكم في إظهار أو إخفاء قسم الإحصائيات في الصفحة الرئيسية (الافتراضي: مخفي حتى توثيق البيانات)' : 'Show or hide metrics on homepage (default: hidden)'}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.showStatsSection ?? false}
+                        onChange={(e) => handleConfigChange('showStatsSection', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                  </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="p-3 rounded-xl bg-[#071120] border border-white/10">

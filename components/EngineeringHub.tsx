@@ -213,7 +213,9 @@ function createTenderData(
   };
 }
 
-export const DEFAULT_TENDERS_RADAR: TenderItem[] = [
+export const DEFAULT_TENDERS_RADAR: TenderItem[] = [];
+
+const _UNUSED_MOCKS = [
   createTenderData(
     'tnd-2026-01',
     'RFP-NAC-2026/418',
@@ -1421,8 +1423,52 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
             </div>
 
             {/* Tenders Cards Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {filteredTenders.map((tnd) => (
+            {filteredTenders.length === 0 ? (
+              <div className={`p-8 sm:p-12 rounded-3xl border-2 text-center space-y-4 ${
+                isDark ? 'bg-[#0B1A2F]/80 border-slate-700/80' : 'bg-white border-slate-300 shadow-sm'
+              }`}>
+                <div className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                  isDark ? 'bg-sky-500/10 text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+                }`}>
+                  <FileCheck className="w-7 h-7" />
+                </div>
+                <div className="max-w-xl mx-auto space-y-2">
+                  <h4 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                    {isAr ? 'مرصد المناقصات والاعتمادات الهندسية' : 'Verified Engineering Tenders Observatory'}
+                  </h4>
+                  <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {isAr 
+                      ? 'يتم نشر وإتاحة الفرص والممارسات بعد التحقق الهندسي المباشر ومراجعة كراسات الشروط الرسمية. نعمل على مساعدة الشركات والمقاولين في صياغة جداول المطابقة الفنية (Compliance Sheets) وإعداد ملفات الاعتماد الفني للمواد (Material Submittals).'
+                      : 'Verified tender opportunities are published following direct technical qualification with issuing authorities. Our engineering team prepares technical compliance matrices and material submittals for contractors.'}
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onOpenConsultation(isAr ? 'طلب إعداد وتأهيل مظروف فني لمناقصة' : 'Request RFP Technical Submittal Advisory')}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ${
+                      isDark 
+                        ? 'bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120]' 
+                        : 'bg-[#0284C7] hover:bg-[#0369A1] text-white'
+                    }`}
+                  >
+                    {isAr ? 'طلب استشارة أو تجهيز ملف اعتماد' : 'Request Technical Submittal Support'}
+                  </button>
+                  <Link
+                    href="/tenders"
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition border ${
+                      isDark
+                        ? 'bg-[#10233D] hover:bg-[#152C4D] text-slate-200 border-white/10'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+                    }`}
+                  >
+                    {isAr ? 'زيارة صفحة المرصد' : 'Visit Observatory'}
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {filteredTenders.map((tnd) => (
                 <div
                   key={tnd.id}
                   className={`p-6 sm:p-7 rounded-3xl border-2 transition-all space-y-4 flex flex-col justify-between ${
@@ -1793,6 +1839,7 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
                 </div>
               ))}
             </div>
+          )}
 
             {/* Provider Integration Notice */}
             <div className={`p-5 rounded-2xl border text-xs flex flex-col sm:flex-row items-center justify-between gap-4 ${

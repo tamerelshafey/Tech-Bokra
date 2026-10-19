@@ -28,7 +28,7 @@ interface ServicesSectionProps {
 }
 
 export default function ServicesSection({ lang, data, onSelectService, customServices }: ServicesSectionProps) {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'security-infra' | 'digital-software' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
   const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
@@ -66,6 +66,12 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
 
   const filteredServices = activeList.filter((s) => {
     if (activeFilter === 'all') return true;
+    if (activeFilter === 'security-infra') {
+      return s.category === 'security' || s.category === 'network' || s.category === 'consulting';
+    }
+    if (activeFilter === 'digital-software') {
+      return s.category === 'software' || s.category === 'erp';
+    }
     return s.category === activeFilter;
   });
 
@@ -120,11 +126,8 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
           {[
             { id: 'all', label: data.services.allTab },
-            { id: 'security', label: data.services.secTab },
-            { id: 'network', label: data.services.netTab },
-            { id: 'software', label: data.services.softTab },
-            { id: 'erp', label: data.services.erpTab },
-            { id: 'consulting', label: data.services.consultTab || (isAr ? 'استشارات واعتمادات فنية' : 'Technical Submittals') },
+            { id: 'security-infra', label: isAr ? 'أنظمة الأمن المادي والبنية التحتية' : 'Physical Security & Infrastructure' },
+            { id: 'digital-software', label: isAr ? 'الحلول الرقمية والبرمجيات' : 'Digital Solutions & Software' },
           ].map((tab) => {
             const isActive = activeFilter === tab.id;
             return (

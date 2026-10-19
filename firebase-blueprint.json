@@ -29,6 +29,7 @@
         "announcementTextAr": { "type": "string", "maxLength": 300 },
         "announcementTextEn": { "type": "string", "maxLength": 300 },
         "announcementLink": { "type": "string", "maxLength": 300 },
+        "showStatsSection": { "type": "boolean" },
         "stat1Val": { "type": "string", "maxLength": 30 },
         "stat2Val": { "type": "string", "maxLength": 30 },
         "stat3Val": { "type": "string", "maxLength": 30 },

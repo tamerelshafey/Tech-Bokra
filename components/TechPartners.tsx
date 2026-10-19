@@ -14,14 +14,46 @@ export default function TechPartners({ lang, data }: TechPartnersProps) {
   const { isDark } = useTheme();
 
   const partners = [
-    { name: 'Cisco Systems', role: 'Core Switches & Firewalls', badge: 'Certified Partner' },
-    { name: 'Hikvision', role: '4K CCTV & AI Analytics', badge: 'Official Dist.' },
-    { name: 'Schneider Electric', role: 'Structured Cabling & Racks', badge: 'Tier 1 Standard' },
-    { name: 'Dahua Technology', role: 'Thermal & Perimeter Optics', badge: 'Enterprise Line' },
-    { name: 'Ubiquiti UniFi', role: 'Enterprise Mesh & Bridges', badge: 'Long Range' },
-    { name: 'Legrand', role: 'Cabinets & Cable Trays', badge: 'Certified Specs' },
-    { name: 'Odoo Enterprise', role: 'ERP & ETA Tax Integration', badge: 'Custom Solutions' },
-    { name: 'Fluke Networks', role: 'Structured Cable Testing', badge: 'DSX Certified' },
+    { 
+      name: 'Cisco Systems', 
+      role: isAr ? 'سويتشات وشبكات رئيسية' : 'Enterprise Switches & Routing', 
+      badge: isAr ? 'بنية شبكية' : 'Networking' 
+    },
+    { 
+      name: 'Hikvision', 
+      role: isAr ? 'كاميرات مراقبة رقمية 4K' : '4K IP Video Surveillance', 
+      badge: isAr ? 'أمن مادي' : 'Surveillance' 
+    },
+    { 
+      name: 'Schneider Electric', 
+      role: isAr ? 'كابلات مهيكلة وحاويات خوادم' : 'Structured Cabling & Racks', 
+      badge: isAr ? 'بنية تحتية' : 'Cabling & Racks' 
+    },
+    { 
+      name: 'Dahua Technology', 
+      role: isAr ? 'كاميرات ومراقبة محيطية' : 'Thermal & Perimeter Cameras', 
+      badge: isAr ? 'أمن مادي' : 'Surveillance' 
+    },
+    { 
+      name: 'Ubiquiti UniFi', 
+      role: isAr ? 'روابط شبكية ولاسلكية' : 'Wireless Bridges & Mesh', 
+      badge: isAr ? 'بنية شبكية' : 'Wireless' 
+    },
+    { 
+      name: 'Legrand', 
+      role: isAr ? 'مسارات كابلات وتجهيزات كبائن' : 'Cable Trays & Enclosures', 
+      badge: isAr ? 'بنية تحتية' : 'Enclosures' 
+    },
+    { 
+      name: 'Odoo Enterprise', 
+      role: isAr ? 'منظومات ERP وتكامل الضرائب' : 'ERP & Tax System Integration', 
+      badge: isAr ? 'برمجيات' : 'Enterprise ERP' 
+    },
+    { 
+      name: 'Fluke Networks', 
+      role: isAr ? 'أجهزة فحص واختبار الشبكات' : 'Structured Cable Testing Tools', 
+      badge: isAr ? 'فحص واختبار' : 'Diagnostic Hardware' 
+    },
   ];
 
   return (

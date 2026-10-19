@@ -1330,16 +1330,36 @@ export const siteConfig = ${JSON.stringify(
           {/* Tab 4: Stats & Metrics */}
           {activeTab === 'stats' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#071120] border border-white/10">
+                <div>
+                  <h4 className="text-xs font-bold text-white">
+                    {isAr ? 'إظهار قسم الإحصائيات بالصفحة الرئيسية' : 'Show Trust Stats on Homepage'}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {isAr ? 'الافتراضي: مخفي لحين توثيق الأرقام والبيانات التعاقدية' : 'Default: hidden pending audited data'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.showStatsSection ?? false}
+                    onChange={(e) => handleChange('showStatsSection', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+
               <p className="text-xs text-slate-400">
                 {isAr
-                  ? 'يمكنك تعديل الأرقام الإحصائية المعروضة في شريط الثقة وأعلى الموقع:'
-                  : 'Adjust trust metrics displayed across the top banner:'}
+                  ? 'يمكنك تعديل نصوص وقيم المؤشرات الهندسية المعروضة:'
+                  : 'Adjust metric values displayed when the section is enabled:'}
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    {isAr ? 'سنوات الخبرة' : 'Experience Years'}
+                    {isAr ? 'حلول مخصصة للمشروع' : 'Tailored Solutions'}
                   </label>
                   <input
                     type="text"
@@ -1351,7 +1371,7 @@ export const siteConfig = ${JSON.stringify(
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    {isAr ? 'عدد المشاريع' : 'Projects Done'}
+                    {isAr ? 'أنظمة ومعدات معيارية' : 'Standard Hardware'}
                   </label>
                   <input
                     type="text"
@@ -1363,7 +1383,7 @@ export const siteConfig = ${JSON.stringify(
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    {isAr ? 'الكاميرات والأنظمة' : 'Cameras/Nodes'}
+                    {isAr ? 'مطابقة للمواصفات الفنية' : 'Spec Compliance'}
                   </label>
                   <input
                     type="text"
@@ -1375,7 +1395,7 @@ export const siteConfig = ${JSON.stringify(
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    {isAr ? 'نسبة الاعتمادية' : 'Reliability'}
+                    {isAr ? 'عقود صيانة ودعم مستمر' : 'SLA & Support'}
                   </label>
                   <input
                     type="text"

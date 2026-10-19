@@ -8,6 +8,7 @@ import { useTheme } from '@/components/ThemeProvider';
 interface TrustStatsProps {
   lang: 'ar' | 'en';
   data: SiteLanguageData;
+  showSection?: boolean;
   statOverrides?: {
     stat1Val?: string;
     stat2Val?: string;
@@ -16,9 +17,14 @@ interface TrustStatsProps {
   };
 }
 
-export default function TrustStats({ lang, data, statOverrides }: TrustStatsProps) {
+export default function TrustStats({ lang, data, statOverrides, showSection = false }: TrustStatsProps) {
   const isAr = lang === 'ar';
   const { isDark } = useTheme();
+
+  // If section is disabled (default false pending official evidence audit), do not render
+  if (!showSection) {
+    return null;
+  }
 
   const stats = [
     {
@@ -80,11 +86,6 @@ export default function TrustStats({ lang, data, statOverrides }: TrustStatsProp
                 >
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className={`text-[10px] font-mono font-bold uppercase ${
-                  isDark ? 'text-slate-500' : 'text-slate-400'
-                }`}>
-                  VERIFIED
-                </span>
               </div>
 
               <div className={`text-3xl sm:text-4xl font-black tracking-tight font-mono ${

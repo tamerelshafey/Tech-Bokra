@@ -50,14 +50,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
     cctv: {
       titleAr: 'منظومة المراقبة المركزية والذكاء الاصطناعي (CCTV & AI Video)',
       titleEn: 'Centralized Surveillance & AI Video Analytics',
-      status: 'ONLINE & SECURED',
-      uptime: '99.98%',
+      status: 'VIDEO TELEMETRY',
       image: heroOverrides?.cctvImage || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
       metrics: [
-        { labelAr: 'كاميرات 4K متصلة', labelEn: '4K Active Cameras', val: '128 Node' },
-        { labelAr: 'تحليل الذكاء الاصطناعي', labelEn: 'AI Perimeter Guard', val: 'Active 24/7' },
-        { labelAr: 'تخزين سحابي ومحلي', labelEn: 'RAID 6 Storage', val: '90-180 Days' },
-        { labelAr: 'زمن استجابة التنبيه', labelEn: 'Alarm Response Latency', val: '0.4 sec' },
+        { labelAr: 'كاميرات رقمية 4K', labelEn: '4K IP Cameras', val: '4K / IP / ColorVu' },
+        { labelAr: 'تحليل الذكاء الاصطناعي', labelEn: 'AI Perimeter Guard', val: 'Active Analytics' },
+        { labelAr: 'تخزين سحابي ومحلي', labelEn: 'RAID 5/6 Storage', val: 'Standard RAID' },
+        { labelAr: 'زمن استجابة التنبيه', labelEn: 'Alarm Response Latency', val: 'Sub-second' },
       ],
       descAr: 'بث فائق الدقة 4K مع تتبع فوري للأجسام، قراءة لوحات السيارات (LPR)، كشف التسلل الليلي، وحسابات سعات التخزين الهندسية المعتمدة.',
       descEn: 'Ultra HD 4K video feeds with edge AI tracking, ANPR plate recognition, 24/7 Full-Color night vision, and certified storage sizing.',
@@ -66,14 +65,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
     network: {
       titleAr: 'كابلات UTP والفايبر وتجهيز مراكز البيانات (DCIM & Mini Data Centers)',
       titleEn: 'UTP/Fiber Cabling, Data Center Fit-out & DCIM',
-      status: 'HIGH-SPEED LINK',
-      uptime: '100.0%',
+      status: 'INFRASTRUCTURE LINK',
       image: heroOverrides?.networkImage || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
       metrics: [
-        { labelAr: 'كابلات UTP المهيكلة', labelEn: 'UTP Cat6A/7/8', val: '+2,400 Drop' },
-        { labelAr: 'مسار الألياف الضوئية', labelEn: 'Fiber Backbone', val: '10/40/100G' },
-        { labelAr: 'تجهيزات الداتا سنتر', labelEn: 'Data Center Fit-out', val: '42U & Cooling' },
-        { labelAr: 'مراقبة بيئية ذكية', labelEn: 'DCIM & Mini Centers', val: 'Active Telemetry' },
+        { labelAr: 'كابلات UTP المهيكلة', labelEn: 'UTP Structured Cabling', val: 'Cat6A / Cat7' },
+        { labelAr: 'مسار الألياف الضوئية', labelEn: 'Fiber Backbone', val: 'Single / Multimode' },
+        { labelAr: 'تجهيزات الداتا سنتر', labelEn: 'Data Center Fit-out', val: '42U & Precision' },
+        { labelAr: 'مراقبة بيئية ذكية', labelEn: 'DCIM Environmental', val: 'Active Sensors' },
       ],
       descAr: 'تمديدات كابلات نحاسية UTP/STP وفايبر معتمدة، كبائن خوادم 42U/48U، تبريد دقيق In-Row، مراقبة بيئية ذكية DCIM، ومراكز بيانات مصغرة (Mini Data Centers).',
       descEn: 'Structured UTP/STP & optical fiber cabling, full server room fit-out, In-Row precision cooling, DCIM environmental telemetry, and modular mini data centers.',
@@ -82,14 +80,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
     software: {
       titleAr: 'المواقع والمنصات المتخصصة ذات العمليات المتراكمة',
       titleEn: 'Specialized Web Platforms with Complex Workflows',
-      status: 'CLOUD ACTIVE',
-      uptime: '99.99%',
+      status: 'WEB PLATFORMS',
       image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'منصات عقارية PropTech', labelEn: 'PropTech Portals', val: 'Helio Property' },
         { labelAr: 'منصات حجز وسياحة', labelEn: 'Logistics & Booking', val: 'Al-Rehla Platform' },
-        { labelAr: 'بوابات معاملات B2B/B2C', labelEn: 'Transactional Logic', val: 'Complex Engine' },
-        { labelAr: 'معمارية سحابية متقدمة', labelEn: 'Next.js 15 & Redis', val: 'Ultra Fast' },
+        { labelAr: 'بوابات معاملات B2B/B2C', labelEn: 'Transactional Logic', val: 'Custom Engine' },
+        { labelAr: 'معمارية سحابية متقدمة', labelEn: 'Next.js & Cloud Core', val: 'Edge Network' },
       ],
       descAr: 'تطوير المنصات متعددة الأطراف وبوابات الويب التي تدير عمليات حسابية ومالية ولوجستية متراكمة ومعقدة مع لوحات تحكم ومؤشرات لحظية.',
       descEn: 'Engineering complex multi-sided web platforms and enterprise portals with accumulated business logic, real-time analytics, and high concurrency resilience.',
@@ -98,12 +95,11 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
     erp: {
       titleAr: 'التطبيقات المتخصصة ومنظومات ERP والربط الضريبي ETA',
       titleEn: 'Specialized Enterprise Apps & Custom ERP',
-      status: 'ETA CERTIFIED',
-      uptime: '99.95%',
+      status: 'ERP & ETA INTEGRATION',
       image: heroOverrides?.cloudImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
       metrics: [
-        { labelAr: 'الفاتورة الإلكترونية ETA', labelEn: 'Egypt Tax API', val: '100% Direct' },
-        { labelAr: 'تطبيقات الجوال الميدانية', labelEn: 'Mobile Apps (iOS/And)', val: 'Mahyay & Helio' },
+        { labelAr: 'الفاتورة الإلكترونية ETA', labelEn: 'Egypt Tax API', val: 'Official Direct API' },
+        { labelAr: 'تطبيقات الجوال الميدانية', labelEn: 'Mobile Apps (iOS/And)', val: 'Native / Hybrid' },
         { labelAr: 'إدارة المخازن وسلاسل الإمداد', labelEn: 'Barcode & RFID POS', val: 'Full Inventory' },
         { labelAr: 'تخصيص محركات الـ ERP', labelEn: 'Odoo & Tailored Core', val: 'Custom Workflow' },
       ],
@@ -114,14 +110,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
     consulting: {
       titleAr: 'الاستشارات الهندسية والاعتمادات الفنية (Technical Submittals)',
       titleEn: 'Technical Submittals & Engineering Consultation',
-      status: 'VERIFIED & AUDITED',
-      uptime: '100%',
+      status: 'ENGINEERING SPECS',
       image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
       metrics: [
         { labelAr: 'اعتمادات فنية للمواد', labelEn: 'Material Submittals', val: 'Consultant Ready' },
         { labelAr: 'جداول مطابقة الشروط', labelEn: 'Compliance Sheets', val: 'Line-by-Line' },
         { labelAr: 'مخططات تنفيذية', labelEn: 'Shop / As-Built CAD', val: 'Full Sets' },
-        { labelAr: 'فحص واستلام الأجهزة', labelEn: 'Fluke DSX & OTDR', val: 'Certified Reports' },
+        { labelAr: 'فحص واستلام الأجهزة', labelEn: 'Fluke DSX & OTDR', val: 'Calibration Reports' },
       ],
       descAr: 'إعداد ومراجعة ملفات الاعتماد الفني للمواد، صياغة جداول المطابقة الفنية لكراسات شروط المناقصات، إعداد Shop Drawings، واختبارات فلوك المعتمدة.',
       descEn: 'Formulation and review of technical submittals, line-by-line compliance sheets for RFPs, CAD shop drawings, and certified Fluke DSX/OTDR commissioning.',
@@ -131,12 +126,11 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
       titleAr: 'بوابات المرور السريعة والتحكم في الدخول البيومتري',
       titleEn: 'Smart Access Control & Speed Gates',
       status: 'MONITORED',
-      uptime: '99.99%',
       image: heroOverrides?.accessImage || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
       metrics: [
-        { labelAr: 'بوابات ذكية مجهزة', labelEn: 'Access Turnstiles', val: '16 Gates' },
-        { labelAr: 'سعة التعرف على الوجه', labelEn: 'Facial Capacity', val: '50,000 ID' },
-        { labelAr: 'سرعة التحقق البيومتري', labelEn: 'Auth Latency', val: '0.2 sec' },
+        { labelAr: 'بوابات ذكية مجهزة', labelEn: 'Access Turnstiles', val: 'Optical / Flap' },
+        { labelAr: 'سعة التعرف على الوجه', labelEn: 'Facial Capacity', val: 'Enterprise' },
+        { labelAr: 'سرعة التحقق البيومتري', labelEn: 'Auth Latency', val: 'Sub-second' },
         { labelAr: 'تكامل إنذار الحريق', labelEn: 'Fire Alarm Fail-Safe', val: 'Integrated' },
       ],
       descAr: 'أجهزة بصمة وجه وبصمة إصبع لا تلامسية، بوابات مرور أفراد زجاجية، بوابات سيارات آلية، وقفل مغناطيسي مرتبط بنظام الإخلاء.',
@@ -275,13 +269,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>SLA:</span>
+                  <span className={`text-[11px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>SPECS:</span>
                   <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded border ${
                     isDark
                       ? 'text-[#00F2FE] bg-[#00F2FE]/10 border-[#00F2FE]/20'
                       : 'text-[#0284C7] bg-sky-50 border-sky-200'
                   }`}>
-                    {currentTel.uptime}
+                    {isAr ? 'معايير هندسية معتمدة' : 'ENGINEERED SPEC'}
                   </span>
                 </div>
               </div>

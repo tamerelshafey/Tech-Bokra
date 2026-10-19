@@ -45,7 +45,8 @@ export interface EditableConfig {
   announcementTextEn: string;
   announcementLink: string;
 
-  // Trust Stats
+  // Trust Stats Section Control (Default hidden pending verification)
+  showStatsSection: boolean;
   stat1Val: string;
   stat2Val: string;
   stat3Val: string;
@@ -115,7 +116,8 @@ export const defaultEditableConfig: EditableConfig = {
   announcementTextEn: 'Currently engineering Helio Property PropTech and Al-Rehla Interactive Platform',
   announcementLink: 'https://helio-property.vercel.app/',
 
-  // Stats
+  // Stats - Default hidden pending official verification
+  showStatsSection: false,
   stat1Val: contentAr.stats.stat1Val,
   stat2Val: contentAr.stats.stat2Val,
   stat3Val: contentAr.stats.stat3Val,
