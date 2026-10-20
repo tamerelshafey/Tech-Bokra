@@ -55,20 +55,46 @@ export async function verifyAdminStatus(user: User | null): Promise<AdminVerific
     const snap = await getDoc(adminDocRef);
     if (snap.exists()) {
       const data = snap.data();
+      const docEmail = (data?.email || '').trim().toLowerCase();
+      const docRole = data?.role;
+
+      // Verify that document email matches authenticated user email
+      if (docEmail && docEmail !== userEmail) {
+        return {
+          isAdmin: false,
+          isVerified,
+          email: userEmail,
+          role: 'none',
+          reason: 'Administrator record email mismatch.',
+        };
+      }
+
+      // Check role validity
+      if (docRole !== 'super_admin' && docRole !== 'admin') {
+        return {
+          isAdmin: false,
+          isVerified,
+          email: userEmail,
+          role: 'none',
+          reason: 'Account role is not authorized for administration.',
+        };
+      }
+
       if (!isVerified) {
         return {
           isAdmin: false,
           isVerified: false,
           email: userEmail,
-          role: data?.role || 'admin',
+          role: docRole,
           reason: 'Email must be verified to activate administrator privileges.',
         };
       }
+
       return {
         isAdmin: true,
         isVerified: true,
         email: userEmail,
-        role: data?.role || 'admin',
+        role: docRole,
       };
     }
   } catch (err) {

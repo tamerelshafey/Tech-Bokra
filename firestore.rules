@@ -17,24 +17,37 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Strict verification: User must be signed in AND have verified their email
-    function isBootstrappedAdmin() {
+    // Super Admin: Strictly the bootstrapped owner email + verified
+    function isSuperAdmin() {
       return isSignedIn() && 
         request.auth.token.email == 'tam.elshafey@gmail.com' &&
         request.auth.token.email_verified == true;
     }
 
-    // RBAC: Check bootstrap admin OR explicit admin document in /admins/{uid}
-    function isAdmin() {
-      return isBootstrappedAdmin() || (
-        isSignedIn() && 
+    // Regular Admin: Signed in + verified email + active record in /admins/{uid} matching email & role
+    function isRegularAdmin() {
+      return isSignedIn() && 
         request.auth.token.email_verified == true && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin'] &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.email == request.auth.token.email;
     }
 
-    // Strict Schema & Field Whitelist Validator for Customer Inquiries
-    function isValidInquiry(data) {
+    function isAdmin() {
+      return isSuperAdmin() || isRegularAdmin();
+    }
+
+    // 2. Settings:
+    // Only 'general' document is public for live website rendering.
+    // Any other document under /settings (e.g. internal configs, audit logs) is strictly admin-only.
+    match /settings/{settingsId} {
+      allow get: if settingsId == 'general' || (isAdmin() && isValidId(settingsId));
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(settingsId);
+    }
+
+    // Strict Schema & Field Whitelist Validator for Customer Inquiries Creation
+    function isValidNewInquiry(data) {
       return data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source']) &&
         data.keys().hasOnly([
           'clientName', 
@@ -45,8 +58,7 @@ service cloud.firestore {
           'notes', 
           'source', 
           'status', 
-          'createdAt', 
-          'updatedAt'
+          'createdAt'
         ]) &&
         data.clientName is string &&
         data.clientName.size() >= 2 &&
@@ -64,25 +76,36 @@ service cloud.firestore {
         (!('selectedSystems' in data) || (data.selectedSystems is list && data.selectedSystems.size() <= 10));
     }
 
-    // 2. Settings: Public read for live website rendering, admin-only write
-    match /settings/{settingsId} {
-      allow get: if isValidId(settingsId);
-      allow list: if isAdmin();
-      allow create, update, delete: if isAdmin() && isValidId(settingsId);
+    // Validation for Admin Updating Inquiry Status
+    function isValidInquiryUpdate(incoming, existing) {
+      return incoming.diff(existing).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        incoming.status in ['new', 'contacted', 'survey_scheduled', 'contracted', 'archived'] &&
+        (!('updatedAt' in incoming) || (incoming.updatedAt is string && incoming.updatedAt.size() <= 64));
     }
 
     // 3. Customer Inquiries & Quote Requests
     match /inquiries/{inquiryId} {
       // Anyone can submit a new inquiry / lead (create), strictly validated against schema
-      allow create: if isValidId(inquiryId) && isValidInquiry(request.resource.data);
+      allow create: if isValidId(inquiryId) && isValidNewInquiry(request.resource.data);
 
-      // PII Protection: Only authorized admins can read, list, update or delete customer leads
-      allow get, list, update, delete: if isAdmin() && isValidId(inquiryId);
+      // PII Protection: Only authorized admins can get or list customer leads
+      allow get, list: if isAdmin() && isValidId(inquiryId);
+
+      // Only authorized admins can update inquiry status
+      allow update: if isAdmin() && isValidId(inquiryId) && isValidInquiryUpdate(request.resource.data, resource.data);
+
+      // Only authorized admins can delete inquiry records
+      allow delete: if isAdmin() && isValidId(inquiryId);
     }
 
     // 4. Authorized Admins Collection
     match /admins/{adminId} {
-      allow read, write: if isAdmin() && isValidId(adminId);
+      // Authorized admins can view the roster
+      allow get, list: if isAdmin() && isValidId(adminId);
+
+      // CRITICAL: ONLY Super Admin can create, modify, or delete admin records.
+      // Regular admins CANNOT grant admin roles or self-escalate privileges.
+      allow create, update, delete: if isSuperAdmin() && isValidId(adminId);
     }
   }
 }
