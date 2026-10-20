@@ -53,7 +53,7 @@ function isValidNewInquiry(data) {
   if (!data || typeof data !== 'object') return false;
   const required = ['clientName', 'phone', 'status', 'createdAt', 'source'];
   const allowed = [
-    'clientName', 'phone', 'email', 'facilityType', 
+    'id', 'clientName', 'phone', 'email', 'facilityType', 
     'selectedSystems', 'notes', 'source', 'status', 'createdAt'
   ];
 
@@ -62,6 +62,7 @@ function isValidNewInquiry(data) {
   const hasOnly = keys.every((k) => allowed.includes(k));
 
   if (!hasAll || !hasOnly) return false;
+  if ('id' in data && (typeof data.id !== 'string' || data.id.length > 64)) return false;
 
   if (typeof data.clientName !== 'string' || data.clientName.length < 2 || data.clientName.length > 100) return false;
   if (typeof data.phone !== 'string' || data.phone.length < 6 || data.phone.length > 32) return false;
@@ -121,8 +122,11 @@ function evaluateRule(operation, collection, docId, auth, incomingData = null, e
   }
 
   if (collection === 'admins') {
-    if (['get', 'list'].includes(operation)) {
-      return isAdmin(auth) && isValidId(docId);
+    if (operation === 'get') {
+      return isValidId(docId) && (isSuperAdmin(auth) || (isSignedIn(auth) && auth.uid === docId));
+    }
+    if (operation === 'list') {
+      return isAdmin(auth);
     }
     if (['create', 'update', 'delete'].includes(operation)) {
       return isSuperAdmin(auth) && isValidId(docId);
@@ -156,13 +160,29 @@ const testCases = [
     expected: false,
   },
   {
-    name: 'Unauth: Allow valid new inquiry submission',
+    name: 'Unauth: Allow valid new inquiry submission (without id)',
     run: () => evaluateRule('create', 'inquiries', 'inq_valid_1', null, {
       clientName: 'Khaled',
       phone: '01000000000',
       status: 'new',
       createdAt: '2026-10-20T14:00:00Z',
       source: 'contact_form',
+    }),
+    expected: true,
+  },
+  {
+    name: 'Unauth: Allow valid inquiry WITH id field (actual dbService runtime payload)',
+    run: () => evaluateRule('create', 'inquiries', 'inq_valid_2', null, {
+      id: 'inq_valid_2',
+      clientName: 'Fatma',
+      phone: '01011112222',
+      email: 'fatma@test.com',
+      facilityType: 'Corporate',
+      selectedSystems: ['cctv', 'network'],
+      notes: 'Need quote for 32 cameras',
+      status: 'new',
+      createdAt: '2026-10-20T14:00:00Z',
+      source: 'estimator',
     }),
     expected: true,
   },
@@ -224,6 +244,21 @@ const testCases = [
   {
     name: 'Guest: Deny self-escalation write into admins collection',
     run: () => evaluateRule('create', 'admins', 'guest_1', { uid: 'guest_1', token: { email: 'guest@mail.com', email_verified: true } }, { role: 'admin' }),
+    expected: false,
+  },
+  {
+    name: 'Guest: Allow get own admin doc to check role (/admins/guest_1)',
+    run: () => evaluateRule('get', 'admins', 'guest_1', { uid: 'guest_1', token: { email: 'guest@mail.com', email_verified: true } }),
+    expected: true,
+  },
+  {
+    name: 'Guest: Deny reading other admin doc (/admins/super_owner)',
+    run: () => evaluateRule('get', 'admins', 'super_owner', { uid: 'guest_1', token: { email: 'guest@mail.com', email_verified: true } }),
+    expected: false,
+  },
+  {
+    name: 'Guest: Deny listing admins collection',
+    run: () => evaluateRule('list', 'admins', 'any', { uid: 'guest_1', token: { email: 'guest@mail.com', email_verified: true } }),
     expected: false,
   },
 

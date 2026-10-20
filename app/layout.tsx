@@ -90,8 +90,23 @@ export default function RootLayout({
       suppressHydrationWarning 
       className={`dark ${cairo.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <head>
-        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+      <body className="antialiased selection:bg-[#00F2FE] selection:text-[#071120]" suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(e) {
+                if (e && e.message && (e.message.indexOf('Loading chunk') !== -1 || e.message.indexOf('ChunkLoadError') !== -1)) {
+                  var lastReload = sessionStorage.getItem('tb_chunk_reload');
+                  var now = Date.now();
+                  if (!lastReload || (now - parseInt(lastReload, 10)) > 10000) {
+                    sessionStorage.setItem('tb_chunk_reload', String(now));
+                    window.location.reload();
+                  }
+                }
+              });
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -120,8 +135,6 @@ export default function RootLayout({
             }),
           }}
         />
-      </head>
-      <body className="antialiased selection:bg-[#00F2FE] selection:text-[#071120]" suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>

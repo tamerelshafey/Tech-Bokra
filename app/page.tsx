@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import TrustStats from '@/components/TrustStats';
@@ -14,29 +13,14 @@ import { testConnection } from '@/lib/firebase';
 import { subscribeSiteSettings } from '@/lib/dbService';
 import { safeLoadConfigFromStorage } from '@/lib/storageHelper';
 
-// Code-split heavy below-the-fold modules for speed and minimal initial JS bundle
-const EngineeringHub = dynamic(() => import('@/components/EngineeringHub'), {
-  loading: () => (
-    <div className="py-24 flex justify-center items-center">
-      <div className="w-8 h-8 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin" />
-    </div>
-  ),
-});
-
-const ProjectEstimator = dynamic(() => import('@/components/ProjectEstimator'), {
-  loading: () => (
-    <div className="py-24 flex justify-center items-center">
-      <div className="w-8 h-8 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin" />
-    </div>
-  ),
-});
-
-const ProjectsSection = dynamic(() => import('@/components/ProjectsSection'));
-const ProcessSection = dynamic(() => import('@/components/ProcessSection'));
-const TechPartners = dynamic(() => import('@/components/TechPartners'));
-const FaqSection = dynamic(() => import('@/components/FaqSection'));
-const ContactSection = dynamic(() => import('@/components/ContactSection'));
-const Footer = dynamic(() => import('@/components/Footer'));
+import EngineeringHub from '@/components/EngineeringHub';
+import ProjectEstimator from '@/components/ProjectEstimator';
+import ProjectsSection from '@/components/ProjectsSection';
+import ProcessSection from '@/components/ProcessSection';
+import TechPartners from '@/components/TechPartners';
+import FaqSection from '@/components/FaqSection';
+import ContactSection from '@/components/ContactSection';
+import Footer from '@/components/Footer';
 
 export default function HomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');

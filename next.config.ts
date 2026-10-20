@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  turbopack: {},
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -34,15 +32,6 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/(.*).(svg|png|jpg|jpeg|webp|avif|ico)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',

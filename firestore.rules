@@ -50,6 +50,7 @@ service cloud.firestore {
     function isValidNewInquiry(data) {
       return data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source']) &&
         data.keys().hasOnly([
+          'id',
           'clientName', 
           'phone', 
           'email', 
@@ -60,6 +61,7 @@ service cloud.firestore {
           'status', 
           'createdAt'
         ]) &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
         data.clientName is string &&
         data.clientName.size() >= 2 &&
         data.clientName.size() <= 100 &&
@@ -100,8 +102,11 @@ service cloud.firestore {
 
     // 4. Authorized Admins Collection
     match /admins/{adminId} {
-      // Authorized admins can view the roster
-      allow get, list: if isAdmin() && isValidId(adminId);
+      // Super admin can get any admin doc; regular signed-in users can only get their own admin doc to verify their role
+      allow get: if isValidId(adminId) && (isSuperAdmin() || (isSignedIn() && request.auth.uid == adminId));
+
+      // Only verified admins can list the admin roster
+      allow list: if isAdmin();
 
       // CRITICAL: ONLY Super Admin can create, modify, or delete admin records.
       // Regular admins CANNOT grant admin roles or self-escalate privileges.
