@@ -79,7 +79,9 @@ import {
   updateInquiryStatus, 
   deleteInquiry, 
   saveSiteSettingsToCloud,
-  subscribeSiteSettings 
+  subscribeSiteSettings,
+  loadAdminVault,
+  migrateSettingsAndVaultSafely 
 } from '@/lib/dbService';
 import { 
   safeSaveConfigToStorage, 
@@ -200,6 +202,15 @@ export default function SecureAdminPortalPage() {
             if (typeof window !== 'undefined') {
               localStorage.removeItem(BRUTE_FORCE_KEY);
             }
+
+            // Load isolated admin media vault from settings/admin_vault
+            loadAdminVault().then((vaultData) => {
+              if (vaultData && Array.isArray(vaultData.mediaVault)) {
+                setConfig((prev) => ({ ...prev, mediaVault: vaultData.mediaVault }));
+              }
+            }).catch((err) => {
+              console.warn('Admin vault load warning:', err);
+            });
           } else {
             // Logged in user is not an authorized administrator or email is unverified
             await signOut(auth);
@@ -461,21 +472,28 @@ export default function SecureAdminPortalPage() {
       // 1. Safe Local Cache
       safeSaveConfigToStorage(config);
 
-      // 2. Cloud Firestore Real-time Persistence
-      await saveSiteSettingsToCloud(config, auth?.currentUser || null);
+      // 2. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
+      const saveResult = await saveSiteSettingsToCloud(config, auth?.currentUser || null);
 
-      setNotificationMsg(
-        isAr 
-          ? 'تم حفظ وتحديث كافة بيانات الموقع والصور في سحابة Firebase بنجاح!' 
-          : 'All site content, media, and settings saved to Firebase cloud successfully!'
-      );
-    } catch (err) {
-      console.error('Save error:', err);
-      setNotificationMsg(
-        isAr 
-          ? 'تم الحفظ محلياً وجاري المزامنة مع السحابة...' 
-          : 'Saved locally, syncing to cloud...'
-      );
+      if (saveResult.generalSaved && saveResult.vaultSaved) {
+        setNotificationMsg(
+          isAr 
+            ? 'تم حفظ وتحديث كافة بيانات الموقع والصور في سحابة Firebase بنجاح!' 
+            : 'All site content, media, and settings saved to Firebase cloud successfully!'
+        );
+      } else if (saveResult.generalSaved && !saveResult.vaultSaved) {
+        setNotificationMsg(
+          isAr 
+            ? 'تم حفظ إعدادات الموقع العامة بنجاح (مع بقاء مكتبة الوسائط الإدارية محفوظة محلياً لحين المزامنة).' 
+            : 'Public site settings saved successfully (admin media vault sync pending).'
+        );
+      } else {
+        setNotificationMsg(
+          isAr 
+            ? 'تم الحفظ محلياً وجاري المزامنة مع السحابة...' 
+            : 'Saved locally, syncing to cloud...'
+        );
+      }
     } finally {
       setIsSaving(false);
       setTimeout(() => setNotificationMsg(''), 5000);
