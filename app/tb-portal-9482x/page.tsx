@@ -3193,11 +3193,12 @@ export default function SecureAdminPortalPage() {
                   <label className="block text-xs font-bold text-white">
                     {isAr ? '1. اختر نمط الشعار الفيكتور (عالي التباين):' : '1. Choose Vector Emblem Preset:'}
                   </label>
-                  <div className="grid sm:grid-cols-3 gap-3">
+                  <div className="grid sm:grid-cols-4 gap-3">
                     {[
-                      { id: 'modern-tb', nameAr: 'Modern TB (المضلع الهندسي المزدوج)', nameEn: 'Modern TB Hex' },
-                      { id: 'security-shield', nameAr: 'Security Shield (درع الحماية السيبراني)', nameEn: 'Cyber Shield' },
-                      { id: 'cyber-cube', nameAr: 'Isometric Cube (مكعب الأنظمة والبيانات)', nameEn: 'Tech Cube' },
+                      { id: 'modern-tb' as const, nameAr: 'Modern TB (المضلع الهندسي)', nameEn: 'Modern TB Hex' },
+                      { id: 'security-shield' as const, nameAr: 'Security Shield (درع الحماية)', nameEn: 'Cyber Shield' },
+                      { id: 'cyber-cube' as const, nameAr: 'Tech Cube (مكعب الأنظمة)', nameEn: 'Tech Cube' },
+                      { id: 'minimal-text' as const, nameAr: 'Minimal (نص صافي وعصري)', nameEn: 'Clean Wordmark' },
                     ].map((emblem) => (
                       <div
                         key={emblem.id}
@@ -3205,20 +3206,109 @@ export default function SecureAdminPortalPage() {
                         className={`p-4 rounded-xl border cursor-pointer transition flex flex-col items-center text-center gap-3 ${
                           config.logoEmblemStyle === emblem.id && !config.customLogoUrl
                             ? 'bg-[#00F2FE]/15 border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
-                            : 'bg-[#071120] border-white/10 hover:border-white/30'
+                            : isDark ? 'bg-[#071120] border-white/10 hover:border-white/30' : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                         }`}
                       >
                         <TechBokraLogo size="lg" theme={theme} variant="icon" emblemStyle={emblem.id as LogoEmblemStyle} />
-                        <span className="text-xs font-bold text-white">{isAr ? emblem.nameAr : emblem.nameEn}</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{isAr ? emblem.nameAr : emblem.nameEn}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
+                {/* Logo Scale & Appearance Options */}
+                <div className={`p-4 rounded-xl border space-y-4 ${
+                  isDark ? 'bg-[#071120] border-white/10' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {isAr ? '2. مقاس وبروز الشعار في شريط التنقل (Logo Scale):' : '2. Logo Scale in Navigation Bar:'}
+                      </h4>
+                      <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {isAr ? 'تحكم في حجم الشعار (صغير / عادي / كبير / بارز جداً)' : 'Adjust logo sizing'}
+                      </p>
+                    </div>
+                    <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${
+                      isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-slate-200/70 border-slate-300'
+                    }`}>
+                      {[
+                        { id: 'sm' as const, label: isAr ? 'صغير' : 'Small' },
+                        { id: 'md' as const, label: isAr ? 'عادي' : 'Medium' },
+                        { id: 'lg' as const, label: isAr ? 'كبير' : 'Large' },
+                        { id: 'xl' as const, label: isAr ? 'بارز جداً' : 'Extra' },
+                      ].map((sz) => (
+                        <button
+                          key={sz.id}
+                          type="button"
+                          onClick={() => handleConfigChange('logoScale', sz.id)}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                            (config.logoScale || 'md') === sz.id
+                              ? isDark
+                                ? 'bg-[#00F2FE] text-[#071120] shadow-sm'
+                                : 'bg-slate-900 text-white shadow-sm'
+                              : isDark
+                              ? 'text-slate-300 hover:text-white'
+                              : 'text-slate-700 hover:text-slate-900'
+                          }`}
+                        >
+                          {sz.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={`grid sm:grid-cols-2 gap-3 pt-3 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                    <div className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isDark ? 'bg-[#0B1A2F] border-white/5' : 'bg-white border-slate-200 shadow-xs'
+                    }`}>
+                      <div>
+                        <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {isAr ? 'إظهار الوصف التوضيحي' : 'Show Subtitle'}
+                        </span>
+                        <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {isAr ? 'حلول الأنظمة الأمنية والبنية التحتية' : 'Security & IT Infrastructure'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.showLogoSubtitle ?? true}
+                          onChange={(e) => handleConfigChange('showLogoSubtitle', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F2FE]"></div>
+                      </label>
+                    </div>
+
+                    <div className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isDark ? 'bg-[#0B1A2F] border-white/5' : 'bg-white border-slate-200 shadow-xs'
+                    }`}>
+                      <div>
+                        <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {isAr ? 'إظهار شارة (تيك بكرة)' : 'Show Arabic Badge'}
+                        </span>
+                        <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {isAr ? 'شارة الاسم بالعربية بجوار اللوجو' : 'Bilingual badge'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.showLogoArabicBadge ?? true}
+                          onChange={(e) => handleConfigChange('showLogoArabicBadge', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F2FE]"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Custom Logo Upload */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
-                  <label className="block text-xs font-bold text-white">
-                    {isAr ? '2. أو رفع شعار مخصص (Upload Custom Image Logo):' : '2. Or Upload Custom Image Logo:'}
+                <div className={`pt-4 border-t space-y-3 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                  <label className={`block text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {isAr ? '3. أو رفع شعار مخصص (Upload Custom Image Logo):' : '3. Or Upload Custom Image Logo:'}
                   </label>
                   <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3">
                     <input

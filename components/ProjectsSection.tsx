@@ -358,7 +358,7 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
             href="/projects"
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:brightness-110 text-[#071120] font-black text-sm shadow-xl transition-all transform hover:scale-105 active:scale-95"
           >
-            <span>{isAr ? 'استعرض كافة المشاريع وسابقة الأعمال المتكاملة' : 'Explore All Verified Projects & Case Studies'}</span>
+            <span>{isAr ? 'استعرض كافة المشاريع وسابقة الأعمال المتكاملة' : 'Explore All Projects & Technical Case Studies'}</span>
             {isAr ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
           </Link>
         </div>

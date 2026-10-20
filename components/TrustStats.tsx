@@ -11,9 +11,17 @@ interface TrustStatsProps {
   showSection?: boolean;
   statOverrides?: {
     stat1Val?: string;
+    stat1Label?: string;
+    stat1Desc?: string;
     stat2Val?: string;
+    stat2Label?: string;
+    stat2Desc?: string;
     stat3Val?: string;
+    stat3Label?: string;
+    stat3Desc?: string;
     stat4Val?: string;
+    stat4Label?: string;
+    stat4Desc?: string;
   };
 }
 
@@ -29,26 +37,26 @@ export default function TrustStats({ lang, data, statOverrides, showSection = fa
   const stats = [
     {
       val: statOverrides?.stat1Val || data.stats.stat1Val,
-      label: data.stats.stat1Label,
-      desc: data.stats.stat1Desc,
+      label: statOverrides?.stat1Label || data.stats.stat1Label,
+      desc: statOverrides?.stat1Desc || data.stats.stat1Desc,
       icon: Award,
     },
     {
       val: statOverrides?.stat2Val || data.stats.stat2Val,
-      label: data.stats.stat2Label,
-      desc: data.stats.stat2Desc,
+      label: statOverrides?.stat2Label || data.stats.stat2Label,
+      desc: statOverrides?.stat2Desc || data.stats.stat2Desc,
       icon: Building,
     },
     {
       val: statOverrides?.stat3Val || data.stats.stat3Val,
-      label: data.stats.stat3Label,
-      desc: data.stats.stat3Desc,
+      label: statOverrides?.stat3Label || data.stats.stat3Label,
+      desc: statOverrides?.stat3Desc || data.stats.stat3Desc,
       icon: HardDrive,
     },
     {
       val: statOverrides?.stat4Val || data.stats.stat4Val,
-      label: data.stats.stat4Label,
-      desc: data.stats.stat4Desc,
+      label: statOverrides?.stat4Label || data.stats.stat4Label,
+      desc: statOverrides?.stat4Desc || data.stats.stat4Desc,
       icon: ShieldCheck,
     },
   ];
@@ -89,19 +97,19 @@ export default function TrustStats({ lang, data, statOverrides, showSection = fa
               </div>
 
               <div className={`text-3xl sm:text-4xl font-black tracking-tight font-mono ${
-                isDark ? 'text-white text-glow' : 'text-slate-900'
+                isDark ? 'text-white text-glow' : 'text-slate-950'
               }`}>
                 {stat.val}
               </div>
 
               <h3 className={`text-sm sm:text-base font-bold mt-1 ${
-                isDark ? 'text-slate-200' : 'text-slate-800'
+                isDark ? 'text-slate-200' : 'text-slate-900'
               }`}>
                 {stat.label}
               </h3>
 
               <p className={`text-xs mt-0.5 leading-relaxed ${
-                isDark ? 'text-slate-400' : 'text-slate-600'
+                isDark ? 'text-slate-400' : 'text-slate-700'
               }`}>
                 {stat.desc}
               </p>

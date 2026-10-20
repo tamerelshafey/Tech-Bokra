@@ -200,7 +200,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
             {/* Subheading / Value explanation */}
             <p className={`text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl font-normal ${
-              isDark ? 'text-slate-300' : 'text-slate-600'
+              isDark ? 'text-slate-300' : 'text-slate-700'
             }`}>
               {heroOverrides?.sub || data.hero.sub}
             </p>
@@ -418,7 +418,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                     <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-[#00F2FE]' : 'bg-[#0284C7]'}`} />
                     {isAr ? currentTel.titleAr : currentTel.titleEn}
                   </h3>
-                  <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700 font-medium'}`}>
                     {isAr ? currentTel.descAr : currentTel.descEn}
                   </p>
                 </div>
@@ -431,13 +431,13 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                       className={`p-2.5 rounded-xl border transition-colors ${
                         isDark
                           ? 'bg-[#071120]/80 border-white/5 hover:border-[#00F2FE]/30'
-                          : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
                       }`}
                     >
-                      <div className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className={`text-[10px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                         {isAr ? metric.labelAr : metric.labelEn}
                       </div>
-                      <div className={`text-sm font-mono font-bold mt-0.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`}>
+                      <div className={`text-sm font-mono font-black mt-0.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`}>
                         {metric.val}
                       </div>
                     </div>
@@ -449,14 +449,14 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                   className={`p-2.5 rounded-xl border font-mono text-[11px] flex items-center justify-between ${
                     isDark
                       ? 'bg-[#071120] border-[#00F2FE]/15 text-slate-400'
-                      : 'bg-slate-50 border-slate-200 text-slate-600'
+                      : 'bg-slate-100 border-slate-200 text-slate-700 font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <Radio className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
                     <span>SYSTEM CORE: READY</span>
                   </div>
-                  <span className="text-emerald-500 font-semibold">ONLINE</span>
+                  <span className="text-emerald-500 font-bold">ONLINE</span>
                 </div>
               </div>
 
@@ -464,14 +464,14 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
               <button
                 type="button"
                 onClick={onOpenContact}
-                className={`mt-4 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                className={`mt-4 w-full py-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition cursor-pointer ${
                   isDark
                     ? 'bg-[#152C4D] hover:bg-[#1A3760] border-[#00F2FE]/30 text-white'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                    : 'bg-slate-900 hover:bg-slate-800 border-slate-900 text-white shadow-sm'
                 }`}
               >
                 <span>{isAr ? 'طلب أو استفسار عن هذا النظام' : 'Inquire About this System'}</span>
-                <ArrowIcon className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                <ArrowIcon className={`w-3.5 h-3.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#00F2FE]'}`} />
               </button>
             </div>
           </div>

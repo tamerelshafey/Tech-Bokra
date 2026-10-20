@@ -16,6 +16,10 @@ interface NavbarProps {
   whatsappNumber?: string;
   logoEmblemStyle?: LogoEmblemStyle;
   customLogoUrl?: string;
+  logoScale?: 'sm' | 'md' | 'lg' | 'xl';
+  showLogoSubtitle?: boolean;
+  showLogoArabicBadge?: boolean;
+  customLogoHeight?: number;
 }
 
 export default function Navbar({ 
@@ -26,6 +30,10 @@ export default function Navbar({
   whatsappNumber = siteConfig.whatsappNumber,
   logoEmblemStyle = 'modern-tb',
   customLogoUrl,
+  logoScale = 'md',
+  showLogoSubtitle = true,
+  showLogoArabicBadge = true,
+  customLogoHeight,
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,12 +80,14 @@ export default function Navbar({
             aria-label="Tech Bokra Home"
           >
             <TechBokraLogo 
-              size="md" 
+              size={logoScale} 
               theme={theme} 
               lang={lang} 
-              showSubtitle={true}
+              showSubtitle={showLogoSubtitle}
+              showArabicBadge={showLogoArabicBadge}
               emblemStyle={logoEmblemStyle}
               customImageUrl={customLogoUrl}
+              customHeight={customLogoHeight}
             />
           </Link>
 
@@ -269,7 +279,11 @@ export default function Navbar({
             <Link
               href="/contact"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-black text-sm shadow-[0_0_15px_rgba(0,242,254,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+              className={`w-full text-center py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition ${
+                isDark
+                  ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] shadow-[0_0_15px_rgba(0,242,254,0.3)]'
+                  : 'bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white shadow-md'
+              }`}
             >
               <Shield className="w-4 h-4" />
               <span>{data.nav.surveyCta}</span>

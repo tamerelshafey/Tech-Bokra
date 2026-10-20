@@ -652,16 +652,16 @@ export const siteConfig = ${JSON.stringify(
               {/* 1. Vector Emblem Style Selector */}
               <div>
                 <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  {isAr ? '1. نماذج الشعار الفيكتور (أشكال هندسية مستقيمة فائقة الدقة):' : '1. Vector Brand Mark Presets:'}
+                  {isAr ? '1. نماذج ونمط الشعار (تصميمات هندسية فائقة الوضوح والتباين):' : '1. Brand Mark & Emblem Presets:'}
                 </label>
 
-                <div className="grid sm:grid-cols-3 gap-3">
-                  {/* Preset 1: Modern TB Origami Hexagon */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Preset 1: Modern TB Monogram */}
                   <div
                     onClick={() => {
                       handleChange('logoEmblemStyle', 'modern-tb');
                     }}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       formData.logoEmblemStyle === 'modern-tb' && !formData.customLogoUrl
                         ? isDark
                           ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
@@ -671,23 +671,20 @@ export const siteConfig = ${JSON.stringify(
                         : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/20 text-[#00F2FE]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/20 text-[#00F2FE]">
                         {isAr ? 'الموصى به' : 'Recommended'}
                       </span>
                       {formData.logoEmblemStyle === 'modern-tb' && !formData.customLogoUrl && (
-                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                        <Check className="w-3.5 h-3.5 text-[#00F2FE]" />
                       )}
                     </div>
-                    <div className="h-16 flex items-center justify-center py-1">
-                      <TechBokraLogo variant="icon" emblemStyle="modern-tb" size="md" theme={theme} />
+                    <div className="h-14 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="modern-tb" size="sm" theme={theme} />
                     </div>
-                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {isAr ? 'أوريجامي التكنولوجيا TB' : 'TB Origami Hexagon'}
+                    <h5 className={`text-xs font-bold text-center mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'Modern TB' : 'Modern TB'}
                     </h5>
-                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {isAr ? 'هندسة مستقيمة تجمع T و B بسيان متوهج وزجاج تقني منير عالي التباين.' : 'Straight orthographic monogram combining T & B with high-contrast glowing facets.'}
-                    </p>
                   </div>
 
                   {/* Preset 2: Security Shield */}
@@ -695,7 +692,7 @@ export const siteConfig = ${JSON.stringify(
                     onClick={() => {
                       handleChange('logoEmblemStyle', 'security-shield');
                     }}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       formData.logoEmblemStyle === 'security-shield' && !formData.customLogoUrl
                         ? isDark
                           ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
@@ -705,23 +702,20 @@ export const siteConfig = ${JSON.stringify(
                         : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400">
                         {isAr ? 'أنظمة أمنية' : 'Security'}
                       </span>
                       {formData.logoEmblemStyle === 'security-shield' && !formData.customLogoUrl && (
-                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                        <Check className="w-3.5 h-3.5 text-[#00F2FE]" />
                       )}
                     </div>
-                    <div className="h-16 flex items-center justify-center py-1">
-                      <TechBokraLogo variant="icon" emblemStyle="security-shield" size="md" theme={theme} />
+                    <div className="h-14 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="security-shield" size="sm" theme={theme} />
                     </div>
-                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {isAr ? 'درع الأمان والمراقبة' : 'Security & Aperture Shield'}
+                    <h5 className={`text-xs font-bold text-center mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'درع الأمان' : 'Security Shield'}
                     </h5>
-                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {isAr ? 'درع حماية سيبراني مع عدسة كاميرا ذكية ومسارات شبكية مترابطة.' : 'Futuristic cyber shield with camera aperture and connected nodes.'}
-                    </p>
                   </div>
 
                   {/* Preset 3: Cyber Cube */}
@@ -729,7 +723,7 @@ export const siteConfig = ${JSON.stringify(
                     onClick={() => {
                       handleChange('logoEmblemStyle', 'cyber-cube');
                     }}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       formData.logoEmblemStyle === 'cyber-cube' && !formData.customLogoUrl
                         ? isDark
                           ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
@@ -739,33 +733,153 @@ export const siteConfig = ${JSON.stringify(
                         : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">
                         {isAr ? 'بنية تحتية' : 'Infrastructure'}
                       </span>
                       {formData.logoEmblemStyle === 'cyber-cube' && !formData.customLogoUrl && (
-                        <Check className="w-4 h-4 text-[#00F2FE]" />
+                        <Check className="w-3.5 h-3.5 text-[#00F2FE]" />
                       )}
                     </div>
-                    <div className="h-16 flex items-center justify-center py-1">
-                      <TechBokraLogo variant="icon" emblemStyle="cyber-cube" size="md" theme={theme} />
+                    <div className="h-14 flex items-center justify-center py-1">
+                      <TechBokraLogo variant="icon" emblemStyle="cyber-cube" size="sm" theme={theme} />
                     </div>
-                    <h5 className={`text-xs font-bold mt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {isAr ? 'المكعب التكنولوجي 3D' : 'Cyber Isometric Cube'}
+                    <h5 className={`text-xs font-bold text-center mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'المكعب التقني' : 'Cyber Cube'}
                     </h5>
-                    <p className={`text-[10px] mt-1 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {isAr ? 'مكعب تقني يرمز لتكامل الأجهزة والبرمجيات وشبكات السيرفرات.' : 'Isometric 3D prism representing hardware, software & IT infrastructure.'}
-                    </p>
+                  </div>
+
+                  {/* Preset 4: Minimal Wordmark */}
+                  <div
+                    onClick={() => {
+                      handleChange('logoEmblemStyle', 'minimal-text');
+                    }}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                      formData.logoEmblemStyle === 'minimal-text' && !formData.customLogoUrl
+                        ? isDark
+                          ? 'bg-[#10233D] border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]'
+                          : 'bg-sky-50 border-[#0284C7] shadow-md ring-2 ring-[#0284C7]/20'
+                        : isDark
+                        ? 'bg-[#071120]/60 border-white/10 hover:border-white/20'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                        {isAr ? 'نص فقط' : 'Wordmark'}
+                      </span>
+                      {formData.logoEmblemStyle === 'minimal-text' && !formData.customLogoUrl && (
+                        <Check className="w-3.5 h-3.5 text-[#00F2FE]" />
+                      )}
+                    </div>
+                    <div className="h-14 flex items-center justify-center py-1">
+                      <span className={`font-black text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Tech<span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>Bokra</span>
+                      </span>
+                    </div>
+                    <h5 className={`text-xs font-bold text-center mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'شعار نصي فائق البساطة' : 'Pure Wordmark'}
+                    </h5>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Custom Image Upload or URL */}
+              {/* 2. Logo Size & Fine Controls */}
+              <div className={`p-4 rounded-2xl border space-y-4 ${
+                isDark ? 'bg-[#071120]/80 border-white/10' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? '2. حجم ومقاس الشعار في الهيدر (Logo Scale):' : '2. Logo Scale in Navigation Bar:'}
+                    </h4>
+                    <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAr ? 'تحكم في كبر أو صغر الشعار ليتناسب مع ذوقك ومقاس الشاشات' : 'Adjust logo visibility and dimensions'}
+                    </p>
+                  </div>
+                  <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${
+                    isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-slate-200/70 border-slate-300'
+                  }`}>
+                    {[
+                      { id: 'sm' as const, label: isAr ? 'صغير' : 'Small' },
+                      { id: 'md' as const, label: isAr ? 'عادي' : 'Medium' },
+                      { id: 'lg' as const, label: isAr ? 'كبير' : 'Large' },
+                      { id: 'xl' as const, label: isAr ? 'بارز جداً' : 'Extra' },
+                    ].map((sz) => (
+                      <button
+                        key={sz.id}
+                        type="button"
+                        onClick={() => handleChange('logoScale', sz.id)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          (formData.logoScale || 'md') === sz.id
+                            ? isDark
+                              ? 'bg-[#00F2FE] text-[#071120] shadow-sm'
+                              : 'bg-slate-900 text-white shadow-sm'
+                            : isDark
+                            ? 'text-slate-300 hover:text-white'
+                            : 'text-slate-700 hover:text-slate-900'
+                        }`}
+                      >
+                        {sz.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subtitle & Badge Toggles */}
+                <div className={`grid sm:grid-cols-2 gap-3 pt-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                  <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
+                    isDark ? 'bg-[#0B1A2F] border-white/5' : 'bg-white border-slate-200 shadow-xs'
+                  }`}>
+                    <div>
+                      <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {isAr ? 'إظهار الوصف التوضيحي' : 'Show Subtitle'}
+                      </span>
+                      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {isAr ? 'حلول الأنظمة الأمنية والبنية التحتية' : 'Security & IT Infrastructure'}
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.showLogoSubtitle ?? true}
+                        onChange={(e) => handleChange('showLogoSubtitle', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F2FE]"></div>
+                    </label>
+                  </div>
+
+                  <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
+                    isDark ? 'bg-[#0B1A2F] border-white/5' : 'bg-white border-slate-200 shadow-xs'
+                  }`}>
+                    <div>
+                      <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {isAr ? 'إظهار شارة (تيك بكرة)' : 'Show Arabic Badge'}
+                      </span>
+                      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {isAr ? 'شارة الاسم بالعربية بجوار اللوجو' : 'Bilingual badge'}
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.showLogoArabicBadge ?? true}
+                        onChange={(e) => handleChange('showLogoArabicBadge', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F2FE]"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Custom Image Upload or URL */}
               <div className={`p-4 sm:p-5 rounded-2xl border ${
                 isDark ? 'bg-[#071120]/80 border-white/10' : 'bg-slate-50 border-slate-200'
               }`}>
                 <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  {isAr ? '2. رفع صورة شعار مخصصة (Custom Image):' : '2. Upload Custom Logo Image:'}
+                  {isAr ? '3. رفع صورة شعار مخصصة (Custom Image):' : '3. Upload Custom Logo Image:'}
                 </label>
 
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -847,10 +961,10 @@ export const siteConfig = ${JSON.stringify(
                 </div>
               </div>
 
-              {/* 3. Dual Theme Live Preview */}
+              {/* 4. Dual Theme Live Preview */}
               <div>
                 <label className={`block text-xs font-bold mb-2.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  {isAr ? '3. معاينة حية فورية للشعار في كلا الوضعين (Dark & Light):' : '3. Live Dual-Theme Preview:'}
+                  {isAr ? '4. معاينة حية فورية للشعار في كلا الوضعين (Dark & Light):' : '4. Live Dual-Theme Preview:'}
                 </label>
 
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -865,12 +979,14 @@ export const siteConfig = ${JSON.stringify(
                     </div>
                     <div className="py-2">
                       <TechBokraLogo
-                        size="md"
+                        size={formData.logoScale || 'md'}
                         theme="dark"
                         lang={lang}
-                        showSubtitle={true}
+                        showSubtitle={formData.showLogoSubtitle ?? true}
+                        showArabicBadge={formData.showLogoArabicBadge ?? true}
                         emblemStyle={formData.logoEmblemStyle}
                         customImageUrl={formData.customLogoUrl}
+                        customHeight={formData.customLogoHeight}
                       />
                     </div>
                   </div>
@@ -878,7 +994,7 @@ export const siteConfig = ${JSON.stringify(
                   {/* Light Theme Preview */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-300 shadow-md">
                     <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                      <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
                         <Sun className="w-3.5 h-3.5 text-amber-500" />
                         {isAr ? 'الوضع الفاتح (Light Mode)' : 'Light Theme'}
                       </span>
@@ -886,12 +1002,14 @@ export const siteConfig = ${JSON.stringify(
                     </div>
                     <div className="py-2">
                       <TechBokraLogo
-                        size="md"
+                        size={formData.logoScale || 'md'}
                         theme="light"
                         lang={lang}
-                        showSubtitle={true}
+                        showSubtitle={formData.showLogoSubtitle ?? true}
+                        showArabicBadge={formData.showLogoArabicBadge ?? true}
                         emblemStyle={formData.logoEmblemStyle}
                         customImageUrl={formData.customLogoUrl}
+                        customHeight={formData.customLogoHeight}
                       />
                     </div>
                   </div>

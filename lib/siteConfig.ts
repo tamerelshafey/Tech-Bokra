@@ -14,6 +14,10 @@ export interface EditableConfig {
   // Logo & Branding
   logoEmblemStyle: LogoEmblemStyle;
   customLogoUrl: string;
+  logoScale?: 'sm' | 'md' | 'lg' | 'xl';
+  showLogoSubtitle?: boolean;
+  showLogoArabicBadge?: boolean;
+  customLogoHeight?: number;
 
   // Contact & Social
   whatsappNumber: string;
@@ -48,9 +52,25 @@ export interface EditableConfig {
   // Trust Stats Section Control (Default hidden pending verification)
   showStatsSection: boolean;
   stat1Val: string;
+  stat1LabelAr?: string;
+  stat1LabelEn?: string;
+  stat1DescAr?: string;
+  stat1DescEn?: string;
   stat2Val: string;
+  stat2LabelAr?: string;
+  stat2LabelEn?: string;
+  stat2DescAr?: string;
+  stat2DescEn?: string;
   stat3Val: string;
+  stat3LabelAr?: string;
+  stat3LabelEn?: string;
+  stat3DescAr?: string;
+  stat3DescEn?: string;
   stat4Val: string;
+  stat4LabelAr?: string;
+  stat4LabelEn?: string;
+  stat4DescAr?: string;
+  stat4DescEn?: string;
 
   // Live Project URLs
   helioPropertyUrl: string;
@@ -85,6 +105,10 @@ export const defaultEditableConfig: EditableConfig = {
   // Logo
   logoEmblemStyle: 'modern-tb',
   customLogoUrl: '',
+  logoScale: 'md',
+  showLogoSubtitle: true,
+  showLogoArabicBadge: true,
+  customLogoHeight: 44,
 
   // Contact
   whatsappNumber: defaultSiteConfig.whatsappNumber,
@@ -119,9 +143,28 @@ export const defaultEditableConfig: EditableConfig = {
   // Stats - Default hidden pending official verification
   showStatsSection: false,
   stat1Val: contentAr.stats.stat1Val,
+  stat1LabelAr: contentAr.stats.stat1Label,
+  stat1LabelEn: contentEn.stats.stat1Label,
+  stat1DescAr: contentAr.stats.stat1Desc,
+  stat1DescEn: contentEn.stats.stat1Desc,
+
   stat2Val: contentAr.stats.stat2Val,
+  stat2LabelAr: contentAr.stats.stat2Label,
+  stat2LabelEn: contentEn.stats.stat2Label,
+  stat2DescAr: contentAr.stats.stat2Desc,
+  stat2DescEn: contentEn.stats.stat2Desc,
+
   stat3Val: contentAr.stats.stat3Val,
+  stat3LabelAr: contentAr.stats.stat3Label,
+  stat3LabelEn: contentEn.stats.stat3Label,
+  stat3DescAr: contentAr.stats.stat3Desc,
+  stat3DescEn: contentEn.stats.stat3Desc,
+
   stat4Val: contentAr.stats.stat4Val,
+  stat4LabelAr: contentAr.stats.stat4Label,
+  stat4LabelEn: contentEn.stats.stat4Label,
+  stat4DescAr: contentAr.stats.stat4Desc,
+  stat4DescEn: contentEn.stats.stat4Desc,
 
   // Live Projects
   helioPropertyUrl: 'https://helio-property.vercel.app/',

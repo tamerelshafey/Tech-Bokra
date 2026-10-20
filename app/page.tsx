@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import TrustStats from '@/components/TrustStats';
@@ -13,14 +14,29 @@ import { testConnection } from '@/lib/firebase';
 import { subscribeSiteSettings } from '@/lib/dbService';
 import { safeLoadConfigFromStorage } from '@/lib/storageHelper';
 
-import EngineeringHub from '@/components/EngineeringHub';
-import ProjectEstimator from '@/components/ProjectEstimator';
-import ProjectsSection from '@/components/ProjectsSection';
-import ProcessSection from '@/components/ProcessSection';
-import TechPartners from '@/components/TechPartners';
-import FaqSection from '@/components/FaqSection';
-import ContactSection from '@/components/ContactSection';
-import Footer from '@/components/Footer';
+// Code-split heavy below-the-fold modules for speed and minimal initial JS bundle
+const EngineeringHub = dynamic(() => import('@/components/EngineeringHub'), {
+  loading: () => (
+    <div className="py-24 flex justify-center items-center">
+      <div className="w-8 h-8 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin" />
+    </div>
+  ),
+});
+
+const ProjectEstimator = dynamic(() => import('@/components/ProjectEstimator'), {
+  loading: () => (
+    <div className="py-24 flex justify-center items-center">
+      <div className="w-8 h-8 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin" />
+    </div>
+  ),
+});
+
+const ProjectsSection = dynamic(() => import('@/components/ProjectsSection'));
+const ProcessSection = dynamic(() => import('@/components/ProcessSection'));
+const TechPartners = dynamic(() => import('@/components/TechPartners'));
+const FaqSection = dynamic(() => import('@/components/FaqSection'));
+const ContactSection = dynamic(() => import('@/components/ContactSection'));
+const Footer = dynamic(() => import('@/components/Footer'));
 
 export default function HomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
@@ -205,6 +221,10 @@ export default function HomePage() {
         whatsappNumber={customConfig.whatsappNumber}
         logoEmblemStyle={customConfig.logoEmblemStyle}
         customLogoUrl={customConfig.customLogoUrl}
+        logoScale={customConfig.logoScale}
+        showLogoSubtitle={customConfig.showLogoSubtitle}
+        showLogoArabicBadge={customConfig.showLogoArabicBadge}
+        customLogoHeight={customConfig.customLogoHeight}
       />
 
       {/* Main Content Sections */}
@@ -234,9 +254,17 @@ export default function HomePage() {
           showSection={customConfig.showStatsSection ?? false}
           statOverrides={{
             stat1Val: customConfig.stat1Val,
+            stat1Label: isAr ? customConfig.stat1LabelAr : customConfig.stat1LabelEn,
+            stat1Desc: isAr ? customConfig.stat1DescAr : customConfig.stat1DescEn,
             stat2Val: customConfig.stat2Val,
+            stat2Label: isAr ? customConfig.stat2LabelAr : customConfig.stat2LabelEn,
+            stat2Desc: isAr ? customConfig.stat2DescAr : customConfig.stat2DescEn,
             stat3Val: customConfig.stat3Val,
+            stat3Label: isAr ? customConfig.stat3LabelAr : customConfig.stat3LabelEn,
+            stat3Desc: isAr ? customConfig.stat3DescAr : customConfig.stat3DescEn,
             stat4Val: customConfig.stat4Val,
+            stat4Label: isAr ? customConfig.stat4LabelAr : customConfig.stat4LabelEn,
+            stat4Desc: isAr ? customConfig.stat4DescAr : customConfig.stat4DescEn,
           }}
         />
 

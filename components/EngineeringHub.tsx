@@ -1145,26 +1145,26 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
                 : 'bg-white border-slate-200 shadow-sm'
             }`}>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                <div className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0" />
                 <div className="text-xs">
                   <div className="font-bold flex items-center gap-2">
                     <span className={isDark ? 'text-white' : 'text-slate-950 font-black'}>
-                      {isAr ? 'بوابة التعاقدات العامة المصرية (etenders.gov.eg) والقطاعات التخصصية' : 'Egyptian Public Procurement Portal & Enterprise RFPs'}
+                      {isAr ? 'رادار متابعة المناقصات والفرص الهندسية والمؤسسية المطروحة' : 'Procurement & Engineering Tenders Tracking Radar'}
                     </span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
                       isDark 
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                        : 'bg-emerald-100 text-emerald-950 border-emerald-400'
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' 
+                        : 'bg-sky-100 text-sky-950 border-sky-300'
                     }`}>
-                      {isAr ? 'ربط آلي نشط 🟢' : 'Live Gateway Active'}
+                      {isAr ? 'متابعة دورية' : 'Regularly Tracked'}
                     </span>
                   </div>
                   <div className={`mt-0.5 flex flex-wrap items-center gap-3 font-medium ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
                   }`}>
-                    <span>{isAr ? 'آخر مزامنة عبر الـ API:' : 'Last Synced:'} <strong className={`font-mono font-bold ${isDark ? 'text-[#00F2FE]' : 'text-sky-900'}`}>{lastSyncTime}</strong></span>
+                    <span>{isAr ? 'آخر تحديث لبيانات الفرص:' : 'Catalog Updated:'} <strong className={`font-mono font-bold ${isDark ? 'text-[#00F2FE]' : 'text-sky-900'}`}>{lastSyncTime}</strong></span>
                     <span>•</span>
-                    <span>{isAr ? 'دورة التحديث: كل 6 ساعات آلياً' : 'Refresh Cycle: Auto 6-hours'}</span>
+                    <span>{isAr ? 'تغطية المشروعات: أنظمة المراقبة، الشبكات، والبرمجيات' : 'Scope: Security, Data Infrastructure & ERP'}</span>
                   </div>
                 </div>
               </div>
