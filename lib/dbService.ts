@@ -119,15 +119,30 @@ export async function migrateSettingsAndVaultSafely(user?: User | null): Promise
       return { success: true, migrated: false, itemCount: 0, message: 'settings/general is already clean; no legacy fields found.' };
     }
 
-    // Step 1: Read existing admin_vault to check if already present
+    // Step 1: Read existing admin_vault and perform a union merge by item ID
+    // Guarantees zero data loss if mediaVault exists in one or both documents
     const existingVaultSnap = await getDoc(adminVaultDocRef);
-    let targetVaultItems: MediaVaultItem[] = [];
+    const vaultMap = new Map<string, MediaVaultItem>();
 
-    if (existingVaultSnap.exists() && Array.isArray(existingVaultSnap.data()?.mediaVault) && existingVaultSnap.data()?.mediaVault.length > 0) {
-      targetVaultItems = existingVaultSnap.data()?.mediaVault;
-    } else if (Array.isArray(legacyMediaVault)) {
-      targetVaultItems = legacyMediaVault;
+    // 1a. Seed with legacy items from general settings
+    if (Array.isArray(legacyMediaVault)) {
+      legacyMediaVault.forEach((item) => {
+        if (item && item.id) {
+          vaultMap.set(item.id, item);
+        }
+      });
     }
+
+    // 1b. Layer with items in admin_vault (newer overrides older if matching id)
+    if (existingVaultSnap.exists() && Array.isArray(existingVaultSnap.data()?.mediaVault)) {
+      existingVaultSnap.data()?.mediaVault.forEach((item: MediaVaultItem) => {
+        if (item && item.id) {
+          vaultMap.set(item.id, item);
+        }
+      });
+    }
+
+    const targetVaultItems: MediaVaultItem[] = Array.from(vaultMap.values());
 
     // Step 2: Securely persist to settings/admin_vault FIRST
     await setDoc(adminVaultDocRef, {
@@ -163,6 +178,35 @@ export async function migrateSettingsAndVaultSafely(user?: User | null): Promise
       message: error?.message || 'Migration aborted due to error.',
     };
   }
+}
+
+/**
+ * Creates an authoritative JSON backup snapshot of both settings/general and settings/admin_vault.
+ * Allows safe verification and one-click JSON export before running migration.
+ */
+export async function createSettingsBackup(): Promise<{
+  timestamp: string;
+  general: Record<string, any> | null;
+  adminVault: Record<string, any> | null;
+}> {
+  const generalSnap = await getDoc(doc(db, 'settings', 'general'));
+  const vaultSnap = await getDoc(doc(db, 'settings', 'admin_vault'));
+  
+  const backup = {
+    timestamp: new Date().toISOString(),
+    general: generalSnap.exists() ? generalSnap.data() : null,
+    adminVault: vaultSnap.exists() ? vaultSnap.data() : null,
+  };
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(`tech_bokra_pre_migration_backup`, JSON.stringify(backup));
+    } catch {
+      // Ignore quota error
+    }
+  }
+
+  return backup;
 }
 
 /**
