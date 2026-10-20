@@ -58,6 +58,7 @@ import {
   saveSiteSettingsToCloud 
 } from '@/lib/dbService';
 import { compressImageFile } from '@/lib/storageHelper';
+import { verifyAdminStatus } from '@/lib/authHelper';
 
 export type { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
 export { defaultEditableConfig } from '@/lib/siteConfig';
@@ -111,14 +112,31 @@ export default function AdminSettingsModal({
     return () => unsubscribe();
   }, []);
 
-  // Listen to Realtime Inquiries when modal is open and user is admin
+  // Listen to Realtime Inquiries when modal is open and user is verified admin
   React.useEffect(() => {
-    if (!isOpen) return;
-    const unsubscribe = subscribeInquiries(
-      (data) => setInquiries(data),
-      (err) => console.warn('Inquiries sync notice:', err.message)
-    );
-    return () => unsubscribe();
+    if (!isOpen || !user) {
+      return;
+    }
+
+    let unsub: (() => void) | null = null;
+    let isCancelled = false;
+
+    verifyAdminStatus(user).then((res) => {
+      if (isCancelled) return;
+      if (res.isAdmin) {
+        unsub = subscribeInquiries(
+          (data) => setInquiries(data),
+          (err) => console.warn('Inquiries sync notice:', err.message)
+        );
+      } else {
+        setInquiries([]);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+      if (unsub) unsub();
+    };
   }, [isOpen, user]);
 
   // Sync if currentConfig changes from outside

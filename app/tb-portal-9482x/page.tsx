@@ -65,8 +65,14 @@ import {
   auth, 
   signInWithEmailAndPassword, 
   signOut, 
-  testConnection 
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
+  testConnection,
+  User 
 } from '@/lib/firebase';
+import { verifyAdminStatus, AdminVerificationResult, BOOTSTRAP_ADMIN_EMAIL } from '@/lib/authHelper';
 import { 
   FirestoreInquiry, 
   subscribeInquiries, 
@@ -82,13 +88,7 @@ import {
 } from '@/lib/storageHelper';
 
 const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v4';
-const MASTER_KEY_STORAGE = 'tech_bokra_master_key_v1';
-const SESSION_AUTH_KEY = 'tb_secure_session_token_v1';
 const BRUTE_FORCE_KEY = 'tb_failed_attempts_count_v1';
-
-// Default initial Master Key (can be changed from within the panel)
-const DEFAULT_MASTER_KEY = 'TechBokra@Secure9482';
-const BOOTSTRAP_ADMIN_EMAIL = 'tam.elshafey@gmail.com';
 
 // Curated high-res presets for surveillance, server rooms, smart access & cloud dashboards
 const CURATED_IMAGE_PRESETS = {
@@ -126,15 +126,6 @@ function checkTimestampValid(timestamp: number): boolean {
   return timestamp > Date.now();
 }
 
-function getSessionPayload(token: string) {
-  return {
-    authenticated: true,
-    token,
-    expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-    grantedAt: new Date().toISOString()
-  };
-}
-
 export default function SecureAdminPortalPage() {
   const { theme, toggleTheme, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<
@@ -143,22 +134,25 @@ export default function SecureAdminPortalPage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const isAr = lang === 'ar';
 
-  // Security Gate State
+  // Security Gate & Firebase Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [adminVerification, setAdminVerification] = useState<AdminVerificationResult | null>(null);
+  const [isVerifyingAuth, setIsVerifyingAuth] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [adminEmailInput, setAdminEmailInput] = useState<string>(BOOTSTRAP_ADMIN_EMAIL);
   const [adminPasswordInput, setAdminPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState<boolean>(false);
   const [lockoutUntil, setLockoutUntil] = useState<number>(0);
   const [failedAttempts, setFailedAttempts] = useState<number>(0);
   const isLockedOut = lockoutUntil > 0;
 
-  // Password Management State
-  const [currentMasterKey, setCurrentMasterKey] = useState<string>(DEFAULT_MASTER_KEY);
-  const [newMasterKeyInput, setNewMasterKeyInput] = useState<string>('');
-  const [keyChangeSuccess, setKeyChangeSuccess] = useState<boolean>(false);
-  const [keyChangeError, setKeyChangeError] = useState<string>('');
+  // Account Management & Password Reset State
+  const [resetEmailSent, setResetEmailSent] = useState<boolean>(false);
+  const [resetEmailMsg, setResetEmailMsg] = useState<string>('');
+  const [isSendingReset, setIsSendingReset] = useState<boolean>(false);
 
   // Config State
   const [config, setConfig] = useState<EditableConfig>(defaultEditableConfig);
@@ -189,28 +183,63 @@ export default function SecureAdminPortalPage() {
   const [targetProjectForUpload, setTargetProjectForUpload] = useState<string>('');
   const [recentUploads, setRecentUploads] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
 
-  // Check Session and Brute Force on Client Mount
+  // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const verification = await verifyAdminStatus(user);
+          setAdminVerification(verification);
+
+          if (verification.isAdmin) {
+            setCurrentUser(user);
+            setIsAuthenticated(true);
+            setLoginError('');
+            setFailedAttempts(0);
+            setLockoutUntil(0);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(BRUTE_FORCE_KEY);
+            }
+          } else {
+            // Logged in user is not an authorized administrator or email is unverified
+            await signOut(auth);
+            setCurrentUser(null);
+            setAdminVerification(null);
+            setIsAuthenticated(false);
+            setInquiries([]);
+            setLoginError(
+              isAr
+                ? (verification.reason || 'هذا الحساب غير مصرح له بالدخول كمسؤول.')
+                : (verification.reason || 'Unauthorized account. Administrator privileges required.')
+            );
+          }
+        } catch (err: unknown) {
+          console.error('Admin verification error:', err);
+          await signOut(auth);
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          setInquiries([]);
+          setLoginError(isAr ? 'تعذر التحقق من صلاحيات المدير.' : 'Failed to verify administrator privileges.');
+        }
+      } else {
+        setCurrentUser(null);
+        setAdminVerification(null);
+        setIsAuthenticated(false);
+        setInquiries([]);
+      }
+      setIsVerifyingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAr]);
+
+  // 2. Load Local Config Cache & Brute Force State (Decoupled from render cycle)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (typeof window !== 'undefined') {
-        const savedKey = localStorage.getItem(MASTER_KEY_STORAGE);
-        if (savedKey) setCurrentMasterKey(savedKey);
-
         const savedConfig = safeLoadConfigFromStorage();
         if (savedConfig) {
           setConfig((prev) => ({ ...prev, ...savedConfig }));
-        }
-
-        const session = sessionStorage.getItem(SESSION_AUTH_KEY);
-        if (session) {
-          try {
-            const parsed = JSON.parse(session);
-            if (parsed.expiresAt && checkTimestampValid(parsed.expiresAt)) {
-              setIsAuthenticated(true);
-            }
-          } catch {
-            // ignore
-          }
         }
 
         try {
@@ -229,7 +258,7 @@ export default function SecureAdminPortalPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Timer to clear lockout countdown
+  // 3. Clear Lockout Countdown
   useEffect(() => {
     if (lockoutUntil > 0) {
       const remaining = Math.max(0, lockoutUntil - Date.now());
@@ -244,7 +273,7 @@ export default function SecureAdminPortalPage() {
     }
   }, [lockoutUntil]);
 
-  // Cloud Sync & Leads Subscription
+  // 4. Cloud Settings Sync (Public read for layout & preview)
   useEffect(() => {
     testConnection();
 
@@ -254,18 +283,71 @@ export default function SecureAdminPortalPage() {
       }
     });
 
-    const unsubInquiries = subscribeInquiries((items) => {
-      setInquiries(items);
-    });
-
     return () => {
       unsubSettings();
-      unsubInquiries();
     };
   }, []);
 
-  // Secure Login Handler
-  const handleSecureLogin = async (e: React.FormEvent) => {
+  // 5. Customer Leads Subscription (Strictly Admin Gated: Runs ONLY when authenticated as verified admin)
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      return;
+    }
+
+    const unsubInquiries = subscribeInquiries(
+      (items) => {
+        setInquiries(items);
+      },
+      (err) => {
+        console.warn('Inquiries listener error:', err.message);
+      }
+    );
+
+    return () => {
+      unsubInquiries();
+    };
+  }, [isAuthenticated, currentUser]);
+
+  // Google OAuth One-Click Sign-In (Recommended for tam.elshafey@gmail.com)
+  const handleGoogleLogin = async () => {
+    setLoginError('');
+    if (isLockedOut) {
+      setLoginError(isAr ? 'البوابة مغلقة مؤقتاً لتكرار المحاولات الخاطئة. يرجى الانتظار.' : 'Console locked due to multiple failed attempts.');
+      return;
+    }
+
+    setIsGoogleLoggingIn(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const cred = await signInWithPopup(auth, provider);
+      const verification = await verifyAdminStatus(cred.user);
+      if (!verification.isAdmin) {
+        await signOut(auth);
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+        setLoginError(
+          isAr
+            ? `الحساب (${cred.user.email}) ليس لديه صلاحيات مدير معتمد.`
+            : `Account (${cred.user.email}) is not an authorized administrator.`
+        );
+      }
+    } catch (err: any) {
+      console.warn('Google login notice:', err?.message);
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        setLoginError(
+          isAr 
+            ? 'تعذر إتمام الدخول عبر Google. يرجى التأكد من اختيار حساب المدير المعتمد أو استخدام كلمة المرور.' 
+            : 'Google authentication was not completed.'
+        );
+      }
+    } finally {
+      setIsGoogleLoggingIn(false);
+    }
+  };
+
+  // Secure Email & Password Login Handler (Firebase Auth Only - Zero Bypass)
+  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -275,108 +357,92 @@ export default function SecureAdminPortalPage() {
     }
 
     setIsLoggingIn(true);
-
     const enteredEmail = adminEmailInput.trim().toLowerCase();
     const enteredPassword = adminPasswordInput.trim();
 
-    // Check Master Key Authorization
-    const isMasterKeyMatch = enteredPassword === currentMasterKey;
-    const isMasterEmailMatch = enteredEmail === BOOTSTRAP_ADMIN_EMAIL || enteredEmail === 'admin' || enteredEmail === 'techbokra';
-
-    if (isMasterKeyMatch && isMasterEmailMatch) {
-      // Successful Master Key Access
-      grantAccess('master_key');
-      setIsLoggingIn(false);
-      return;
-    }
-
-    // Try Firebase Email/Password Authentication
     try {
-      if (auth) {
-        const userCredential = await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
-        if (userCredential.user) {
-          grantAccess(userCredential.user.uid);
-          setIsLoggingIn(false);
-          return;
-        }
+      const cred = await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
+      const verification = await verifyAdminStatus(cred.user);
+      if (!verification.isAdmin) {
+        await signOut(auth);
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+        setLoginError(
+          isAr
+            ? (verification.reason || `الحساب (${cred.user.email}) غير مصرح له أو بريده غير موثق.`)
+            : (verification.reason || `Account (${cred.user.email}) is unauthorized or unverified.`)
+        );
       }
     } catch {
       // Firebase auth failed, increment brute force counter
-    }
+      const newCount = failedAttempts + 1;
+      setFailedAttempts(newCount);
 
-    // Handle Failed Attempt
-    const newCount = failedAttempts + 1;
-    setFailedAttempts(newCount);
-
-    if (newCount >= 5) {
-      const lockDuration = 10 * 60 * 1000; // 10 minutes lock
-      const until = getFutureTimestamp(lockDuration);
-      setLockoutUntil(until);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: until }));
+      if (newCount >= 5) {
+        const lockDuration = 10 * 60 * 1000; // 10 minutes lock
+        const until = getFutureTimestamp(lockDuration);
+        setLockoutUntil(until);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: until }));
+        }
+        setLoginError(
+          isAr 
+            ? 'تم تجاوز الحد الأقصى للمحاولات (5 محاولات). تم قفل البوابة المشفرة لمدة 10 دقائق.' 
+            : 'Max attempts reached. Security lockout active for 10 minutes.'
+        );
+      } else {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: 0 }));
+        }
+        setLoginError(
+          isAr 
+            ? `بيانات الدخول غير صحيحة عبر Firebase Auth. محاولة ${newCount} من 5 محاولات مصرح بها.` 
+            : `Invalid credentials via Firebase Auth. Attempt ${newCount} of 5 authorized.`
+        );
       }
-      setLoginError(
-        isAr 
-          ? 'تم تجاوز الحد الأقصى للمحاولات (5 محاولات). تم قفل البوابة المشفرة لمدة 10 دقائق.' 
-          : 'Max attempts reached. Security lockout active for 10 minutes.'
-      );
-    } else {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: 0 }));
-      }
-      setLoginError(
-        isAr 
-          ? `بيانات الدخول غير صحيحة. محاولة ${newCount} من 5 محاولات مصرح بها.` 
-          : `Invalid credentials. Attempt ${newCount} of 5 authorized.`
-      );
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    setIsLoggingIn(false);
   };
 
-  const grantAccess = (token: string) => {
-    const sessionData = getSessionPayload(token);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(SESSION_AUTH_KEY, JSON.stringify(sessionData));
-      localStorage.removeItem(BRUTE_FORCE_KEY);
-    }
-    setFailedAttempts(0);
-    setLockoutUntil(0);
-    setIsAuthenticated(true);
-  };
-
-  const handleSecureLogout = async () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(SESSION_AUTH_KEY);
-    }
+  // Send Password Reset Link to Admin Email
+  const handleSendPasswordReset = async () => {
+    const targetEmail = adminEmailInput.trim() || BOOTSTRAP_ADMIN_EMAIL;
+    setIsSendingReset(true);
+    setResetEmailMsg('');
     try {
-      if (auth) {
-        await signOut(auth);
-      }
-    } catch {
-      // ignore
+      await sendPasswordResetEmail(auth, targetEmail);
+      setResetEmailSent(true);
+      setResetEmailMsg(
+        isAr 
+          ? `تم إرسال رابط تعيين/إعادة ضبط كلمة المرور إلى البريد (${targetEmail}) بنجاح! تفقد صندوق الوارد أو البريد غير الهام (Spam).` 
+          : `Password reset email sent to (${targetEmail})! Please check your inbox or spam folder.`
+      );
+    } catch (err: any) {
+      console.warn('Password reset error:', err);
+      setResetEmailMsg(
+        isAr 
+          ? 'تعذر إرسال رابط التعيين. تأكد من تفعيل خدمة البريد أو صحة العنوان.' 
+          : 'Could not send password reset email. Please verify email address.'
+      );
+    } finally {
+      setIsSendingReset(false);
     }
-    setIsAuthenticated(false);
-    setAdminPasswordInput('');
-    setNotificationMsg(isAr ? 'تم قفل اللوحة وإنهاء الجلسة بنجاح.' : 'Session locked successfully.');
   };
 
-  const handleUpdateMasterPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setKeyChangeSuccess(false);
-    setKeyChangeError('');
-
-    if (newMasterKeyInput.length < 8) {
-      setKeyChangeError(isAr ? 'يجب أن لا تقل كلمة المرور عن 8 أحرف وأرقام معقدة.' : 'Password must be at least 8 characters.');
-      return;
+  // Secure Logout Handler
+  const handleSecureLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Logout warning:', err);
     }
-
-    setCurrentMasterKey(newMasterKeyInput);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(MASTER_KEY_STORAGE, newMasterKeyInput);
-    }
-    setKeyChangeSuccess(true);
-    setNewMasterKeyInput('');
+    setCurrentUser(null);
+    setAdminVerification(null);
+    setIsAuthenticated(false);
+    setInquiries([]);
+    setAdminPasswordInput('');
+    setNotificationMsg(isAr ? 'تم قفل اللوحة وإنهاء الجلسة المشفرة بنجاح.' : 'Session ended and locked successfully.');
   };
 
   const handleConfigChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
@@ -760,6 +826,27 @@ export default function SecureAdminPortalPage() {
   // ----------------------------------------------------
   // VIEW 1: ENCRYPTED SECURITY GATE LOGIN SCREEN
   // ----------------------------------------------------
+  // ----------------------------------------------------
+  // VIEW 1: SECURE FIREBASE AUTHENTICATION GATE
+  // ----------------------------------------------------
+  if (isVerifyingAuth) {
+    return (
+      <div 
+        className="min-h-screen bg-[#071120] text-slate-100 flex items-center justify-center p-4 relative font-cairo select-none"
+        dir={isAr ? 'rtl' : 'ltr'}
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="p-4 rounded-2xl bg-[#10233D] border border-[#00F2FE]/30 animate-pulse">
+            <RefreshCw className="w-8 h-8 text-[#00F2FE] animate-spin" />
+          </div>
+          <p className="text-xs font-mono text-slate-300 tracking-wide">
+            {isAr ? 'جاري التحقق من جلسة المصادقة الموثقة...' : 'Verifying authorized administrator session...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div 
@@ -787,12 +874,12 @@ export default function SecureAdminPortalPage() {
                   TECH BOKRA CORE SECURITY
                 </span>
                 <h1 className="text-xl font-black text-white mt-1">
-                  {isAr ? 'بوابة الإدارة والتحكم المشفرة' : 'Encrypted Admin Console Gate'}
+                  {isAr ? 'بوابة الإدارة والتحكم الموثقة' : 'Verified Admin Console Gate'}
                 </h1>
                 <p className="text-xs text-slate-400 mt-1">
                   {isAr 
-                    ? 'منطقة محمية - الدخول مصرح به للمديرين المعتمدين فقط' 
-                    : 'Restricted area - Authorized administrative access only'}
+                    ? 'منطقة محمية - الدخول حصري لمدير النظام عبر Firebase Authentication' 
+                    : 'Restricted area - Authorized Firebase Authentication only'}
                 </p>
               </div>
 
@@ -802,7 +889,7 @@ export default function SecureAdminPortalPage() {
                   <span>Zero-Trust Protocol</span>
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-400 border border-sky-500/30 font-bold">
-                  AES-256
+                  Firebase RBAC
                 </span>
               </div>
             </div>
@@ -815,6 +902,18 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
+            {/* Reset Email Notification */}
+            {resetEmailMsg && (
+              <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2 animate-in fade-in ${
+                resetEmailSent 
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
+                  : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+              }`}>
+                {resetEmailSent ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />}
+                <span className="leading-relaxed">{resetEmailMsg}</span>
+              </div>
+            )}
+
             {/* Lockout Notice */}
             {isLockedOut && (
               <div className="p-4 rounded-xl bg-amber-950/50 border border-amber-500/40 text-amber-200 text-xs text-center font-mono">
@@ -822,16 +921,51 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* Login Form */}
-            <form onSubmit={handleSecureLogin} className="space-y-4">
+            {/* Method 1: Google OAuth Instant Login */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={isGoogleLoggingIn || isLockedOut}
+                className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs flex items-center justify-center gap-2.5 transition shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGoogleLoggingIn ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-slate-700" />
+                    <span>{isAr ? 'جاري التحقق عبر Google...' : 'Authenticating with Google...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>{isAr ? 'دخول بحساب Google المعتمد (tam.elshafey@gmail.com)' : 'Sign In with Google (tam.elshafey@gmail.com)'}</span>
+                  </>
+                )}
+              </button>
+
+              <div className="relative flex items-center justify-center pt-1">
+                <div className="border-t border-white/10 w-full" />
+                <span className="bg-[#0B1A2F] px-3 text-[10px] text-slate-500 font-mono uppercase tracking-wider whitespace-nowrap">
+                  {isAr ? 'أو بكلمة مرور Firebase' : 'OR WITH FIREBASE PASSWORD'}
+                </span>
+                <div className="border-t border-white/10 w-full" />
+              </div>
+            </div>
+
+            {/* Method 2: Firebase Auth Email & Password Form */}
+            <form onSubmit={handleEmailPasswordLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>{isAr ? 'البريد الإلكتروني أو معرف المدير' : 'Admin Email or Username'}</span>
-                  <span className="text-[10px] font-mono text-slate-500">ID / EMAIL</span>
+                  <span>{isAr ? 'بريد المدير المعتمد' : 'Admin Email'}</span>
+                  <span className="text-[10px] font-mono text-slate-500">FIREBASE AUTH</span>
                 </label>
                 <div className="relative">
                   <input
-                    type="text"
+                    type="email"
                     value={adminEmailInput}
                     onChange={(e) => setAdminEmailInput(e.target.value)}
                     required
@@ -843,7 +977,7 @@ export default function SecureAdminPortalPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>{isAr ? 'كلمة المرور الأمنية (Security Password)' : 'Security Password'}</span>
+                  <span>{isAr ? 'كلمة مرور الحساب في Firebase' : 'Firebase Password'}</span>
                   <span className="text-[10px] font-mono text-slate-500">PASSWORD</span>
                 </label>
                 <div className="relative">
@@ -858,12 +992,26 @@ export default function SecureAdminPortalPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-3 left-auto right-3 rtl:right-auto rtl:left-3 text-slate-400 hover:text-white p-1"
+                    className="absolute top-3 left-auto right-3 rtl:right-auto rtl:left-3 text-slate-400 hover:text-white p-1 cursor-pointer"
                     title={showPassword ? 'إخفاء' : 'إظهار'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+              </div>
+
+              {/* Reset Password Prompt */}
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <button
+                  type="button"
+                  onClick={handleSendPasswordReset}
+                  disabled={isSendingReset}
+                  className="text-[#00F2FE] hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  {isSendingReset 
+                    ? (isAr ? 'جاري إرسال الرابط...' : 'Sending link...') 
+                    : (isAr ? 'نسيت كلمة المرور؟ إرسال رابط التعيين عبر البريد' : 'Forgot password? Send reset link')}
+                </button>
               </div>
 
               {/* Submit Button */}
@@ -875,12 +1023,12 @@ export default function SecureAdminPortalPage() {
                 {isLoggingIn ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{isAr ? 'جاري التحقق والتشفير...' : 'Verifying Credentials...'}</span>
+                    <span>{isAr ? 'جاري التحقق عبر Firebase Auth...' : 'Authenticating...'}</span>
                   </>
                 ) : (
                   <>
                     <Fingerprint className="w-4 h-4" />
-                    <span>{isAr ? 'دخول آمن للوحة التحكم' : 'Authenticate & Unlock'}</span>
+                    <span>{isAr ? 'دخول موثق للوحة التحكم' : 'Authenticate & Unlock'}</span>
                   </>
                 )}
               </button>
@@ -3425,21 +3573,100 @@ export default function SecureAdminPortalPage() {
                 <div>
                   <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <ShieldCheck className="w-5 h-5 text-[#00F2FE]" />
-                    <span>{isAr ? 'إدارة الأمان وكلمات المرور المشفرة' : 'Security & Access Control'}</span>
+                    <span>{isAr ? 'إدارة الأمان والمصادقة الموثقة (Zero-Trust Identity)' : 'Security & Identity Access Control'}</span>
                   </h3>
                   <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     {isAr 
-                      ? 'التحكم في كلمة المرور الرئيسية، الرابط السري للوحة التحكم، وإعدادات الحماية' 
-                      : 'Manage master password, obfuscated route, and security settings'}
+                      ? 'مراقبة جلسة المدير النشطة، حماية بيانات العملاء، وإدارة كلمات المرور عبر Firebase Authentication' 
+                      : 'Active administrator session, PII customer protection, and Firebase credentials management'}
                   </p>
                 </div>
 
+                {/* Active Admin Session Card */}
+                <div className="p-5 rounded-2xl bg-[#071120] border border-[#00F2FE]/30 space-y-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-[#00F2FE]" />
+                      <span>{isAr ? 'جلسة المدير المعتمدة حالياً (Firebase Session):' : 'Active Authorized Administrator:'}</span>
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{currentUser?.emailVerified ? (isAr ? 'حساب موثق' : 'Verified') : (isAr ? 'غير موثق' : 'Unverified')}</span>
+                    </span>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="p-3 rounded-xl bg-[#0B1A2F] border border-white/5 space-y-1">
+                      <span className="text-[10px] text-slate-400 block font-sans">{isAr ? 'البريد الإلكتروني' : 'Email Address'}</span>
+                      <span className="text-white font-bold break-all">{currentUser?.email || BOOTSTRAP_ADMIN_EMAIL}</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#0B1A2F] border border-white/5 space-y-1">
+                      <span className="text-[10px] text-slate-400 block font-sans">{isAr ? 'مستوى الصلاحية' : 'Privilege Level'}</span>
+                      <span className="text-[#00F2FE] font-bold">
+                        {adminVerification?.role === 'super_admin' ? (isAr ? 'مدير عام مفعّل (Super Admin)' : 'Super Admin') : (isAr ? 'مدير معتمد (Admin)' : 'Admin')}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#0B1A2F] border border-white/5 space-y-1">
+                      <span className="text-[10px] text-slate-400 block font-sans">{isAr ? 'طريقة الدخول' : 'Provider'}</span>
+                      <span className="text-slate-300">
+                        {currentUser?.providerData?.[0]?.providerId === 'google.com' ? 'Google OAuth 2.0' : 'Firebase Password'}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#0B1A2F] border border-white/5 space-y-1">
+                      <span className="text-[10px] text-slate-400 block font-sans">{isAr ? 'معرّف المستخدم (UID)' : 'User UID'}</span>
+                      <span className="text-slate-400 text-[11px] truncate block" title={currentUser?.uid}>
+                        {currentUser?.uid || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Reset Password Action Box */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSendPasswordReset}
+                      disabled={isSendingReset}
+                      className="px-4 py-2.5 rounded-xl bg-[#10233D] hover:bg-[#1a3860] border border-[#00F2FE]/40 text-[#00F2FE] text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>
+                        {isSendingReset 
+                          ? (isAr ? 'جاري إرسال الرابط...' : 'Sending link...') 
+                          : (isAr ? 'إرسال رابط تعيين كلمة مرور جديدة للبريد' : 'Send Password Reset Email')}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSecureLogout}
+                      className="px-4 py-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'إنهاء الجلسة وقفل البوابة' : 'Log Out & Lock Gate'}</span>
+                    </button>
+                  </div>
+
+                  {resetEmailMsg && (
+                    <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                      resetEmailSent 
+                        ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
+                        : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+                    }`}>
+                      {resetEmailSent ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />}
+                      <span className="leading-relaxed">{resetEmailMsg}</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Secret Link Display Box */}
-                <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/30 space-y-2">
+                <div className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                       <KeyRound className="w-3.5 h-3.5 text-[#00F2FE]" />
-                      <span>{isAr ? 'الرابط السري للوحة التحكم (احفظه في المفضلة لديك):' : 'Secret Portal URL:'}</span>
+                      <span>{isAr ? 'الرابط المخصص للوحة التحكم:' : 'Portal URL:'}</span>
                     </span>
                     <button
                       onClick={handleCopySecretLink}
@@ -3454,73 +3681,23 @@ export default function SecureAdminPortalPage() {
                   </div>
                   <p className="text-[11px] text-slate-400">
                     {isAr 
-                      ? 'تم إخفاء هذا الرابط تماماً عن الزوار، ولن يتمكن أي شخص من الوصول للوحة التحكم إلا إذا كان يمتلك هذا الرابط السري وكلمة المرور.' 
-                      : 'This route is completely hidden from public visitors and bots.'}
+                      ? 'ملاحظة أمنية: حماية الرابط وحدها ليست بديلاً عن حماية البيانات. كافة طلبات استرجاع بيانات العملاء وتعديل الموقع محمية ومقيدة بقواعد Firebase Security Rules.' 
+                      : 'Security note: Obfuscating routes does not replace data protection. All customer inquiries and site updates are strictly guarded by Firestore Security Rules.'}
                   </p>
                 </div>
 
-                {/* Change Master Password Form */}
-                <form onSubmit={handleUpdateMasterPassword} className="space-y-4 pt-2">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-[#00F2FE]" />
-                    <span>{isAr ? 'تغيير كلمة المرور الرئيسية (Master Password):' : 'Change Master Password:'}</span>
-                  </h4>
-
-                  {keyChangeSuccess && (
-                    <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>{isAr ? 'تم تحديث وحفظ كلمة المرور الرئيسية بنجاح!' : 'Master password updated successfully!'}</span>
-                    </div>
-                  )}
-
-                  {keyChangeError && (
-                    <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs">
-                      {keyChangeError}
-                    </div>
-                  )}
-
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'كلمة المرور الحالية المعتمدة' : 'Current Active Key'}</label>
-                      <input
-                        type="password"
-                        readOnly
-                        value="••••••••••••••••"
-                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-slate-400 font-mono text-xs outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'كلمة المرور الجديدة (8 أحرف فأكثر)' : 'New Password'}</label>
-                      <input
-                        type="text"
-                        value={newMasterKeyInput}
-                        onChange={(e) => setNewMasterKeyInput(e.target.value)}
-                        placeholder={isAr ? 'أدخل كلمة مرور قوية...' : 'Enter new strong password...'}
-                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-[#00F2FE] outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] font-black text-xs transition cursor-pointer"
-                  >
-                    {isAr ? 'حفظ كلمة المرور الجديدة' : 'Update Master Password'}
-                  </button>
-                </form>
-
-                {/* Google Sign-in Status Box */}
-                <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                {/* Zero-Trust Security Audit Overview */}
+                <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-2">
                   <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{isAr ? 'تسجيل الدخول عبر Google مغلق تماماً' : 'Google Sign-In is permanently disabled'}</span>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{isAr ? 'إجراءات الأمان المطبقة (Phase 1 Security Hardening)' : 'Active Security Posture'}</span>
                   </span>
-                  <p className="text-[11px] text-slate-400">
-                    {isAr 
-                      ? 'تم تعطيل أي نافذة أو زر تسجيل دخول عام عبر Google لحماية الموقع من محاولات التطفل. الدخول مقتصر على كلمات المرور المعتمدة.' 
-                      : 'Public Google login popups have been completely removed to prevent unauthorized entry.'}
-                  </p>
+                  <ul className="text-[11px] text-slate-300 space-y-1.5 list-disc list-inside">
+                    <li>{isAr ? 'تم إلغاء كلمة المرور الثابتة Master Key تماماً وإزالتها من حزمة المتصفح.' : 'Static master key bypass completely removed from client bundle.'}</li>
+                    <li>{isAr ? 'المصادقة حصرية عبر Firebase Authentication (Google OAuth أو البريد الرسمي).' : 'Authentication is strictly backed by Firebase Auth (Google OAuth or email).'}</li>
+                    <li>{isAr ? 'الاستماع لبيانات العملاء (subscribeInquiries) مقيّد بالجلسة الموثقة فقط ولا يبدأ قبل تسجيل الدخول.' : 'Leads subscription only runs after verified admin authentication.'}</li>
+                    <li>{isAr ? 'حماية نماذج التواصل (Honeypot + Cooldown Timer) لمنع الروبوتات والطلبات الآلية.' : 'Contact forms protected by bot honeypots and rate limiting.'}</li>
+                  </ul>
                 </div>
               </div>
             )}

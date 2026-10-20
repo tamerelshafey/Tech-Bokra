@@ -5,6 +5,9 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged, 
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
   User 
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
@@ -78,5 +81,13 @@ export async function testConnection() {
   }
 }
 
-export { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
+export { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail
+};
 export type { User };

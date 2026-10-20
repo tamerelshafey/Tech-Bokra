@@ -17,14 +17,51 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    // Strict verification: User must be signed in AND have verified their email
     function isBootstrappedAdmin() {
-      return isSignedIn() && request.auth.token.email == 'tam.elshafey@gmail.com';
+      return isSignedIn() && 
+        request.auth.token.email == 'tam.elshafey@gmail.com' &&
+        request.auth.token.email_verified == true;
     }
 
+    // RBAC: Check bootstrap admin OR explicit admin document in /admins/{uid}
     function isAdmin() {
       return isBootstrappedAdmin() || (
-        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        isSignedIn() && 
+        request.auth.token.email_verified == true && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
+    }
+
+    // Strict Schema & Field Whitelist Validator for Customer Inquiries
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source']) &&
+        data.keys().hasOnly([
+          'clientName', 
+          'phone', 
+          'email', 
+          'facilityType', 
+          'selectedSystems', 
+          'notes', 
+          'source', 
+          'status', 
+          'createdAt', 
+          'updatedAt'
+        ]) &&
+        data.clientName is string &&
+        data.clientName.size() >= 2 &&
+        data.clientName.size() <= 100 &&
+        data.phone is string &&
+        data.phone.size() >= 6 &&
+        data.phone.size() <= 32 &&
+        data.status == 'new' &&
+        data.source in ['contact_form', 'estimator', 'custom_quote'] &&
+        data.createdAt is string &&
+        data.createdAt.size() <= 64 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('facilityType' in data) || (data.facilityType is string && data.facilityType.size() <= 60)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
+        (!('selectedSystems' in data) || (data.selectedSystems is list && data.selectedSystems.size() <= 10));
     }
 
     // 2. Settings: Public read for live website rendering, admin-only write
@@ -36,15 +73,8 @@ service cloud.firestore {
 
     // 3. Customer Inquiries & Quote Requests
     match /inquiries/{inquiryId} {
-      // Anyone can submit a new inquiry / lead (create)
-      allow create: if isValidId(inquiryId) &&
-        request.resource.data.clientName is string &&
-        request.resource.data.clientName.size() >= 2 &&
-        request.resource.data.clientName.size() <= 100 &&
-        request.resource.data.phone is string &&
-        request.resource.data.phone.size() >= 6 &&
-        request.resource.data.phone.size() <= 32 &&
-        request.resource.data.status == 'new';
+      // Anyone can submit a new inquiry / lead (create), strictly validated against schema
+      allow create: if isValidId(inquiryId) && isValidInquiry(request.resource.data);
 
       // PII Protection: Only authorized admins can read, list, update or delete customer leads
       allow get, list, update, delete: if isAdmin() && isValidId(inquiryId);

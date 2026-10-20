@@ -47,6 +47,8 @@ export default function ContactSection({
   const [notes, setNotes] = useState(prefilledNotes || '');
   const [errorMsg, setErrorMsg] = useState('');
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState('');
+  const lastSubmitTimeRef = React.useRef<number>(0);
 
   const [prevPrefilledService, setPrevPrefilledService] = useState(prefilledService);
   if (prefilledService !== prevPrefilledService) {
@@ -89,16 +91,33 @@ export default function ContactSection({
   ];
 
   const validate = () => {
-    if (!name.trim()) {
-      setErrorMsg(isAr ? 'يرجى كتابة الاسم بالكامل' : 'Please provide your full name');
+    // Bot Honeypot Trap
+    if (honeypot.trim()) {
       return false;
     }
-    if (!company.trim()) {
+
+    // Rate limiting: 15 seconds cooldown
+    const now = Date.now();
+    if (now - lastSubmitTimeRef.current < 15000) {
+      setErrorMsg(
+        isAr 
+          ? 'تم استلام طلبك مؤخراً. يرجى الانتظار 15 ثانية قبل إرسال طلب جديد لمنع التكرار.' 
+          : 'Your request was recently recorded. Please wait 15 seconds before submitting another inquiry.'
+      );
+      return false;
+    }
+
+    if (!name.trim() || name.trim().length < 2) {
+      setErrorMsg(isAr ? 'يرجى كتابة الاسم بالكامل (حرفان على الأقل)' : 'Please provide your full name (at least 2 characters)');
+      return false;
+    }
+    if (!company.trim() || company.trim().length < 2) {
       setErrorMsg(isAr ? 'يرجى تحديد اسم المنشأة أو الشركة' : 'Please provide facility / company name');
       return false;
     }
-    if (!phone.trim() || phone.trim().length < 8) {
-      setErrorMsg(isAr ? 'يرجى كتابة رقم هاتف صحيح للتواصل' : 'Please provide a valid phone number');
+    const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+    if (!cleanPhone || cleanPhone.length < 8 || !/^[+0-9]+$/.test(cleanPhone)) {
+      setErrorMsg(isAr ? 'يرجى كتابة رقم هاتف صحيح للتواصل (أرقام فقط)' : 'Please provide a valid phone number');
       return false;
     }
     setErrorMsg('');
@@ -131,6 +150,7 @@ export default function ContactSection({
   const handleSendWhatsApp = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    lastSubmitTimeRef.current = Date.now();
     const text = getFormattedMessage();
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
@@ -151,6 +171,7 @@ export default function ContactSection({
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    lastSubmitTimeRef.current = Date.now();
     const text = getFormattedMessage();
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
@@ -255,6 +276,19 @@ export default function ContactSection({
             )}
 
             <form className="space-y-4 text-start">
+              {/* Invisible Bot Honeypot Field */}
+              <div style={{ display: 'none', position: 'absolute', left: '-9999px' }} aria-hidden="true">
+                <label htmlFor="website_hp">Leave this empty</label>
+                <input
+                  id="website_hp"
+                  type="text"
+                  name="website_hp"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>

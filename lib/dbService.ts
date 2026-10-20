@@ -96,20 +96,39 @@ export async function submitInquiry(inquiryData: {
   notes?: string;
   source: 'contact_form' | 'estimator' | 'custom_quote';
 }): Promise<string> {
+  const clientName = (inquiryData.clientName || '').trim().slice(0, 100);
+  const phone = (inquiryData.phone || '').trim().slice(0, 32);
+
+  if (clientName.length < 2) {
+    throw new Error('Client name must be at least 2 characters.');
+  }
+  if (phone.length < 6) {
+    throw new Error('Phone number must be at least 6 digits.');
+  }
+
   const cleanId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const inquiryRef = doc(db, INQUIRIES_COLLECTION_PATH, cleanId);
 
-  const payload = {
-    clientName: inquiryData.clientName.trim().slice(0, 100),
-    phone: inquiryData.phone.trim().slice(0, 32),
-    email: (inquiryData.email || '').trim().slice(0, 100),
-    facilityType: (inquiryData.facilityType || '').trim().slice(0, 60),
-    selectedSystems: (inquiryData.selectedSystems || []).slice(0, 10),
-    notes: (inquiryData.notes || '').trim().slice(0, 2000),
+  const payload: Record<string, unknown> = {
+    clientName,
+    phone,
     source: inquiryData.source,
     status: 'new' as const,
     createdAt: new Date().toISOString(),
   };
+
+  if (inquiryData.email && inquiryData.email.trim()) {
+    payload.email = inquiryData.email.trim().slice(0, 100);
+  }
+  if (inquiryData.facilityType && inquiryData.facilityType.trim()) {
+    payload.facilityType = inquiryData.facilityType.trim().slice(0, 60);
+  }
+  if (inquiryData.notes && inquiryData.notes.trim()) {
+    payload.notes = inquiryData.notes.trim().slice(0, 2000);
+  }
+  if (Array.isArray(inquiryData.selectedSystems) && inquiryData.selectedSystems.length > 0) {
+    payload.selectedSystems = inquiryData.selectedSystems.slice(0, 10);
+  }
 
   try {
     await setDoc(inquiryRef, payload);
@@ -122,11 +141,22 @@ export async function submitInquiry(inquiryData: {
 
 /**
  * Subscribe to real-time customer leads (Admin only)
+ * Defensively verifies that Firebase Auth has an active session before opening the listener.
  */
 export function subscribeInquiries(
   onUpdate: (inquiries: FirestoreInquiry[]) => void,
   onError?: (err: Error) => void
 ): () => void {
+  if (!auth.currentUser) {
+    const unauthErr = new Error('Permission denied: User must be authenticated to subscribe to inquiries.');
+    if (onError) {
+      onError(unauthErr);
+    } else {
+      console.warn('subscribeInquiries: Blocked unauthenticated attempt to open listener.');
+    }
+    return () => {};
+  }
+
   const inquiriesRef = collection(db, INQUIRIES_COLLECTION_PATH);
 
   return onSnapshot(
