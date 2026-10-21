@@ -73,7 +73,12 @@ function isValidNewInquiry(data) {
   if ('email' in data && (typeof data.email !== 'string' || data.email.length > 100)) return false;
   if ('facilityType' in data && (typeof data.facilityType !== 'string' || data.facilityType.length > 60)) return false;
   if ('notes' in data && (typeof data.notes !== 'string' || data.notes.length > 2000)) return false;
-  if ('selectedSystems' in data && (!Array.isArray(data.selectedSystems) || data.selectedSystems.length > 10)) return false;
+  const allowedSystems = ['cctv', 'network', 'access', 'software', 'erp', 'consulting', 'all', 'datacenter', 'security'];
+  if ('selectedSystems' in data && (
+    !Array.isArray(data.selectedSystems) || 
+    data.selectedSystems.length > 10 || 
+    !data.selectedSystems.every((s) => typeof s === 'string' && allowedSystems.includes(s))
+  )) return false;
 
   return true;
 }
@@ -206,6 +211,30 @@ const testCases = [
       status: 'contracted', // Non-new status
       createdAt: '2026-10-20T14:00:00Z',
       source: 'contact_form',
+    }),
+    expected: false,
+  },
+  {
+    name: 'Unauth: Reject inquiry with illegal selectedSystems values',
+    run: () => evaluateRule('create', 'inquiries', 'inq_attack_3', null, {
+      clientName: 'Attacker',
+      phone: '01000000000',
+      status: 'new',
+      createdAt: '2026-10-20T14:00:00Z',
+      source: 'contact_form',
+      selectedSystems: ['cctv', 'arbitrary_injection_attempt'],
+    }),
+    expected: false,
+  },
+  {
+    name: 'Unauth: Reject inquiry with non-string elements in selectedSystems',
+    run: () => evaluateRule('create', 'inquiries', 'inq_attack_4', null, {
+      clientName: 'Attacker',
+      phone: '01000000000',
+      status: 'new',
+      createdAt: '2026-10-20T14:00:00Z',
+      source: 'contact_form',
+      selectedSystems: [12345, true],
     }),
     expected: false,
   },

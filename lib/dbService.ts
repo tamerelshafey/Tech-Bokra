@@ -53,7 +53,7 @@ export async function saveSiteSettingsToCloud(
   let generalSaved = false;
 
   // Step 1: Save admin vault FIRST, so mediaVault is secured before general settings
-  if (Array.isArray(mediaVault)) {
+  if (Array.isArray(mediaVault) && mediaVault.length > 0) {
     try {
       await setDoc(adminVaultDocRef, {
         mediaVault,
@@ -64,6 +64,25 @@ export async function saveSiteSettingsToCloud(
     } catch (vaultError) {
       console.warn('Failed to save settings/admin_vault:', vaultError);
       // Resilience: Do NOT abort general settings save
+    }
+  } else if (Array.isArray(mediaVault) && mediaVault.length === 0) {
+    // PROTECTIVE GUARD: If mediaVault is passed as empty array, check if cloud already has items
+    // to prevent accidental wipe caused by failed or uninitialized vault load
+    try {
+      const currentVaultSnap = await getDoc(adminVaultDocRef);
+      if (currentVaultSnap.exists() && Array.isArray(currentVaultSnap.data()?.mediaVault) && currentVaultSnap.data()?.mediaVault.length > 0) {
+        console.warn('Protective guard: preserving existing cloud admin_vault; avoided wiping with empty uninitialized array.');
+        vaultSaved = true; // existing vault is kept intact
+      } else {
+        await setDoc(adminVaultDocRef, {
+          mediaVault: [],
+          updatedAt: new Date().toISOString(),
+          updatedBy: user?.email || auth?.currentUser?.email || 'admin@tech-bokra.com',
+        });
+        vaultSaved = true;
+      }
+    } catch (err) {
+      console.warn('Vault safety check notice:', err);
     }
   }
 
@@ -152,9 +171,22 @@ export async function migrateSettingsAndVaultSafely(user?: User | null): Promise
     });
 
     // Step 3: Strictly VERIFY that settings/admin_vault was persisted successfully
+    // Does NOT just count items; verifies exact ID matching and non-empty URLs
     const verifySnap = await getDoc(adminVaultDocRef);
-    if (!verifySnap.exists() || !Array.isArray(verifySnap.data()?.mediaVault)) {
-      throw new Error('Verification failed: settings/admin_vault was not confirmed. Aborting deletion.');
+    if (!verifySnap.exists()) {
+      throw new Error('Verification failed: settings/admin_vault was not created. Aborting deletion.');
+    }
+    const persistedItems = verifySnap.data()?.mediaVault;
+    if (!Array.isArray(persistedItems) || persistedItems.length !== targetVaultItems.length) {
+      throw new Error('Verification failed: mediaVault array length mismatch in admin_vault. Aborting deletion.');
+    }
+    const persistedIdMap = new Map(persistedItems.map((p) => [p.id, p]));
+    const allItemsVerified = targetVaultItems.every((target) => {
+      const persisted = persistedIdMap.get(target.id);
+      return persisted && persisted.url;
+    });
+    if (!allItemsVerified) {
+      throw new Error('Verification failed: asset ID or payload integrity mismatch in admin_vault. Aborting deletion.');
     }
 
     // Step 4: ONLY AFTER verified persistence, safely delete legacy fields from settings/general
@@ -207,6 +239,93 @@ export async function createSettingsBackup(): Promise<{
   }
 
   return backup;
+}
+
+/**
+ * Browser helper to download the backup snapshot as a downloadable .json file.
+ */
+export async function downloadSettingsBackupFile(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const backup = await createSettingsBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tech-bokra-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (err) {
+    console.error('Backup download error:', err);
+    return false;
+  }
+}
+
+/**
+ * Authoritative Restore: Restores settings and admin_vault from an exported JSON backup payload.
+ * Validates payload structure before committing to Firestore.
+ */
+export async function restoreSettingsFromBackup(backupPayload: {
+  timestamp?: string;
+  general?: Record<string, any> | null;
+  adminVault?: Record<string, any> | null;
+}): Promise<{
+  success: boolean;
+  restoredGeneral: boolean;
+  restoredVault: boolean;
+  message: string;
+}> {
+  if (!backupPayload || typeof backupPayload !== 'object') {
+    return { success: false, restoredGeneral: false, restoredVault: false, message: 'Invalid backup payload format.' };
+  }
+
+  let restoredGeneral = false;
+  let restoredVault = false;
+
+  try {
+    // 1. Restore Admin Vault if present in backup
+    if (backupPayload.adminVault && typeof backupPayload.adminVault === 'object') {
+      const vaultDocRef = doc(db, 'settings', 'admin_vault');
+      const vaultData = backupPayload.adminVault;
+      await setDoc(vaultDocRef, {
+        mediaVault: Array.isArray(vaultData.mediaVault) ? vaultData.mediaVault : [],
+        updatedAt: new Date().toISOString(),
+        updatedBy: vaultData.updatedBy || 'admin@tech-bokra.com',
+      });
+      restoredVault = true;
+    }
+
+    // 2. Restore General Settings (sanitizing out any mediaVault or updatedBy)
+    if (backupPayload.general && typeof backupPayload.general === 'object') {
+      const settingsDocRef = doc(db, 'settings', 'general');
+      const { mediaVault, updatedBy, ...safeGeneral } = backupPayload.general;
+      await setDoc(settingsDocRef, {
+        ...safeGeneral,
+        mediaVault: deleteField(),
+        updatedBy: deleteField(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      restoredGeneral = true;
+    }
+
+    return {
+      success: true,
+      restoredGeneral,
+      restoredVault,
+      message: 'Backup restored successfully to Firestore.',
+    };
+  } catch (error: any) {
+    console.error('Restore failed:', error);
+    return {
+      success: false,
+      restoredGeneral,
+      restoredVault,
+      message: error?.message || 'Restore failed due to an error.',
+    };
+  }
 }
 
 /**

@@ -75,7 +75,21 @@ service cloud.firestore {
         (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
         (!('facilityType' in data) || (data.facilityType is string && data.facilityType.size() <= 60)) &&
         (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
-        (!('selectedSystems' in data) || (data.selectedSystems is list && data.selectedSystems.size() <= 10));
+        (!('selectedSystems' in data) || (
+          data.selectedSystems is list && 
+          data.selectedSystems.size() <= 10 &&
+          data.selectedSystems.hasOnly([
+            'cctv', 
+            'network', 
+            'access', 
+            'software', 
+            'erp', 
+            'consulting', 
+            'all', 
+            'datacenter', 
+            'security'
+          ])
+        ));
     }
 
     // Validation for Admin Updating Inquiry Status
