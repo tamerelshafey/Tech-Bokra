@@ -48,10 +48,10 @@ export default function ServicesPage() {
 
   const categories = [
     { id: 'all', labelAr: 'كافة الحلول الهندسية', labelEn: 'All Solutions' },
-    { id: 'security', labelAr: 'كاميرات المراقبة والتحليل الذكي', labelEn: 'CCTV & AI Security' },
-    { id: 'network', labelAr: 'كابلات UTP والفايبر والداتا سنتر', labelEn: 'Cabling & Data Centers' },
-    { id: 'software', labelAr: 'المنصات وتطبيقات ERP', labelEn: 'Software & ERP' },
-    { id: 'consulting', labelAr: 'الاستشارات والاعتمادات الفنية', labelEn: 'Engineering Consulting' },
+    { id: 'security', labelAr: 'أنظمة الأمن المادي (CCTV والتحكم بالدخول)', labelEn: 'Physical Security Systems' },
+    { id: 'network', labelAr: 'البنية التحتية والشبكات ومراكز البيانات', labelEn: 'IT & Infrastructure' },
+    { id: 'elv', labelAr: 'أنظمة التيار الخفيف', labelEn: 'Low Current / ELV Systems' },
+    { id: 'software', labelAr: 'البرمجيات والحلول الرقمية', labelEn: 'Software & Digital Solutions' },
   ];
 
   const filteredServices = servicesList.filter((s) => {
@@ -86,20 +86,20 @@ export default function ServicesPage() {
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>{isAr ? 'دليل الحلول والأنظمة الهندسية المعتمدة' : 'Verified Engineering Systems Portfolio'}</span>
+              <span>{isAr ? 'حلول هندسية وتقنية للأعمال' : 'Engineering & Technology Solutions for Business'}</span>
             </div>
 
             <h1 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <span>{isAr ? 'حلول هندسية متكاملة للتيار الخفيف والشبكات' : 'Integrated Low-Current, IT &'}</span>{' '}
+              <span>{isAr ? 'حلول تقنية متكاملة،' : 'Integrated Technology Solutions,'}</span>{' '}
               <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>
-                {isAr ? 'وبرمجيات المؤسسات' : 'Enterprise Software'}
+                {isAr ? 'مصممة وفق احتياجات أعمالك' : 'Engineered for Business'}
               </span>
             </h1>
 
             <p className={`text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               {isAr
-                ? 'نقدم في "تيك بكرة" حلولاً تخصصية غير نمطية تجمع بين صلابة البنية التحتية الفيزيائية للشبكات وكابلات النحاس والألياف ومراكز البيانات، ودقة أنظمة المراقبة والتحكم، وذكاء المنصات الرقمية ومنظومات الـ ERP المتوافقة مع متطلبات الضرائب المصرية.'
-                : 'Turnkey engineering solutions combining mission-critical copper/fiber structured cabling, modular mini data centers, intelligent 4K AI surveillance, biometrics, bespoke ERP, and accredited consultant submittals.'}
+                ? 'نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءًا من تحديد الاحتياجات والتصميم، وصولًا إلى التنفيذ والدعم المستمر.'
+                : 'We deliver physical security systems, technology infrastructure, and software solutions tailored to business needs — from requirements and design to implementation and ongoing support.'}
             </p>
 
             {/* Category Filter Pills */}

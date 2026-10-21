@@ -114,6 +114,14 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
           >
             {data.projects.subtitle}
           </p>
+
+          {data.projects.confidentialityNotice && (
+            <div className={`text-xs mt-3 max-w-2xl mx-auto px-4 py-2 rounded-xl border ${
+              isDark ? 'bg-[#0B1A2F]/80 border-white/10 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+            }`}>
+              <span>🔒 {data.projects.confidentialityNotice}</span>
+            </div>
+          )}
         </div>
 
         {/* Filter Navigation */}

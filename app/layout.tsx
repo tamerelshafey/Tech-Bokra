@@ -26,8 +26,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tech-bokra.com'),
-  title: 'تيك بكرة | Tech Bokra - حلول الأنظمة الأمنية، البنية التحتية، وبرمجيات الشركات',
-  description: 'شركة تيك بكرة (Tech Bokra): رواد تأسيس البنية التحتية للشبكات، كاميرات المراقبة الذكية (CCTV)، أنظمة التيار الخفيف، وتطوير برمجيات الشركات وحلول ERP في مصر والشرق الأوسط.',
+  title: 'تيك بكرة | Tech Bokra - حلول تقنية متكاملة وهندسة البنية التحتية والأمن المادي',
+  description: 'حلول تقنية متكاملة، مصممة وفق احتياجات أعمالك. نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءًا من التخطيط والتصميم وحتى التنفيذ والدعم المستمر.',
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',
@@ -36,23 +36,24 @@ export const metadata: Metadata = {
   keywords: [
     'تيك بكرة',
     'Tech Bokra',
-    'كاميرات مراقبة',
-    'تيار خفيف',
-    'شبكات وسيرفرات',
-    'أنظمة ERP',
-    'CCTV Egypt',
-    'Low Current',
-    'تطبيقات جوال',
-    'شركة إيماك الخرافي',
-    'هاسيندا رأس سدر',
-    'محياي',
-    'هليو ان',
-    'EELAF KPI'
+    'حلول تقنية متكاملة',
+    'أنظمة الأمن المادي',
+    'كاميرات المراقبة CCTV',
+    'التحكم في الدخول',
+    'البنية التحتية والشبكات',
+    'الكابلات المنظمة',
+    'مراكز البيانات',
+    'أنظمة التيار الخفيف ELV',
+    'البرمجيات وحلول الأعمال',
+    'Physical Security Systems',
+    'Structured Cabling',
+    'IT Infrastructure',
+    'Enterprise Software'
   ],
   authors: [{ name: 'تيك بكرة - Tech Bokra' }],
   openGraph: {
-    title: 'تيك بكرة | Tech Bokra - هندسة المستقبل التقني والأمني',
-    description: 'شريكك الاستراتيجي في تأسيس البنية التحتية المتطورة للشبكات والأنظمة الأمنية والحلول البرمجية لقطاع الأعمال والمنشآت الكبرى.',
+    title: 'تيك بكرة | Tech Bokra - حلول تقنية متكاملة، مصممة وفق احتياجات أعمالك',
+    description: 'نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات — من التخطيط والتصميم إلى التنفيذ والدعم المستمر.',
     url: 'https://tech-bokra.com',
     siteName: 'تيك بكرة | Tech Bokra',
     images: [
@@ -68,8 +69,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'تيك بكرة | Tech Bokra',
-    description: 'نبتكر الحلول الأمنية والتقنية لتأمين ونمو أعمالك.',
+    title: 'تيك بكرة | Tech Bokra - حلول هندسية وتقنية للأعمال',
+    description: 'Integrated Technology Solutions. Engineered for Business.',
     images: ['/logo.svg'],
   },
   robots: {

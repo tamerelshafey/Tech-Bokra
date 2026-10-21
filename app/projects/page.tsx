@@ -102,31 +102,34 @@ export default function ProjectsPage() {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isAr ? 'سجل الإنجازات والمشاريع المنفذة' : 'Proven Track Record & Case Studies'}</span>
+              <span>{isAr ? 'نماذج مشروعات وحلول هندسية' : 'Engineering Projects & Solutions'}</span>
             </div>
 
             <h1 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <span>{isAr ? 'مشاريع هندسية وقصص نجاح' : 'Engineering Projects &'}</span>{' '}
-              <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>
-                {isAr ? 'موثقة وميدانية' : 'Field Case Studies'}
-              </span>
+              <span>{data.projects.title}</span>
             </h1>
 
             <p className={`text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              {isAr
-                ? 'استعرض تفاصيل مشاريعنا المنفذة في كبرى المنشآت والمجمعات: من شبكات الفايبر وكابلات Cat6A، إلى غرف الخوادم ومراكز البيانات المصغرة، ومنظومات المراقبة 4K الذكية، وصولاً إلى بوابات التحكم والمنصات السحابية.'
-                : 'Explore detailed case studies across enterprise facilities: from Cat6A & single-mode fiber optic backbones, to modular data centers, 4K CCTV analytics, speed gates, and custom enterprise portals.'}
+              {data.projects.subtitle}
             </p>
+
+            {data.projects.confidentialityNotice && (
+              <div className={`p-4 rounded-2xl border text-xs sm:text-sm text-center max-w-3xl mx-auto ${
+                isDark ? 'bg-[#0B1A2F]/80 border-white/10 text-slate-300' : 'bg-sky-50/80 border-sky-200 text-slate-700'
+              }`}>
+                <span className="font-bold text-amber-500">🔒 {isAr ? 'تنويه السرية التعاقدية: ' : 'Confidentiality Note: '}</span>
+                <span>{data.projects.confidentialityNotice}</span>
+              </div>
+            )}
 
             {/* Filter Tabs */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-6">
               {[
                 { id: 'all', label: data.projects.filterAll },
-                { id: 'security', label: isAr ? '🛡️ كاميرات ومراقبة' : 'CCTV & Security' },
-                { id: 'network', label: isAr ? '🌐 شبكات وفايبر وداتا سنتر' : 'Networks & Fiber' },
-                { id: 'software', label: isAr ? '💻 منصات متخصصة' : 'Specialist Portals' },
-                { id: 'erp', label: isAr ? '⚡ أنظمة ERP والضرائب' : 'Custom ERP' },
-                { id: 'upcoming', label: isAr ? '🚀 منصات قيد الإطلاق' : 'Upcoming Platforms' },
+                { id: 'security', label: data.projects.filterSecurity },
+                { id: 'network', label: data.projects.filterNetwork },
+                { id: 'software', label: data.projects.filterSoftware },
+                { id: 'upcoming', label: data.projects.filterUpcoming },
               ].map((tab) => (
                 <button
                   key={tab.id}

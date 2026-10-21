@@ -41,12 +41,15 @@ export default function ContactSection({
 
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [workEmail, setWorkEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [service, setService] = useState('cctv');
   const [governorate, setGovernorate] = useState('cairo');
+  const [timeline, setTimeline] = useState('planning');
   const [notes, setNotes] = useState(prefilledNotes || '');
   const [errorMsg, setErrorMsg] = useState('');
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const lastSubmitTimeRef = React.useRef<number>(0);
 
@@ -54,13 +57,11 @@ export default function ContactSection({
   if (prefilledService !== prevPrefilledService) {
     setPrevPrefilledService(prefilledService);
     if (prefilledService) {
-      if (prefilledService.includes('CCTV') || prefilledService.includes('مراقبة') || prefilledService.includes('تخزين')) setService('cctv');
-      else if (prefilledService.includes('ألياف') || prefilledService.includes('شبك') || prefilledService.includes('UTP') || prefilledService.includes('داتا سنتر') || prefilledService.includes('DCIM')) setService('network');
-      else if (prefilledService.includes('بصمة') || prefilledService.includes('بوابات') || prefilledService.includes('Access')) setService('access');
-      else if (prefilledService.includes('منص') || prefilledService.includes('مواقع') || prefilledService.includes('Platform') || prefilledService.includes('PropTech')) setService('software');
-      else if (prefilledService.includes('ERP') || prefilledService.includes('تطبيق') || prefilledService.includes('فاتورة')) setService('erp');
-      else if (prefilledService.includes('اعتماد') || prefilledService.includes('استشار') || prefilledService.includes('Submittal') || prefilledService.includes('مناقص')) setService('consulting');
-      else setService('consulting');
+      if (prefilledService.includes('CCTV') || prefilledService.includes('مراقبة') || prefilledService.includes('أمن')) setService('cctv');
+      else if (prefilledService.includes('ألياف') || prefilledService.includes('شبك') || prefilledService.includes('UTP') || prefilledService.includes('داتا سنتر') || prefilledService.includes('بنية')) setService('network');
+      else if (prefilledService.includes('خفيف') || prefilledService.includes('إنذار') || prefilledService.includes('صوت') || prefilledService.includes('ELV')) setService('elv');
+      else if (prefilledService.includes('برمج') || prefilledService.includes('تطبيق') || prefilledService.includes('منص') || prefilledService.includes('Software')) setService('software');
+      else setService('turnkey');
     }
   }
 
@@ -73,21 +74,27 @@ export default function ContactSection({
   }
 
   const governorateOptions = [
-    { id: 'cairo', labelAr: 'القاهرة الكبرى والتجمع والمدن الجديدة', labelEn: 'Cairo & New Cities' },
+    { id: 'cairo', labelAr: 'القاهرة الكبرى والمدن الجديدة (التجمع، العاصمة، الشروق)', labelEn: 'Cairo & New Cities' },
     { id: 'giza', labelAr: 'الجيزة و 6 أكتوبر والشيخ زايد', labelEn: 'Giza, 6th of October & Zayed' },
-    { id: 'alex', labelAr: 'الإسكندرية والساحل الشمالي', labelEn: 'Alexandria & North Coast' },
-    { id: 'redsea', labelAr: 'البحر الأحمر والغردقة والجونة', labelEn: 'Red Sea & Hurghada' },
-    { id: 'delta', labelAr: 'محافظات الدلتا والقناة', labelEn: 'Delta & Canal Governorates' },
-    { id: 'upper', labelAr: 'محافظات الصعيد ومحاور الطاقة', labelEn: 'Upper Egypt Governorates' },
+    { id: 'alex', labelAr: 'الإسكندرية والساحل الشمالي ومطروح', labelEn: 'Alexandria & North Coast' },
+    { id: 'canal', labelAr: 'مدن القناة (السويس، الإسماعيلية، بورسعيد)', labelEn: 'Canal Cities (Suez, Ismailia, Port Said)' },
+    { id: 'delta', labelAr: 'محافظات الدلتا والمناطق الصناعية', labelEn: 'Delta & Industrial Zones' },
+    { id: 'redsea', labelAr: 'البحر الأحمر والغردقة وجنوب سيناء', labelEn: 'Red Sea & South Sinai' },
+    { id: 'upper', labelAr: 'محافظات الصعيد ومحاور التنمية', labelEn: 'Upper Egypt Governorates' },
   ];
 
   const serviceOptions = [
-    { id: 'cctv', labelAr: 'كاميرات المراقبة الذكية 4K وتحليلات AI', labelEn: '4K CCTV & AI Analytics' },
-    { id: 'network', labelAr: 'كابلات UTP والفايبر وتجهيز داتا سنتر و DCIM ومراكز مصغرة', labelEn: 'UTP/Fiber, Data Center Fit-out & DCIM' },
-    { id: 'access', labelAr: 'بوابات المرور السريعة والتحكم في الدخول البيومتري', labelEn: 'Biometric Access & Turnstiles' },
-    { id: 'software', labelAr: 'المواقع والمنصات المتخصصة ذات العمليات المتراكمة', labelEn: 'Specialized Web Platforms with Complex Workflows' },
-    { id: 'erp', labelAr: 'التطبيقات المتخصصة ومنظومات ERP والربط الضريبي ETA', labelEn: 'Specialized Enterprise Apps & Custom ERP' },
-    { id: 'consulting', labelAr: 'الاستشارات الهندسية وإعداد الاعتمادات الفنية (Technical Submittals)', labelEn: 'Technical Submittals & Engineering Consultation' },
+    { id: 'cctv', labelAr: 'أنظمة الأمن المادي (المراقبة بالكاميرات والتحكم في الدخول)', labelEn: 'Physical Security Systems (CCTV & Access Control)' },
+    { id: 'network', labelAr: 'البنية التحتية والشبكات ومراكز البيانات (الكابلات المنظمة وغرف الخوادم)', labelEn: 'Networking & IT Infrastructure (Structured Cabling & Server Rooms)' },
+    { id: 'elv', labelAr: 'أنظمة التيار الخفيف (الإنذار، الصوتيات، الاتصال الداخلي)', labelEn: 'Low Current / ELV Systems (Fire Alarm, PA/BGM, Intercom)' },
+    { id: 'software', labelAr: 'البرمجيات والحلول الرقمية (تطبيقات مخصصة وتكامل الأنظمة)', labelEn: 'Software & Digital Solutions (Custom Apps, ERP & APIs)' },
+    { id: 'turnkey', labelAr: 'مشروعات متكاملة (أمن مادي + شبكات وبنية تحتية)', labelEn: 'Integrated Turnkey Project (Security & Infrastructure)' },
+  ];
+
+  const timelineOptions = [
+    { id: 'urgent', labelAr: 'عاجل (خلال أسبوعين)', labelEn: 'Urgent (Within 2 weeks)' },
+    { id: 'month', labelAr: 'خلال شهر', labelEn: 'Within 1 month' },
+    { id: 'planning', labelAr: 'مرحلة التخطيط والدراسة', labelEn: 'Planning & Feasibility Phase' },
   ];
 
   const validate = () => {
@@ -96,13 +103,13 @@ export default function ContactSection({
       return false;
     }
 
-    // Rate limiting: 15 seconds cooldown
+    // Rate limiting: 10 seconds cooldown
     const now = Date.now();
-    if (now - lastSubmitTimeRef.current < 15000) {
+    if (now - lastSubmitTimeRef.current < 10000) {
       setErrorMsg(
         isAr 
-          ? 'تم استلام طلبك مؤخراً. يرجى الانتظار 15 ثانية قبل إرسال طلب جديد لمنع التكرار.' 
-          : 'Your request was recently recorded. Please wait 15 seconds before submitting another inquiry.'
+          ? 'تم استلام طلبك مؤخراً. يرجى الانتظار بضع ثوانٍ قبل إرسال طلب جديد لمنع التكرار.' 
+          : 'Your request was recently recorded. Please wait a few seconds before submitting again.'
       );
       return false;
     }
@@ -112,12 +119,16 @@ export default function ContactSection({
       return false;
     }
     if (!company.trim() || company.trim().length < 2) {
-      setErrorMsg(isAr ? 'يرجى تحديد اسم المنشأة أو الشركة' : 'Please provide facility / company name');
+      setErrorMsg(isAr ? 'يرجى تحديد اسم الشركة أو الجهة' : 'Please provide company or organization name');
       return false;
     }
     const cleanPhone = phone.trim().replace(/[\s-]/g, '');
     if (!cleanPhone || cleanPhone.length < 8 || !/^[+0-9]+$/.test(cleanPhone)) {
-      setErrorMsg(isAr ? 'يرجى كتابة رقم هاتف صحيح للتواصل (أرقام فقط)' : 'Please provide a valid phone number');
+      setErrorMsg(isAr ? 'يرجى كتابة رقم هاتف أو واتساب صحيح للتواصل (أرقام فقط)' : 'Please provide a valid phone/WhatsApp number');
+      return false;
+    }
+    if (workEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(workEmail.trim())) {
+      setErrorMsg(isAr ? 'يرجى كتابة بريد إلكتروني صحيح' : 'Please provide a valid email address');
       return false;
     }
     setErrorMsg('');
@@ -127,24 +138,76 @@ export default function ContactSection({
   const getFormattedMessage = () => {
     const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
     const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
+    const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
 
     return isAr
-      ? `طلب استشارة ومعاينة فنية هندسية - تيك بكرة:\n` +
+      ? `استفسار مشروع - تيك بكرة (Tech Bokra):\n` +
         `• الاسم: ${name}\n` +
-        `• المنشأة / الشركة: ${company}\n` +
-        `• الهاتف: ${phone}\n` +
-        `• التخصص المطلوب: ${sName}\n` +
-        `• النطاق الجغرافي: ${gName}\n` +
+        `• الشركة / الجهة: ${company}\n` +
+        (workEmail ? `• البريد الإلكتروني: ${workEmail}\n` : '') +
+        `• الهاتف / واتساب: ${phone}\n` +
+        `• نوع الحل المطلوب: ${sName}\n` +
+        `• موقع المشروع: ${gName}\n` +
+        `• الإطار الزمني المتوقع: ${tName}\n` +
         (notes ? `• تفاصيل إضافية: ${notes}\n` : '') +
-        `\nأرجو التكرم بالتواصل لتحديد موعد المعاينة.`
-      : `Tech Bokra Inquiry & Quote Request:\n` +
+        `\nأرجو مراجعة المتطلبات والتواصل لتحديد الخطوة التالية.`
+      : `Project Inquiry - Tech Bokra:\n` +
         `• Full Name: ${name}\n` +
-        `• Facility: ${company}\n` +
-        `• Phone: ${phone}\n` +
+        `• Company: ${company}\n` +
+        (workEmail ? `• Work Email: ${workEmail}\n` : '') +
+        `• Phone / WhatsApp: ${phone}\n` +
         `• Solution: ${sName}\n` +
         `• Location: ${gName}\n` +
-        (notes ? `• Details: ${notes}\n` : '') +
-        `\nPlease get back to me regarding this inquiry.`;
+        `• Timeline: ${tName}\n` +
+        (notes ? `• Scope Details: ${notes}\n` : '') +
+        `\nPlease review requirements and get in touch to discuss next steps.`;
+  };
+
+  const handleSubmitInquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setIsSubmitting(true);
+    lastSubmitTimeRef.current = Date.now();
+    const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const mapServiceToFirestore = (srv: string): string[] => {
+      if (srv === 'cctv') return ['cctv'];
+      if (srv === 'network') return ['network'];
+      if (srv === 'software') return ['software'];
+      if (srv === 'elv') return ['security'];
+      if (srv === 'turnkey') return ['all'];
+      return ['cctv'];
+    };
+
+    try {
+      const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
+      const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
+      const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
+      const combinedNotes = [
+        `الخدمة: ${sName}`,
+        `الموقع: ${gName}`,
+        `الجدول الزمني: ${tName}`,
+        workEmail ? `البريد: ${workEmail}` : '',
+        notes ? `الوصف: ${notes}` : ''
+      ].filter(Boolean).join(' | ');
+
+      await submitInquiry({
+        clientName: name,
+        phone,
+        facilityType: company,
+        selectedSystems: mapServiceToFirestore(service),
+        notes: combinedNotes,
+        source: 'contact_form',
+      });
+      setSubmittedRef(ref);
+      setErrorMsg('');
+    } catch (err) {
+      console.warn('Inquiry save error:', err);
+      // Fallback: still show ref to user since local state captured it
+      setSubmittedRef(ref);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSendWhatsApp = (e: React.FormEvent) => {
@@ -155,13 +218,25 @@ export default function ContactSection({
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
 
+    const mapServiceToFirestore = (srv: string): string[] => {
+      if (srv === 'cctv') return ['cctv'];
+      if (srv === 'network') return ['network'];
+      if (srv === 'software') return ['software'];
+      if (srv === 'elv') return ['security'];
+      if (srv === 'turnkey') return ['all'];
+      return ['cctv'];
+    };
+
     // Persist lead to Firestore asynchronously
+    const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
+    const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
+    const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
     submitInquiry({
       clientName: name,
       phone,
       facilityType: company,
-      selectedSystems: service ? [service] : [],
-      notes: notes ? `المحافظة: ${governorate} | ${notes}` : `المحافظة: ${governorate}`,
+      selectedSystems: mapServiceToFirestore(service),
+      notes: `واتساب | الخدمة: ${sName} | الموقع: ${gName} | الجدول: ${tName} | ${notes || ''}`,
       source: 'contact_form',
     }).catch((err) => console.warn('Inquiry auto-save error:', err));
 
@@ -176,18 +251,30 @@ export default function ContactSection({
     const ref = `TB-${Math.floor(1000 + Math.random() * 9000)}`;
     setSubmittedRef(ref);
 
+    const mapServiceToFirestore = (srv: string): string[] => {
+      if (srv === 'cctv') return ['cctv'];
+      if (srv === 'network') return ['network'];
+      if (srv === 'software') return ['software'];
+      if (srv === 'elv') return ['security'];
+      if (srv === 'turnkey') return ['all'];
+      return ['cctv'];
+    };
+
     // Persist lead to Firestore asynchronously
+    const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
+    const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
+    const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
     submitInquiry({
       clientName: name,
       phone,
       facilityType: company,
-      selectedSystems: service ? [service] : [],
-      notes: notes ? `المحافظة: ${governorate} | ${notes}` : `المحافظة: ${governorate}`,
+      selectedSystems: mapServiceToFirestore(service),
+      notes: `بريد | الخدمة: ${sName} | الموقع: ${gName} | الجدول: ${tName} | ${notes || ''}`,
       source: 'contact_form',
     }).catch((err) => console.warn('Inquiry auto-save error:', err));
 
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(
-      isAr ? `طلب أو استفسار: ${company}` : `Inquiry & Quote Request: ${company}`
+      isAr ? `استفسار مشروع جديد: ${company}` : `Project Inquiry: ${company}`
     )}&body=${encodeURIComponent(text)}`;
   };
 
@@ -290,6 +377,7 @@ export default function ContactSection({
                 />
               </div>
               
+              {/* Row 1: Name and Company */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -330,7 +418,26 @@ export default function ContactSection({
                 </div>
               </div>
 
+              {/* Row 2: Work Email and Phone/WhatsApp */}
               <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {data.contact.emailLabel || (isAr ? 'البريد الإلكتروني للعمل' : 'Work Email')}
+                  </label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={workEmail}
+                    onChange={(e) => setWorkEmail(e.target.value)}
+                    placeholder={data.contact.emailPlaceholder || 'name@company.com'}
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white placeholder-slate-500 focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
+                  />
+                </div>
+
                 <div>
                   <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     {data.contact.phoneLabel} <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>*</span>
@@ -348,6 +455,34 @@ export default function ContactSection({
                         : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
                     }`}
                   />
+                </div>
+              </div>
+
+              {/* Row 3: Solution Service and Project Location */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {data.contact.serviceLabel}
+                  </label>
+                  <select
+                    value={service}
+                    onChange={(e) => setService(e.target.value)}
+                    className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition cursor-pointer border ${
+                      isDark
+                        ? 'bg-[#10233D] border-white/10 text-white focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
+                    }`}
+                  >
+                    {serviceOptions.map((opt) => (
+                      <option 
+                        key={opt.id} 
+                        value={opt.id} 
+                        className={isDark ? 'bg-[#0B1A2F] text-white' : 'bg-white text-slate-900'}
+                      >
+                        {isAr ? opt.labelAr : opt.labelEn}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -376,20 +511,21 @@ export default function ContactSection({
                 </div>
               </div>
 
+              {/* Row 4: Expected Timeline */}
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {data.contact.serviceLabel}
+                  {data.contact.timelineLabel || (isAr ? 'الإطار الزمني المتوقع للبدء' : 'Expected Project Timeline')}
                 </label>
                 <select
-                  value={service}
-                  onChange={(e) => setService(e.target.value)}
+                  value={timeline}
+                  onChange={(e) => setTimeline(e.target.value)}
                   className={`w-full rounded-xl px-3.5 py-3 text-xs sm:text-sm outline-none transition cursor-pointer border ${
                     isDark
                       ? 'bg-[#10233D] border-white/10 text-white focus:border-[#00F2FE] focus:ring-1 focus:ring-[#00F2FE]'
                       : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] focus:bg-white'
                   }`}
                 >
-                  {serviceOptions.map((opt) => (
+                  {timelineOptions.map((opt) => (
                     <option 
                       key={opt.id} 
                       value={opt.id} 
@@ -401,6 +537,7 @@ export default function ContactSection({
                 </select>
               </div>
 
+              {/* Row 5: Notes & Brief Scope */}
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   {data.contact.notesLabel}
@@ -418,12 +555,28 @@ export default function ContactSection({
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="grid sm:grid-cols-2 gap-3 pt-3">
+              {/* Primary Direct Form Submit */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleSubmitInquiry}
+                  disabled={isSubmitting}
+                  className={`w-full py-3.5 px-6 rounded-xl font-black text-xs sm:text-sm shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${
+                    isDark
+                      ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] hover:brightness-110 shadow-[0_0_20px_rgba(0,242,254,0.3)]'
+                      : 'bg-[#0284C7] hover:bg-[#0369A1] text-white shadow-md'
+                  }`}
+                >
+                  <span>{isSubmitting ? (data.contact.btnSubmitting || (isAr ? 'جارٍ إرسال الاستفسار...' : 'Submitting...')) : (data.contact.btnSubmit || (isAr ? 'إرسال استفسار المشروع' : 'Send Project Inquiry'))}</span>
+                </button>
+              </div>
+
+              {/* Secondary Options: WhatsApp and Email */}
+              <div className="grid sm:grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={handleSendWhatsApp}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs shadow-sm transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{data.contact.btnWhatsapp}</span>
@@ -432,15 +585,20 @@ export default function ContactSection({
                 <button
                   type="button"
                   onClick={handleSendEmail}
-                  className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer border-2 ${
+                  className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer border ${
                     isDark
-                      ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE] text-[#00F2FE]'
-                      : 'bg-sky-50 hover:bg-[#0284C7] hover:text-white border-[#0284C7] text-[#0284C7]'
+                      ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/40 text-[#00F2FE]'
+                      : 'bg-sky-50 hover:bg-[#0284C7] hover:text-white border-sky-300 text-[#0284C7]'
                   }`}
                 >
                   <Mail className="w-4 h-4" />
                   <span>{data.contact.btnEmail}</span>
                 </button>
+              </div>
+
+              {/* Disclaimer Note */}
+              <div className={`pt-3 border-t text-[11px] leading-relaxed ${isDark ? 'border-white/5 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
+                {data.contact.disclaimer}
               </div>
 
             </form>
