@@ -46,6 +46,11 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
   const isAr = lang === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
+  const handleTabChange = (tab: 'cctv' | 'network' | 'software' | 'erp' | 'consulting' | 'access') => {
+    setActiveTab(tab);
+    setHeroImageError(false);
+  };
+
   const telemetryData = {
     cctv: {
       titleAr: 'منظومة المراقبة المركزية والذكاء الاصطناعي (CCTV & AI Video)',
@@ -284,7 +289,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 py-4">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('cctv')}
+                  onClick={() => handleTabChange('cctv')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'cctv'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
@@ -300,7 +305,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('network')}
+                  onClick={() => handleTabChange('network')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'network'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
@@ -316,7 +321,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('software')}
+                  onClick={() => handleTabChange('software')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'software'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
@@ -332,7 +337,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('erp')}
+                  onClick={() => handleTabChange('erp')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'erp'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
@@ -348,7 +353,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('consulting')}
+                  onClick={() => handleTabChange('consulting')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'consulting'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'
@@ -364,7 +369,7 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('access')}
+                  onClick={() => handleTabChange('access')}
                   className={`p-2 rounded-xl text-[11px] font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                     activeTab === 'access'
                       ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] font-bold shadow-md'

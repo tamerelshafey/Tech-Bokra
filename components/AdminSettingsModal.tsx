@@ -60,10 +60,10 @@ import {
 import { compressImageFile } from '@/lib/storageHelper';
 import { verifyAdminStatus } from '@/lib/authHelper';
 
-export type { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
-export { defaultEditableConfig } from '@/lib/siteConfig';
-import type { EditableConfig } from '@/lib/siteConfig';
+import type { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
 import { defaultEditableConfig } from '@/lib/siteConfig';
+export type { EditableConfig, MediaVaultItem };
+export { defaultEditableConfig };
 
 interface AdminSettingsModalProps {
   isOpen: boolean;
@@ -179,9 +179,11 @@ export default function AdminSettingsModal({
     // Save to Cloud Firestore
     setIsSavingCloud(true);
     try {
-      await saveSiteSettingsToCloud(formData, user);
-      setCloudSavedSuccess(true);
-      setTimeout(() => setCloudSavedSuccess(false), 4000);
+      const result = await saveSiteSettingsToCloud(formData, user);
+      if (result.generalSaved) {
+        setCloudSavedSuccess(true);
+        setTimeout(() => setCloudSavedSuccess(false), 4000);
+      }
     } catch (err: unknown) {
       console.warn('Cloud save skipped or warning:', err);
     } finally {

@@ -365,15 +365,12 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
         // Explicitly exclude any internal/admin fields from public state
         const { mediaVault, updatedBy, ...safePublicData } = rawData as Record<string, any>;
         
-        // Defensive check: if cloud doc has old/stale services (< 6 items), preserve new 6 services
-        const resolvedServicesList = (Array.isArray(safePublicData.servicesList) && safePublicData.servicesList.length >= 6)
+        // Defensive check: if cloud doc has services list, use it; otherwise fallback to default services
+        const resolvedServicesList = (Array.isArray(safePublicData.servicesList) && safePublicData.servicesList.length > 0)
           ? safePublicData.servicesList
           : defaultEditableConfig.servicesList;
 
-        // Defensive check: if cloud doc has old hero sub, preserve new hero sub
-        const resolvedHeroSubAr = (safePublicData.heroSubAr && safePublicData.heroSubAr.includes('UTP'))
-          ? safePublicData.heroSubAr
-          : defaultEditableConfig.heroSubAr;
+        const resolvedHeroSubAr = safePublicData.heroSubAr || defaultEditableConfig.heroSubAr;
 
         onUpdate({
           ...defaultEditableConfig,

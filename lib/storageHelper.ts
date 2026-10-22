@@ -5,7 +5,7 @@
 import { EditableConfig, MediaVaultItem } from '@/components/AdminSettingsModal';
 import { Project } from '@/lib/content';
 
-export const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v4';
+export const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v5';
 
 /**
  * Client-side canvas compression for uploaded images.
@@ -170,7 +170,7 @@ export function safeLoadConfigFromStorage(
 
   try {
     // Purge outdated storage keys to free browser quota and eliminate stale configs
-    ['tech_bokra_custom_config_v1', 'tech_bokra_custom_config_v2', 'tech_bokra_custom_config_v3'].forEach((oldKey) => {
+    ['tech_bokra_custom_config_v1', 'tech_bokra_custom_config_v2', 'tech_bokra_custom_config_v3', 'tech_bokra_custom_config_v4'].forEach((oldKey) => {
       try {
         localStorage.removeItem(oldKey);
       } catch {
@@ -181,16 +181,6 @@ export function safeLoadConfigFromStorage(
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-
-    // Defensive check: if cached config has old/stale services (< 6 items), discard cached services
-    if (parsed && Array.isArray(parsed.servicesList) && parsed.servicesList.length < 6) {
-      delete parsed.servicesList;
-    }
-
-    // Defensive check: if cached config has old hero sub, discard cached hero sub
-    if (parsed && parsed.heroSubAr && !parsed.heroSubAr.includes('UTP')) {
-      delete parsed.heroSubAr;
-    }
 
     return parsed;
   } catch (err) {

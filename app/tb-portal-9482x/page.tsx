@@ -89,7 +89,7 @@ import {
   compressImageFile 
 } from '@/lib/storageHelper';
 
-const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v4';
+const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v5';
 const BRUTE_FORCE_KEY = 'tb_failed_attempts_count_v1';
 
 // Curated high-res presets for surveillance, server rooms, smart access & cloud dashboards

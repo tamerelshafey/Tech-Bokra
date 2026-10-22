@@ -43,8 +43,8 @@ export default function HomePage() {
     root.setAttribute('dir', isAr ? 'rtl' : 'ltr');
     document.title =
       isAr
-        ? 'تيك بكرة | Tech Bokra - حلول الأنظمة الأمنية، البنية التحتية، وبرمجيات الشركات'
-        : 'Tech Bokra | Security & IT Infrastructure, ERP & Cloud Solutions';
+        ? 'تيك بكرة | Tech Bokra - حلول تقنية متكاملة وهندسة البنية التحتية والأمن المادي'
+        : 'Tech Bokra | Integrated Technology Solutions, IT Infrastructure & Physical Security';
   }, [lang, isAr]);
 
   useEffect(() => {
