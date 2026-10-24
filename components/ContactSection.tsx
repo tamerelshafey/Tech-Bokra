@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   ShieldCheck, 
   MessageSquare, 
@@ -14,6 +15,23 @@ import {
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 import { submitInquiry } from '@/lib/dbService';
+import { getContactSelectOptions, getServiceBySlug } from '@/lib/services';
+
+function ContactQuerySync({
+  onSync,
+}: {
+  onSync: (serviceParam: string | null, scopeParam: string | null) => void;
+}) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const s = searchParams.get('service');
+    const n = searchParams.get('scope') || searchParams.get('notes');
+    if (s || n) {
+      onSync(s, n);
+    }
+  }, [searchParams, onSync]);
+  return null;
+}
 
 interface ContactSectionProps {
   lang: 'ar' | 'en';
@@ -53,15 +71,51 @@ export default function ContactSection({
   const [honeypot, setHoneypot] = useState('');
   const lastSubmitTimeRef = React.useRef<number>(0);
 
+  const contactSelectData = getContactSelectOptions(lang);
+
+  const handleSyncQuery = useCallback((paramService: string | null, paramNotes: string | null) => {
+    if (paramService) {
+      const normalized = paramService.toLowerCase().trim();
+      const CATEGORY_MAP: Record<string, string> = {
+        'security': 'cctv',
+        'cctv': 'cctv',
+        'physical-security-systems': 'cctv',
+        'network': 'network',
+        'networking-infrastructure': 'network',
+        'elv': 'elv',
+        'elv-systems': 'elv',
+        'software': 'software',
+        'software-digital-solutions': 'software',
+        'turnkey': 'turnkey',
+      };
+
+      if (CATEGORY_MAP[normalized]) {
+        setService(CATEGORY_MAP[normalized]);
+      } else {
+        const sub = getServiceBySlug(normalized);
+        if (sub) {
+          setService(sub.slug);
+        } else if (paramService.includes('CCTV') || paramService.includes('مراقبة') || paramService.includes('أمن')) {
+          setService('cctv');
+        } else if (paramService.includes('ألياف') || paramService.includes('شبك') || paramService.includes('UTP') || paramService.includes('داتا سنتر') || paramService.includes('بنية')) {
+          setService('network');
+        } else if (paramService.includes('خفيف') || paramService.includes('إنذار') || paramService.includes('صوت') || paramService.includes('ELV')) {
+          setService('elv');
+        } else if (paramService.includes('برمج') || paramService.includes('تطبيق') || paramService.includes('منص') || paramService.includes('Software')) {
+          setService('software');
+        }
+      }
+    }
+    if (paramNotes) {
+      setNotes(paramNotes);
+    }
+  }, []);
+
   const [prevPrefilledService, setPrevPrefilledService] = useState(prefilledService);
   if (prefilledService !== prevPrefilledService) {
     setPrevPrefilledService(prefilledService);
     if (prefilledService) {
-      if (prefilledService.includes('CCTV') || prefilledService.includes('مراقبة') || prefilledService.includes('أمن')) setService('cctv');
-      else if (prefilledService.includes('ألياف') || prefilledService.includes('شبك') || prefilledService.includes('UTP') || prefilledService.includes('داتا سنتر') || prefilledService.includes('بنية')) setService('network');
-      else if (prefilledService.includes('خفيف') || prefilledService.includes('إنذار') || prefilledService.includes('صوت') || prefilledService.includes('ELV')) setService('elv');
-      else if (prefilledService.includes('برمج') || prefilledService.includes('تطبيق') || prefilledService.includes('منص') || prefilledService.includes('Software')) setService('software');
-      else setService('turnkey');
+      handleSyncQuery(prefilledService, null);
     }
   }
 
@@ -90,6 +144,14 @@ export default function ContactSection({
     { id: 'software', labelAr: 'البرمجيات والحلول الرقمية (تطبيقات مخصصة وتكامل الأنظمة)', labelEn: 'Software & Digital Solutions (Custom Apps, ERP & APIs)' },
     { id: 'turnkey', labelAr: 'مشروعات متكاملة (أمن مادي + شبكات وبنية تحتية)', labelEn: 'Integrated Turnkey Project (Security & Infrastructure)' },
   ];
+
+  const getServiceLabel = (srvId: string) => {
+    const top = serviceOptions.find((s) => s.id === srvId);
+    if (top) return isAr ? top.labelAr : top.labelEn;
+    const sub = getServiceBySlug(srvId);
+    if (sub) return sub.title[lang];
+    return srvId;
+  };
 
   const timelineOptions = [
     { id: 'urgent', labelAr: 'عاجل (خلال أسبوعين)', labelEn: 'Urgent (Within 2 weeks)' },
@@ -136,7 +198,7 @@ export default function ContactSection({
   };
 
   const getFormattedMessage = () => {
-    const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
+    const sName = getServiceLabel(service);
     const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
     const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
 
@@ -174,15 +236,17 @@ export default function ContactSection({
       if (srv === 'cctv') return ['cctv'];
       if (srv === 'network') return ['network'];
       if (srv === 'software') return ['software'];
-      if (srv === 'elv') return ['security'];
+      if (srv === 'elv') return ['elv'];
       if (srv === 'turnkey') return ['all'];
+      const sub = getServiceBySlug(srv);
+      if (sub) return [sub.category, sub.slug];
       return ['cctv'];
     };
 
     try {
       const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
       const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
-      const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
+      const sName = getServiceLabel(service);
       const combinedNotes = [
         `الخدمة: ${sName}`,
         `الموقع: ${gName}`,
@@ -285,6 +349,10 @@ export default function ContactSection({
         isDark ? 'bg-[#071120] border-white/5 cyber-grid' : 'bg-white border-slate-200 cyber-grid'
       }`}
     >
+      <Suspense fallback={null}>
+        <ContactQuerySync onSync={handleSyncQuery} />
+      </Suspense>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
@@ -364,8 +432,8 @@ export default function ContactSection({
 
             <form className="space-y-4 text-start">
               {/* Invisible Bot Honeypot Field */}
-              <div style={{ display: 'none', position: 'absolute', left: '-9999px' }} aria-hidden="true">
-                <label htmlFor="website_hp">Leave this empty</label>
+              <div className="hidden sr-only pointer-events-none" style={{ display: 'none' }} aria-hidden="true">
+                <label htmlFor="website_hp" className="sr-only">Do not fill this field</label>
                 <input
                   id="website_hp"
                   type="text"
@@ -477,11 +545,59 @@ export default function ContactSection({
                       <option 
                         key={opt.id} 
                         value={opt.id} 
-                        className={isDark ? 'bg-[#0B1A2F] text-white' : 'bg-white text-slate-900'}
+                        className={isDark ? 'bg-[#0B1A2F] text-white font-bold' : 'bg-white text-slate-900 font-bold'}
                       >
                         {isAr ? opt.labelAr : opt.labelEn}
                       </option>
                     ))}
+
+                    <optgroup label={isAr ? '── أنظمة الأمن المادي والمراقبة ──' : '── Physical Security Solutions ──'}>
+                      {contactSelectData.subServicesByCategory.security.map((sub) => (
+                        <option 
+                          key={sub.id} 
+                          value={sub.id} 
+                          className={isDark ? 'bg-[#0B1A2F] text-slate-200' : 'bg-white text-slate-800'}
+                        >
+                          {sub.label}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    <optgroup label={isAr ? '── البنية التحتية والشبكات ومراكز البيانات ──' : '── IT & Infrastructure Solutions ──'}>
+                      {contactSelectData.subServicesByCategory.network.map((sub) => (
+                        <option 
+                          key={sub.id} 
+                          value={sub.id} 
+                          className={isDark ? 'bg-[#0B1A2F] text-slate-200' : 'bg-white text-slate-800'}
+                        >
+                          {sub.label}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    <optgroup label={isAr ? '── أنظمة التيار الخفيف (ELV) ──' : '── Low Current / ELV Systems ──'}>
+                      {contactSelectData.subServicesByCategory.elv.map((sub) => (
+                        <option 
+                          key={sub.id} 
+                          value={sub.id} 
+                          className={isDark ? 'bg-[#0B1A2F] text-slate-200' : 'bg-white text-slate-800'}
+                        >
+                          {sub.label}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    <optgroup label={isAr ? '── البرمجيات والحلول الرقمية ──' : '── Software & Digital Solutions ──'}>
+                      {contactSelectData.subServicesByCategory.software.map((sub) => (
+                        <option 
+                          key={sub.id} 
+                          value={sub.id} 
+                          className={isDark ? 'bg-[#0B1A2F] text-slate-200' : 'bg-white text-slate-800'}
+                        >
+                          {sub.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
 

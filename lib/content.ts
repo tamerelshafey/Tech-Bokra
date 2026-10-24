@@ -1,3 +1,5 @@
+import { DEFAULT_SERVICES_LIST_AR, DEFAULT_SERVICES_LIST_EN } from '@/lib/services';
+
 export interface Project {
   id: string;
   title: string;
@@ -197,18 +199,18 @@ export interface SiteLanguageData {
 }
 
 export const siteConfig = {
-  phone: "+20 101 234 5678",
-  whatsappNumber: "201012345678",
-  email: "Support@tech-bokra.com",
-  secondaryEmail: "sales@tech-bokra.com",
-  addressAr: "مصر، القاهرة، مكرم عبيد، مدينة نصر",
-  addressEn: "Makram Ebeid, Nasr City, Cairo, Egypt",
+  phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || "+20 101 234 5678 [TO_CONFIRM]",
+  whatsappNumber: process.env.NEXT_PUBLIC_COMPANY_WHATSAPP || "201012345678",
+  email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || "Support@tech-bokra.com",
+  secondaryEmail: process.env.NEXT_PUBLIC_COMPANY_SALES_EMAIL || "sales@tech-bokra.com",
+  addressAr: process.env.NEXT_PUBLIC_COMPANY_ADDRESS_AR || "مصر، القاهرة، مكرم عبيد، مدينة نصر",
+  addressEn: process.env.NEXT_PUBLIC_COMPANY_ADDRESS_EN || "Makram Ebeid, Nasr City, Cairo, Egypt",
   workingHoursAr: "السبت - الخميس: 9:00 ص - 6:00 م (خدمة الطوارئ 24/7 للمشتركين)",
   workingHoursEn: "Sat - Thu: 9:00 AM - 6:00 PM (24/7 SLA for Contract Clients)",
-  linkedinUrl: "https://linkedin.com/company/tech-bokra",
-  facebookUrl: "https://facebook.com/techbokra",
-  commercialRegister: "CR-194022",
-  taxId: "TX-682-901-443",
+  linkedinUrl: process.env.NEXT_PUBLIC_COMPANY_LINKEDIN || "https://linkedin.com/company/tech-bokra",
+  facebookUrl: process.env.NEXT_PUBLIC_COMPANY_FACEBOOK || "https://facebook.com/techbokra",
+  commercialRegister: process.env.NEXT_PUBLIC_COMPANY_CR || "[TO_CONFIRM_CR]",
+  taxId: process.env.NEXT_PUBLIC_COMPANY_TAX_ID || "[TO_CONFIRM_TAX_ID]",
 };
 
 export const contentAr: SiteLanguageData = {
@@ -262,88 +264,7 @@ export const contentAr: SiteLanguageData = {
     consultTab: "تكامل المشروعات",
     orderCta: "طلب دراسة مشروع",
     viewSpecs: "المواصفات الفنية والتسليمات",
-    list: [
-      {
-        id: "physical-security-systems",
-        category: "security",
-        iconName: "ShieldCheck",
-        image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80",
-        title: "أنظمة الأمن المادي (Physical Security Systems)",
-        shortDesc: "تشمل حلول المراقبة بالكاميرات، وأنظمة التحكم في الدخول، والبوابات والحواجز، وإدارة الفيديو (VMS)؛ بما يتماشى مع احتياجات المنشأة ومتطلباتها التشغيلية.",
-        points: [
-          "كاميرات مراقبة شبكية عالية الدقة مع الرؤية الليلية والتغطية المحيطية وتحليلات الحركة",
-          "أنظمة تحكم في الدخول بيومترية وكروت ذكية مع إدارة مركزية للصلاحيات",
-          "بوابات مرور أفراد وحواجز آلية لتنظيم حركة المركبات في المنشآت",
-          "أنظمة إدارة وتسجيل الفيديو (VMS) المركزية وحسابات سعات التخزين الهندسية",
-        ],
-        specs: [
-          { title: "المواصفات الفنية", desc: "كاميرات IP متوافقة مع متطلبات المنشآت وأجهزة NVR معتمدة" },
-          { title: "التكامل والسلامة", desc: "ربط متكامل مع حساسات إنذار الحريق وغرف المراقبة والتحكم" },
-          { title: "الدعم والتشغيل", desc: "تسليم تشغيلي متكامل مع خيارات عقود الدعم الفني والصيانة الدورية" },
-        ],
-        deliverables: ["مخطط توزيع الكاميرات ونقاط التحكم في الدخول", "توريد وتركيب وبرمجة المنظومات والأجهزة", "تدريب المشغلين وتسليم وثائق التشغيل"],
-      },
-      {
-        id: "networking-infrastructure",
-        category: "network",
-        iconName: "Network",
-        image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
-        title: "البنية التحتية والشبكات ومراكز البيانات (Networking & IT Infrastructure)",
-        shortDesc: "تصميم وتنفيذ شبكات البيانات، والكابلات المنظمة (Structured Cabling)، وتجهيز غرف الخوادم، وحلول الربط الداخلي والخارجي؛ لضمان استقرار الاتصال واعتمادية بيئة العمل.",
-        points: [
-          "تمديد وتنظيم الكابلات الشبكية النحاسية والفايبر (Structured Cabling Cat6/Cat6A/Fiber)",
-          "توريد وتركيب وبرمجة محولات الشبكة (Managed Switches) وأجهزة التوجيه والربط",
-          "تجهيز كبائن الراك وغرف الخوادم وتوزيع مسارات الكابلات المحمية",
-          "حلول تغطية الشبكات اللاسلكية المؤسسية (Enterprise Wi-Fi) للشركات والمباني الإدارية",
-        ],
-        specs: [
-          { title: "المعايير الهندسية", desc: "التزام كامل بالمواصفات القياسية لمسارات الكابلات والعزل" },
-          { title: "الفحص والاختبار", desc: "إجراء اختبارات فحص خطوط الشبكة المعتمدة وتسليم تقارير التوصيل" },
-          { title: "التجهيز الميداني", desc: "كبائن راك منظمة ومرقمة لسهولة الصيانة والتوسع المستقبلي" },
-        ],
-        deliverables: ["مخططات التمديد وتوزيع نقاط الشبكة التنفيذية", "تقارير فحص ومعايرة التوصيلات والخطوط", "ترقيم وتوثيق كبائن الخوادم ومسارات الربط"],
-      },
-      {
-        id: "elv-systems",
-        category: "elv",
-        iconName: "Radio",
-        image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80",
-        title: "أنظمة التيار الخفيف (Low Current / ELV Systems)",
-        shortDesc: "حلول متكاملة تشمل أنظمة الإنذار، والصوتيات، والاتصال الداخلي، والأنظمة المساندة؛ لدعم كفاءة التشغيل والسلامة داخل المنشأة.",
-        points: [
-          "توريد وتركيب أنظمة إنذار الحريق المعنونة والكشف المبكر طبقاً لاشتراطات السلامة",
-          "أنظمة الصوتيات والإذاعة العامة والموسيقى الخلفية (Public Address & BGM)",
-          "شبكات الاتصال الداخلي المرئي والمسموع (IP Intercom) للمنشآت والمكاتب",
-          "تنسيق وتكامل أنظمة التيار الخفيف المساندة مع البنية التحتية للمشروع",
-        ],
-        specs: [
-          { title: "الكود والسلامة", desc: "مطابقة المواصفات الفنية المعتمدة واشتراطات السلامة المعمول بها" },
-          { title: "التكامل التشغيلي", desc: "ربط تكاملي بين أنظمة الإنذار والتحكم بالدخول ومسارات الإخلاء" },
-          { title: "الاعتمادية", desc: "مهمات وتجهيزات معتمدة تدعم استمرارية العمل في الظروف التشغيلية المختلفة" },
-        ],
-        deliverables: ["مخططات المسارات والتوزيع الهندسي للأنظمة", "تركيب وبرمجة واختبار كفاءة عمل المنظومات", "تسليم تشغيلي وكتيبات التوثيق الفني"],
-      },
-      {
-        id: "software-digital-solutions",
-        category: "software",
-        iconName: "Layers",
-        image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
-        title: "البرمجيات والحلول الرقمية (Software & Digital Solutions)",
-        shortDesc: "تطوير نظم وبرمجيات مخصصة، وأتمتة العمليات، وتكامل الأنظمة وواجهات الربط (APIs)؛ لربط الحلول التقنية بالأهداف التشغيلية للمؤسسة.",
-        points: [
-          "تطوير تطبيقات الويب والمنصات الرقمية المخصصة لاحتياجات الأعمال",
-          "أتمتة دورات العمل والعمليات التشغيلية والميدانية وربط الفرق",
-          "تكامل الأنظمة وبناء وتوثيق واجهات الربط البرمجي (APIs)",
-          "لوحات تحكم وتقارير تفاعلية لمتابعة الأداء وإدارة صلاحيات المستخدمين",
-        ],
-        specs: [
-          { title: "المعمارية التقنية", desc: "بنية برمجية معيارية حديثة وقابلة للتوسع وفق نمو المؤسسة" },
-          { title: "أمان البيانات", desc: "تطبيق معايير حماية البيانات وتشفير الاتصال والتحقق من الهوية" },
-          { title: "سهولة الاستخدام", desc: "واجهات مستخدم مدروسة لرفع كفاءة الفرق التشغيلية والإدارية" },
-        ],
-        deliverables: ["تصميم وبناء النظام وفق المتطلبات المحددة", "لوحة تحكم إدارية وتكامل واجهات الربط البرمجي", "التشغيل التجريبي والتدريب والتوثيق الفني"],
-      },
-    ],
+    list: DEFAULT_SERVICES_LIST_AR,
   },
   architecture: {
     title: "مركز الأدوات الهندسية ومرصد المناقصات",
@@ -737,88 +658,7 @@ export const contentEn: SiteLanguageData = {
     consultTab: "Project Integration",
     orderCta: "Request Project Study",
     viewSpecs: "Technical Specs & Deliverables",
-    list: [
-      {
-        id: "physical-security-systems",
-        category: "security",
-        iconName: "ShieldCheck",
-        image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80",
-        title: "Physical Security Systems",
-        shortDesc: "Comprehensive CCTV surveillance, biometric access control, speed gates & barriers, and Video Management Systems (VMS) tailored to operational requirements.",
-        points: [
-          "High-definition IP surveillance cameras with night vision, perimeter coverage, and motion analytics",
-          "Biometric and smart-card access control systems with centralized credential and permission management",
-          "Pedestrian speed gates and automated vehicular barriers for regulated access",
-          "Centralized Video Management Systems (VMS) and engineering storage sizing",
-        ],
-        specs: [
-          { title: "Hardware Standards", desc: "Commercial-grade IP surveillance, NVRs, and certified access controllers" },
-          { title: "Safety Integration", desc: "Fail-safe interlock with fire alarm systems and central command consoles" },
-          { title: "Support & SLA", desc: "Comprehensive operational handover with preventative maintenance contract options" },
-        ],
-        deliverables: ["Camera Distribution & Access Point Schematics", "Supply, Installation & System Commissioning", "Operator Training & Operational Handover"],
-      },
-      {
-        id: "networking-infrastructure",
-        category: "network",
-        iconName: "Network",
-        image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
-        title: "Networking & IT Infrastructure",
-        shortDesc: "Design and implementation of data networks, structured cabling (Cat6/Cat6A/Fiber), server room fit-out, and reliable connectivity to ensure business continuity.",
-        points: [
-          "Structured copper and fiber optic cabling deployment adhering to industry codes",
-          "Supply, configuration, and commissioning of managed switches and enterprise routers",
-          "Server rack enclosure installation, cable dressing, and clean pathway organization",
-          "Enterprise Wi-Fi coverage solutions for offices, commercial branches, and facilities",
-        ],
-        specs: [
-          { title: "Engineering Standards", desc: "Strict adherence to certified structured cabling specifications and pathways" },
-          { title: "Testing & Certification", desc: "Line verification testing with detailed connectivity handover reports" },
-          { title: "Field Organization", desc: "Labeled server racks and patch panels for streamlined maintenance and scaling" },
-        ],
-        deliverables: ["As-Built Schematics & Drop Locations", "Network Line Verification Reports", "Rack Elevation & Termination Documentation"],
-      },
-      {
-        id: "elv-systems",
-        category: "elv",
-        iconName: "Radio",
-        image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80",
-        title: "Low Current / ELV Systems",
-        shortDesc: "Integrated fire alarm, public address (PA/BGM), intercom, and auxiliary systems engineered for facility safety and operational efficiency.",
-        points: [
-          "Supply and installation of addressable fire alarm systems and early detection devices",
-          "Public Address and Background Music (PA / BGM) acoustic sound distribution",
-          "IP Intercom and internal communication systems for offices and commercial buildings",
-          "Coordination of auxiliary low-current systems with facility infrastructure",
-        ],
-        specs: [
-          { title: "Code Compliance", desc: "Alignment with life safety standards and approved project engineering specs" },
-          { title: "System Interlock", desc: "Interlock integration between fire alarm, access control, and emergency egress" },
-          { title: "Reliability", desc: "Standard hardware engineered for resilient continuous operations" },
-        ],
-        deliverables: ["Conduit Routing & Sound Distribution Layouts", "Installation, Configuration & Commissioning", "Operational Handover & User Manuals"],
-      },
-      {
-        id: "software-digital-solutions",
-        category: "software",
-        iconName: "Layers",
-        image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
-        title: "Software & Digital Solutions",
-        shortDesc: "Development of custom applications, workflow automation, and system integration via robust APIs to align technology with business goals.",
-        points: [
-          "Custom web application and portal development tailored to business requirements",
-          "Operational workflow automation connecting field teams with management",
-          "System integration and secure Application Programming Interfaces (APIs)",
-          "Interactive management dashboards and role-based access management",
-        ],
-        specs: [
-          { title: "Modern Architecture", desc: "Modern modular software architecture engineered to scale with business growth" },
-          { title: "Data Security", desc: "Strict data privacy, encrypted communications, and role-based authentication" },
-          { title: "Usability", desc: "Intuitive user experience tailored to increase operational staff productivity" },
-        ],
-        deliverables: ["Custom System Engineered to Specifications", "Admin Dashboard & API Integration", "Deployment, Staff Training & Technical Documentation"],
-      },
-    ],
+    list: DEFAULT_SERVICES_LIST_EN,
   },
   architecture: {
     title: "Engineering Hub & Tenders Radar",

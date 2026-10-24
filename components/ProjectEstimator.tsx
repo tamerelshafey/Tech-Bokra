@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Calculator, 
   Building2, 
@@ -12,18 +13,33 @@ import {
   Clock, 
   ShieldCheck, 
   MessageSquare, 
-  Sparkles,
-  Layers,
-  Camera,
-  Network,
-  Lock,
-  Smartphone,
-  FileCheck,
-  Globe
+  Sparkles, 
+  Layers, 
+  Camera, 
+  Network, 
+  Lock, 
+  Smartphone, 
+  FileCheck, 
+  Globe 
 } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 import { submitInquiry } from '@/lib/dbService';
+
+function EstimatorQuerySync({ onSelectSystem }: { onSelectSystem: (sys: string) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const systemParam = searchParams.get('system');
+    if (systemParam) {
+      const normalized = systemParam.toLowerCase().trim();
+      const validSystems = ['cctv', 'network', 'access', 'software', 'erp', 'consulting'];
+      if (validSystems.includes(normalized)) {
+        onSelectSystem(normalized);
+      }
+    }
+  }, [searchParams, onSelectSystem]);
+  return null;
+}
 
 interface ProjectEstimatorProps {
   lang: 'ar' | 'en';
@@ -46,6 +62,10 @@ export default function ProjectEstimator({
   const [selectedSystems, setSelectedSystems] = useState<string[]>(['cctv', 'network']);
   const [scale, setScale] = useState<string>('medium');
   const [slaTier, setSlaTier] = useState<string>('premium');
+
+  const handleSelectSystemFromQuery = useCallback((sys: string) => {
+    setSelectedSystems([sys]);
+  }, []);
 
   const facilityTypes = [
     { id: 'corporate', labelAr: 'مكاتب وشركات إدارية', labelEn: 'Corporate Offices', icon: Building2 },
@@ -138,6 +158,10 @@ export default function ProjectEstimator({
         isDark ? 'bg-[#071120]' : 'bg-white'
       }`}
     >
+      <Suspense fallback={null}>
+        <EstimatorQuerySync onSelectSystem={handleSelectSystemFromQuery} />
+      </Suspense>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}

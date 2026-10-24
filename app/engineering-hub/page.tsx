@@ -42,11 +42,13 @@ export default function EngineeringHubPage() {
       />
 
       <main className="pt-24 pb-16">
-        <EngineeringHub
-          lang={lang}
-          data={data}
-          onOpenConsultation={handleOpenConsultation}
-        />
+        <React.Suspense fallback={<div className="max-w-5xl mx-auto p-12 text-center text-slate-400">Loading Engineering Hub...</div>}>
+          <EngineeringHub
+            lang={lang}
+            data={data}
+            onOpenConsultation={handleOpenConsultation}
+          />
+        </React.Suspense>
       </main>
 
       <Footer

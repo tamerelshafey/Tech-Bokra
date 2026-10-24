@@ -1,7 +1,38 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+
+interface HubQueryParams {
+  tool: string | null;
+  cameras: string | null;
+  resolution: string | null;
+  codec: string | null;
+  days: string | null;
+  fps: string | null;
+  hours: string | null;
+  raid: string | null;
+  hdd: string | null;
+}
+
+function EngineeringHubQuerySync({ onSync }: { onSync: (params: HubQueryParams) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    onSync({
+      tool: searchParams.get('tool'),
+      cameras: searchParams.get('cameras') || searchParams.get('cameraCount'),
+      resolution: searchParams.get('resolution') || searchParams.get('selectedResolution'),
+      codec: searchParams.get('codec') || searchParams.get('selectedCodec'),
+      days: searchParams.get('days') || searchParams.get('retentionDays'),
+      fps: searchParams.get('fps'),
+      hours: searchParams.get('hours') || searchParams.get('recordingHours'),
+      raid: searchParams.get('raid') || searchParams.get('raidType'),
+      hdd: searchParams.get('hddSize') || searchParams.get('hddSizePreference'),
+    });
+  }, [searchParams, onSync]);
+  return null;
+}
 import { 
   Calculator, 
   HardDrive, 
@@ -157,6 +188,48 @@ export default function EngineeringHub({ lang, data, onOpenConsultation }: Engin
   const [raidType, setRaidType] = useState<'none' | 'raid5' | 'raid6' | 'raid10'>('raid5');
   const [hddSizePreference, setHddSizePreference] = useState<number>(8); // 8TB drives
   const [calcCopied, setCalcCopied] = useState<boolean>(false);
+
+  const handleSyncQueryParams = useCallback((params: HubQueryParams) => {
+    if (params.tool === 'calculator' || params.tool === 'storage-calculator') {
+      setActiveTab('calculator');
+    } else if (params.tool === 'tenders') {
+      setActiveTab('tenders');
+    } else if (params.tool === 'submittals') {
+      setActiveTab('submittals');
+    }
+
+    if (params.cameras && !isNaN(Number(params.cameras))) {
+      setCameraCount(Math.max(1, Math.min(1000, Number(params.cameras))));
+    }
+
+    if (params.resolution && RESOLUTIONS.some((r) => r.id === params.resolution)) {
+      setSelectedResolution(params.resolution);
+    }
+
+    if (params.codec && CODECS.some((c) => c.id === params.codec)) {
+      setSelectedCodec(params.codec);
+    }
+
+    if (params.days && !isNaN(Number(params.days))) {
+      setRetentionDays(Math.max(1, Math.min(365, Number(params.days))));
+    }
+
+    if (params.fps && !isNaN(Number(params.fps))) {
+      setFps(Math.max(1, Math.min(60, Number(params.fps))));
+    }
+
+    if (params.hours && !isNaN(Number(params.hours))) {
+      setRecordingHours(Math.max(1, Math.min(24, Number(params.hours))));
+    }
+
+    if (params.raid && ['none', 'raid5', 'raid6', 'raid10'].includes(params.raid)) {
+      setRaidType(params.raid as 'none' | 'raid5' | 'raid6' | 'raid10');
+    }
+
+    if (params.hdd && !isNaN(Number(params.hdd))) {
+      setHddSizePreference(Number(params.hdd));
+    }
+  }, []);
 
   // -----------------------------------------------------------
   // TENDERS RADAR STATE & MECHANISM
@@ -363,6 +436,10 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
           : 'bg-slate-50/80 border-slate-200'
       }`}
     >
+      <Suspense fallback={null}>
+        <EngineeringHubQuerySync onSync={handleSyncQueryParams} />
+      </Suspense>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* Section Header */}
@@ -434,9 +511,11 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
           >
             <Radio className="w-4 h-4 animate-pulse text-amber-400" />
             <span>{isAr ? 'مرصد المناقصات والممارسات' : 'Security & IT Tenders Radar'}</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-              {DEFAULT_TENDERS_RADAR.length}
-            </span>
+            {DEFAULT_TENDERS_RADAR.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                {DEFAULT_TENDERS_RADAR.length}
+              </span>
+            )}
           </button>
 
           <button

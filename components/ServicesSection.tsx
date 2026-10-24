@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { 
   Camera, 
   Network, 
@@ -13,12 +14,12 @@ import {
   ArrowRight, 
   ArrowLeft, 
   SlidersHorizontal,
-  ChevronDown,
   Sparkles,
   FileCheck
 } from 'lucide-react';
 import { SiteLanguageData, ServiceItem } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
+import { getServiceBySlug, LEGACY_SERVICE_ID_MAP } from '@/lib/services';
 
 interface ServicesSectionProps {
   lang: 'ar' | 'en';
@@ -29,7 +30,6 @@ interface ServicesSectionProps {
 
 export default function ServicesSection({ lang, data, onSelectService, customServices }: ServicesSectionProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'security-infra' | 'digital-software' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
-  const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
 
@@ -57,10 +57,6 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
     }
   };
 
-  const toggleSpecs = (id: string) => {
-    setExpandedSpecs((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
   // Language-aware services resolution: preserve English text in English mode while syncing CMS images
   const baseServices = isAr
     ? (customServices && customServices.length > 0 ? customServices : data.services.list)
@@ -75,6 +71,25 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
     }
     return s;
   });
+
+  const getServiceTargetUrl = (srv: ServiceItem) => {
+    const slug = LEGACY_SERVICE_ID_MAP[srv.id];
+    if (slug) {
+      const sub = getServiceBySlug(slug);
+      if (sub) {
+        return `/services/${sub.category}/${sub.slug}`;
+      }
+    }
+    const catMap: Record<string, string> = {
+      'security': '/services/security',
+      'network': '/services/network',
+      'elv': '/services/elv',
+      'software': '/services/software',
+      'erp': '/services/software',
+      'consulting': '/services/security',
+    };
+    return catMap[srv.category] || `/services/${srv.category || 'security'}`;
+  };
 
   const filteredServices = activeList.filter((s) => {
     if (activeFilter === 'all') return true;
@@ -166,7 +181,7 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredServices.map((service) => {
             const Icon = getServiceIcon(service.iconName);
-            const isSpecsOpen = !!expandedSpecs[service.id];
+            const targetUrl = getServiceTargetUrl(service);
 
             return (
               <div
@@ -178,49 +193,53 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
                 }`}
               >
                 <div>
-                  {/* Real Image Showcase */}
-                  <div 
-                    className={`relative w-full h-44 rounded-xl overflow-hidden mb-5 border shadow-md ${
-                      isDark 
-                        ? 'border-[#00F2FE]/20 bg-[#0B1A2F]' 
-                        : 'border-slate-200 bg-slate-100'
-                    }`}
-                  >
-                    {imageErrors[service.id] ? (
-                      <div className="w-full h-full bg-slate-200 dark:bg-[#152C4D] flex items-center justify-center text-slate-400 dark:text-[#00F2FE]/40">
-                        <Icon className="w-12 h-12" />
+                  {/* Real Image Showcase Linking to Service/Category */}
+                  <Link href={targetUrl} className="block group/img">
+                    <div 
+                      className={`relative w-full h-44 rounded-xl overflow-hidden mb-5 border shadow-md cursor-pointer ${
+                        isDark 
+                          ? 'border-[#00F2FE]/20 bg-[#0B1A2F]' 
+                          : 'border-slate-200 bg-slate-100'
+                      }`}
+                    >
+                      {imageErrors[service.id] ? (
+                        <div className="w-full h-full bg-slate-200 dark:bg-[#152C4D] flex items-center justify-center text-slate-400 dark:text-[#00F2FE]/40">
+                          <Icon className="w-12 h-12" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={service.image}
+                          alt={service.title}
+                          fill
+                          className="object-cover object-center group-hover/img:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                          sizes="(max-width: 768px) 100vw, 400px"
+                          onError={() => setImageErrors((prev) => ({ ...prev, [service.id]: true }))}
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+                      
+                      <div className="absolute top-3 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto w-10 h-10 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg">
+                        <Icon className="w-5 h-5 text-sky-400" />
                       </div>
-                    ) : (
-                      <Image
-                        src={service.image}
-                        alt={service.title}
-                        fill
-                        className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                        sizes="(max-width: 768px) 100vw, 400px"
-                        onError={() => setImageErrors((prev) => ({ ...prev, [service.id]: true }))}
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-                    
-                    <div className="absolute top-3 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto w-10 h-10 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg">
-                      <Icon className="w-5 h-5 text-sky-400" />
+                      <span className="absolute bottom-2.5 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto text-[11px] font-mono font-bold text-sky-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-sky-400/30">
+                        {service.category}
+                      </span>
                     </div>
-                    <span className="absolute bottom-2.5 right-3 rtl:right-3 rtl:left-auto ltr:left-3 ltr:right-auto text-[11px] font-mono font-bold text-sky-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-sky-400/30">
-                      {service.category}
-                    </span>
-                  </div>
+                  </Link>
 
-                  {/* Title */}
-                  <h3 
-                    className={`text-xl font-bold mb-2 transition-colors leading-snug ${
-                      isDark 
-                        ? 'text-white group-hover:text-[#00F2FE]' 
-                        : 'text-slate-900 group-hover:text-[#0284C7]'
-                    }`}
-                  >
-                    {service.title}
-                  </h3>
+                  {/* Title Linking to Service/Category */}
+                  <Link href={targetUrl} className="block group/title">
+                    <h3 
+                      className={`text-xl font-bold mb-2 transition-colors leading-snug cursor-pointer ${
+                        isDark 
+                          ? 'text-white group-hover/title:text-[#00F2FE]' 
+                          : 'text-slate-900 group-hover/title:text-[#0284C7]'
+                      }`}
+                    >
+                      {service.title}
+                    </h3>
+                  </Link>
 
                   {/* Description */}
                   <p 
@@ -254,17 +273,17 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
                     ))}
                   </div>
 
-                  {/* Expandable Technical Specs Accordion */}
+                  {/* Technical Specs & Deliverables Direct Link Button */}
                   <div className="mb-6">
-                    <button
-                      onClick={() => toggleSpecs(service.id)}
-                      className={`w-full flex items-center justify-between py-2 text-xs font-semibold transition border-t border-dashed cursor-pointer ${
+                    <Link
+                      href={targetUrl}
+                      className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition border group/specs cursor-pointer ${
                         isDark
-                          ? 'text-slate-300 hover:text-[#00F2FE] border-white/10'
-                          : 'text-slate-600 hover:text-[#0284C7] border-slate-200'
+                          ? 'bg-[#10233D] hover:bg-[#152C4D] text-slate-200 hover:text-[#00F2FE] border-white/10'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-[#0284C7] border-slate-200'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 font-bold">
                         <FileCheck 
                           className={`w-3.5 h-3.5 ${
                             isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
@@ -272,43 +291,8 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
                         />
                         {data.services.viewSpecs}
                       </span>
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          isSpecsOpen 
-                            ? isDark ? 'rotate-180 text-[#00F2FE]' : 'rotate-180 text-[#0284C7]'
-                            : ''
-                        }`}
-                      />
-                    </button>
-
-                    {isSpecsOpen && (
-                      <div 
-                        className={`p-3.5 rounded-xl mt-2 space-y-2 text-xs animate-in fade-in duration-200 border ${
-                          isDark
-                            ? 'bg-[#071120]/90 border-[#00F2FE]/20'
-                            : 'bg-slate-50 border-slate-200'
-                        }`}
-                      >
-                        {service.specs.map((sp, sIdx) => (
-                          <div key={sIdx} className="flex flex-col gap-0.5">
-                            <span 
-                              className={`font-mono text-[10px] uppercase font-bold ${
-                                isDark ? 'text-slate-400' : 'text-slate-500'
-                              }`}
-                            >
-                              {sp.title}:
-                            </span>
-                            <span 
-                              className={`font-medium ${
-                                isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
-                              }`}
-                            >
-                              {sp.desc}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                      <ArrowIcon className="w-3.5 h-3.5 group-hover/specs:translate-x-1 rtl:group-hover/specs:-translate-x-1 transition" />
+                    </Link>
                   </div>
                 </div>
 

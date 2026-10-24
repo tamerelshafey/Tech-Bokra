@@ -37,13 +37,15 @@ export default function EstimatorPage() {
       />
 
       <main className="pt-24 pb-16">
-        <ProjectEstimator
-          lang={lang}
-          data={data}
-          onBookSurveyWithScope={handleBookSurveyWithScope}
-          whatsappNumber={customConfig.whatsappNumber}
-          email={customConfig.email}
-        />
+        <React.Suspense fallback={<div className="max-w-5xl mx-auto p-12 text-center text-slate-400">Loading Estimator...</div>}>
+          <ProjectEstimator
+            lang={lang}
+            data={data}
+            onBookSurveyWithScope={handleBookSurveyWithScope}
+            whatsappNumber={customConfig.whatsappNumber}
+            email={customConfig.email}
+          />
+        </React.Suspense>
       </main>
 
       <Footer
