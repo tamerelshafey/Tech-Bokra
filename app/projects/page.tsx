@@ -28,22 +28,17 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
+import { useLanguage } from '@/components/LanguageProvider';
+
 type FilterCategory = 'all' | 'upcoming' | 'security' | 'network' | 'software' | 'erp';
 
 export default function ProjectsPage() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
-
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
-
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
 
   const getProjectIcon = (icon: string) => {
     switch (icon) {
@@ -59,9 +54,25 @@ export default function ProjectsPage() {
     }
   };
 
-  const rawProjects = customConfig.projectsList && customConfig.projectsList.length > 0 
-    ? customConfig.projectsList 
+  const baseProjects = isAr
+    ? ((customConfig.projectsList && customConfig.projectsList.length > 0) ? customConfig.projectsList : data.projects.list)
     : data.projects.list;
+
+  const rawProjects = baseProjects.map((p) => {
+    if (customConfig.projectsList && customConfig.projectsList.length > 0) {
+      const customMatch = customConfig.projectsList.find((cp) => cp.id === p.id);
+      if (customMatch) {
+        return {
+          ...p,
+          image: customMatch.image || p.image,
+          liveUrl: customMatch.liveUrl || p.liveUrl,
+          isDraft: customMatch.isDraft !== undefined ? customMatch.isDraft : p.isDraft,
+          isUpcoming: customMatch.isUpcoming !== undefined ? customMatch.isUpcoming : p.isUpcoming,
+        };
+      }
+    }
+    return p;
+  });
   const activeProjects = rawProjects.filter((p) => p.isDraft !== true);
 
   const filteredProjects = activeProjects.filter((p) => {

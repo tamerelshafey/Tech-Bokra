@@ -8,16 +8,14 @@ import ContactSection from '@/components/ContactSection';
 import { contentAr, contentEn } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
+import { useLanguage } from '@/components/LanguageProvider';
 import { Phone, Mail, MapPin, Clock, MessageSquare, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 function ContactContent() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
   const searchParams = useSearchParams();
   const { isDark } = useTheme();
-
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
 
   // Read URL parameters to prefill notes or service
   const paramService = searchParams.get('service') || '';
@@ -47,9 +45,6 @@ function ContactContent() {
     }
   }
 
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
 
   return (
     <div

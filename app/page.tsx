@@ -21,9 +21,10 @@ import TechPartners from '@/components/TechPartners';
 import FaqSection from '@/components/FaqSection';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function HomePage() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [prefilledService, setPrefilledService] = useState<string>('');
   const [prefilledNotes, setPrefilledNotes] = useState<string>('');
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState(false);
@@ -32,15 +33,9 @@ export default function HomePage() {
   // Initialize with deterministic default configuration for 100% hydration match
   const [customConfig, setCustomConfig] = useState<EditableConfig>(defaultEditableConfig);
 
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
   useEffect(() => {
-    // Sync html root attributes with current language
-    const root = document.documentElement;
-    root.setAttribute('lang', lang);
-    root.setAttribute('dir', isAr ? 'rtl' : 'ltr');
     document.title =
       isAr
         ? 'تيك بكرة | Tech Bokra - حلول تقنية متكاملة وهندسة البنية التحتية والأمن المادي'
@@ -91,9 +86,6 @@ export default function HomePage() {
     };
   }, []);
 
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
 
   const cleanUrl = () => {
     if (typeof window !== 'undefined') {

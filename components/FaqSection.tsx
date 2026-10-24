@@ -61,7 +61,7 @@ export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
 
         {/* Accordion List */}
         <div className="space-y-3.5">
-          {(customFaq && customFaq.length > 0 ? customFaq : data.faq.items).map((item, idx) => {
+          {((isAr && customFaq && customFaq.length > 0) ? customFaq : data.faq.items).map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div

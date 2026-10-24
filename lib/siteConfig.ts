@@ -82,14 +82,17 @@ export interface EditableConfig {
   heroAccessImage?: string;
   heroCloudImage?: string;
 
-  // Projects CMS
+  // Projects CMS (Arabic & English)
   projectsList?: Project[];
+  projectsListEn?: Project[];
 
-  // Services CMS
+  // Services CMS (Arabic & English)
   servicesList?: ServiceItem[];
+  servicesListEn?: ServiceItem[];
 
-  // FAQ CMS
+  // FAQ CMS (Arabic & English)
   faqList?: { q: string; a: string }[];
+  faqListEn?: { q: string; a: string }[];
 
   // Footer & Brand Bio
   brandBioAr?: string;
@@ -178,12 +181,15 @@ export const defaultEditableConfig: EditableConfig = {
 
   // Projects CMS
   projectsList: contentAr.projects.list,
+  projectsListEn: contentEn.projects.list,
 
   // Services CMS
   servicesList: contentAr.services.list,
+  servicesListEn: contentEn.services.list,
 
   // FAQ CMS
   faqList: contentAr.faq.items,
+  faqListEn: contentEn.faq.items,
 
   // Footer & Brand Bio
   brandBioAr: contentAr.footer.brandBio,

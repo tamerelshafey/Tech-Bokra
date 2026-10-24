@@ -9,18 +9,13 @@ import { contentAr, contentEn } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
 
+import { useLanguage } from '@/components/LanguageProvider';
+
 export default function EstimatorPage() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
   const router = useRouter();
   const { isDark } = useTheme();
-
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
-
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
 
   const handleBookSurveyWithScope = (scopeSummary: string) => {
     router.push(`/contact?scope=${encodeURIComponent(scopeSummary)}`);

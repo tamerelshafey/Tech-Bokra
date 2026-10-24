@@ -57,7 +57,7 @@ import {
   deleteInquiry, 
   saveSiteSettingsToCloud 
 } from '@/lib/dbService';
-import { compressImageFile } from '@/lib/storageHelper';
+import { compressImageFile, uploadImageToServer } from '@/lib/storageHelper';
 import { verifyAdminStatus } from '@/lib/authHelper';
 
 import type { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
@@ -930,9 +930,9 @@ export const siteConfig = ${JSON.stringify(
                         const file = e.target.files?.[0];
                         if (file) {
                           try {
-                            const compressed = await compressImageFile(file, 600, 600, 0.82);
-                            if (compressed) {
-                              handleChange('customLogoUrl', compressed);
+                            const result = await uploadImageToServer(file);
+                            if (result?.url) {
+                              handleChange('customLogoUrl', result.url);
                             }
                           } catch (err) {
                             console.error('Logo upload error:', err);

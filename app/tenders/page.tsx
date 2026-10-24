@@ -36,9 +36,10 @@ import {
   Check
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function TendersPage() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
   const [tenderCategoryFilter, setTenderCategoryFilter] = useState<string>('all');
   const [tenderSearch, setTenderSearch] = useState<string>('');
@@ -60,13 +61,7 @@ export default function TendersPage() {
   const router = useRouter();
   const { isDark } = useTheme();
 
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
-
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
 
   const handleSubscribeAlerts = async (e: React.FormEvent) => {
     e.preventDefault();

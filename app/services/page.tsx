@@ -28,23 +28,27 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
+import { useLanguage } from '@/components/LanguageProvider';
+
 export default function ServicesPage() {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const { isDark } = useTheme();
 
-  const isAr = lang === 'ar';
-  const data = isAr ? contentAr : contentEn;
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
-  const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  };
-
-  const servicesList = customConfig.servicesList && customConfig.servicesList.length > 0 
-    ? customConfig.servicesList 
+  const baseList = isAr
+    ? ((customConfig.servicesList && customConfig.servicesList.length > 0) ? customConfig.servicesList : data.services.list)
     : data.services.list;
+
+  const servicesList = baseList.map((s) => {
+    if (customConfig.servicesList && customConfig.servicesList.length > 0) {
+      const match = customConfig.servicesList.find((cs) => cs.id === s.id);
+      if (match && match.image) return { ...s, image: match.image };
+    }
+    return s;
+  });
 
   const categories = [
     { id: 'all', labelAr: 'كافة الحلول الهندسية', labelEn: 'All Solutions' },

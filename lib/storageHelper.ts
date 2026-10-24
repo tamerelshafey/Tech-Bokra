@@ -74,6 +74,42 @@ export async function compressImageFile(
 }
 
 /**
+ * Uploads an image file to the Next.js /api/upload endpoint for persistent server-side storage.
+ * Returns a permanent short URL (/uploads/filename.ext) that does not bloat Firestore or localStorage.
+ * Automatically falls back to compressed base64 if the API is offline.
+ */
+export async function uploadImageToServer(file: File): Promise<{ url: string; size: string; name: string }> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new Error(`Upload server responded with ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.url) {
+      return {
+        url: data.url,
+        size: data.size || `${(file.size / 1024).toFixed(1)} KB`,
+        name: data.filename || file.name,
+      };
+    }
+    throw new Error(data.error || 'No URL returned from upload API');
+  } catch (err) {
+    console.warn('Server upload fallback to client compression:', err);
+    const compressed = await compressImageFile(file);
+    return {
+      url: compressed,
+      size: `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`,
+      name: file.name,
+    };
+  }
+}
+
+/**
  * Strips huge base64 strings (>50KB) from projects/mediaVault if quota is tight,
  * preserving all metadata, text, URLs, and configs.
  */

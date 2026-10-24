@@ -86,7 +86,8 @@ import {
 import { 
   safeSaveConfigToStorage, 
   safeLoadConfigFromStorage, 
-  compressImageFile 
+  compressImageFile,
+  uploadImageToServer 
 } from '@/lib/storageHelper';
 
 const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v5';
@@ -174,6 +175,9 @@ export default function SecureAdminPortalPage() {
   const [projectCategoryFilter, setProjectCategoryFilter] = useState<'all' | 'security' | 'network' | 'software' | 'erp'>('all');
   const [projectSearch, setProjectSearch] = useState<string>('');
   const [expandedProjectIdx, setExpandedProjectIdx] = useState<number | null>(null);
+  const [expandedServiceIdx, setExpandedServiceIdx] = useState<number | null>(null);
+  const [serviceSearch, setServiceSearch] = useState<string>('');
+  const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string>('all');
   const [previewModalProject, setPreviewModalProject] = useState<Project | null>(null);
   const [vaultPickerTargetProjectIdx, setVaultPickerTargetProjectIdx] = useState<number | null>(null);
   const [vaultPickerTargetHeroField, setVaultPickerTargetHeroField] = useState<keyof EditableConfig | null>(null);
@@ -508,19 +512,21 @@ export default function SecureAdminPortalPage() {
     }
   };
 
-  // Helper: Compressed File to base64 Data URL for any single config field
+  // Helper: File upload to server (/api/upload) for any single config field
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof EditableConfig) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const compressed = await compressImageFile(file);
-        if (compressed) {
-          handleConfigChange(fieldName, compressed);
-          setNotificationMsg(isAr ? 'تم ضغط ورفع الصورة بنجاح!' : 'Image compressed and updated successfully!');
-          setTimeout(() => setNotificationMsg(''), 3000);
+        setNotificationMsg(isAr ? 'جاري رفع وحفظ الصورة في الخادم...' : 'Uploading image to server...');
+        const result = await uploadImageToServer(file);
+        if (result?.url) {
+          handleConfigChange(fieldName, result.url);
+          setNotificationMsg(isAr ? 'تم رفع وحفظ الصورة بنجاح!' : 'Image uploaded and updated successfully!');
+          setTimeout(() => setNotificationMsg(''), 3500);
         }
       } catch (err) {
-        console.error('Image compression error:', err);
+        console.error('Image upload error:', err);
+        setNotificationMsg(isAr ? 'تعذر رفع الصورة، تم استخدام النسخة المحلية' : 'Upload error, used fallback');
       }
     }
   };
@@ -532,21 +538,22 @@ export default function SecureAdminPortalPage() {
 
     for (const file of Array.from(files)) {
       try {
-        const compressed = await compressImageFile(file);
-        if (compressed) {
-          const sizeKB = `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`;
+        setNotificationMsg(isAr ? `جاري رفع "${file.name}" إلى الخادم...` : `Uploading "${file.name}" to server...`);
+        const result = await uploadImageToServer(file);
+        if (result?.url) {
+          const sizeKB = result.size || `${(file.size / 1024).toFixed(1)} KB`;
           const fileName = file.name;
-          setUploadedAssetUrl(compressed);
+          setUploadedAssetUrl(result.url);
           setUploadedAssetName(fileName);
           setUploadedAssetSize(sizeKB);
 
           const newVaultItem: MediaVaultItem = {
             id: `asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             name: fileName.replace(/\.[^/.]+$/, ''),
-            url: compressed,
+            url: result.url,
             size: sizeKB,
             date: new Date().toISOString().split('T')[0],
-            tag: isAr ? 'مرفوع محلياً' : 'Local Upload',
+            tag: isAr ? 'مرفوع للخادم' : 'Server Upload',
           };
 
           const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
@@ -554,11 +561,11 @@ export default function SecureAdminPortalPage() {
           handleConfigChange('mediaVault', updatedVault);
 
           setRecentUploads((prev) => [
-            { id: newVaultItem.id, name: fileName, url: compressed, size: sizeKB },
+            { id: newVaultItem.id, name: fileName, url: result.url, size: sizeKB },
             ...prev.slice(0, 5)
           ]);
 
-          setNotificationMsg(isAr ? `تم ضغط وحفظ صورة "${fileName}" في الخزينة بنجاح!` : `Uploaded "${fileName}" successfully!`);
+          setNotificationMsg(isAr ? `تم رفع وحفظ صورة "${fileName}" في الخزينة الدائمة بنجاح!` : `Uploaded "${fileName}" successfully!`);
           setTimeout(() => setNotificationMsg(''), 4000);
         }
       } catch (err) {
@@ -573,18 +580,19 @@ export default function SecureAdminPortalPage() {
     if (!file) return;
 
     try {
-      const compressed = await compressImageFile(file);
-      if (compressed) {
+      setNotificationMsg(isAr ? 'جاري رفع صورة المشروع إلى الخادم...' : 'Uploading project image...');
+      const result = await uploadImageToServer(file);
+      if (result?.url) {
         const currentList = [...(config.projectsList || contentAr.projects.list)];
-        currentList[projectIdx] = { ...currentList[projectIdx], image: compressed };
+        currentList[projectIdx] = { ...currentList[projectIdx], image: result.url };
         handleConfigChange('projectsList', currentList);
 
         // Also add to Media Vault so it has a permanent reference
-        const sizeKB = `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`;
+        const sizeKB = result.size || `${(file.size / 1024).toFixed(1)} KB`;
         const newVaultItem: MediaVaultItem = {
           id: `proj-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           name: file.name.replace(/\.[^/.]+$/, ''),
-          url: compressed,
+          url: result.url,
           size: sizeKB,
           date: new Date().toISOString().split('T')[0],
           tag: currentList[projectIdx]?.tag || 'Project',
@@ -592,11 +600,43 @@ export default function SecureAdminPortalPage() {
         const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
         handleConfigChange('mediaVault', [newVaultItem, ...currentVault]);
 
-        setNotificationMsg(isAr ? 'تم ضغط ورفع صورة المشروع وحفظها في الخزينة بنجاح!' : 'Project image compressed and uploaded!');
-        setTimeout(() => setNotificationMsg(''), 3000);
+        setNotificationMsg(isAr ? 'تم رفع صورة المشروع وحفظها بنجاح!' : 'Project image uploaded and saved successfully!');
+        setTimeout(() => setNotificationMsg(''), 3500);
       }
     } catch (err) {
       console.error('Error uploading project image:', err);
+    }
+  };
+
+  // Helper: Direct Service Image Upload with automatic Media Vault registration
+  const handleServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, serviceIdx: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setNotificationMsg(isAr ? 'جاري رفع صورة الخدمة إلى الخادم...' : 'Uploading service image...');
+      const result = await uploadImageToServer(file);
+      if (result?.url) {
+        const currentList = [...(config.servicesList || contentAr.services.list)];
+        currentList[serviceIdx] = { ...currentList[serviceIdx], image: result.url };
+        handleConfigChange('servicesList', currentList);
+
+        const newVaultItem: MediaVaultItem = {
+          id: `srv-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          url: result.url,
+          size: result.size || `${(file.size / 1024).toFixed(1)} KB`,
+          date: new Date().toISOString().split('T')[0],
+          tag: currentList[serviceIdx]?.title || 'Service',
+        };
+        const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+        handleConfigChange('mediaVault', [newVaultItem, ...currentVault]);
+
+        setNotificationMsg(isAr ? 'تم رفع صورة الخدمة وحفظها بنجاح!' : 'Service image uploaded successfully!');
+        setTimeout(() => setNotificationMsg(''), 3500);
+      }
+    } catch (err) {
+      console.error('Error uploading service image:', err);
     }
   };
 
@@ -823,6 +863,63 @@ export default function SecureAdminPortalPage() {
     existing[statIdx] = { ...existing[statIdx], [field]: val };
     currentList[idx] = { ...currentList[idx], stats: existing };
     handleConfigChange('projectsList', currentList);
+  };
+
+  // Services CMS Actions
+  const handleAddNewService = () => {
+    const currentList = config.servicesList || contentAr.services.list;
+    const newId = `srv-${Date.now()}`;
+    const newService: ServiceItem = {
+      id: newId,
+      title: isAr ? 'خدمة تقنية جديدة' : 'New Technical Service',
+      category: 'security',
+      iconName: 'ShieldCheck',
+      image: CURATED_IMAGE_PRESETS.cctv[0].url,
+      shortDesc: isAr ? 'نبذة تفصيلية عن نطاق الخدمة وحلول التوريد والتركيب والتشغيل المعتمدة.' : 'Detailed description of the service and turnkey delivery.',
+      points: [
+        isAr ? 'توريد وتركيب معتمد بأعلى المواصفات' : 'Certified hardware & deployment',
+        isAr ? 'ضمان رسمي ودعم فني على مدار الساعة' : 'Official SLA & 24/7 technical support'
+      ],
+      specs: [
+        { title: isAr ? 'زمن التنفيذ' : 'Timeline', desc: isAr ? 'حسب نطاق المشروع' : 'Project-based' },
+        { title: isAr ? 'الضمان' : 'Warranty', desc: isAr ? 'ضمان شامل مع عقد صيانة' : 'Comprehensive warranty' }
+      ],
+      deliverables: [
+        isAr ? 'مخططات هندسية As-Built معتمدة' : 'Approved As-Built schematics',
+        isAr ? 'شهادة اختبار وتشغيل وتسليم كامل' : 'Full commissioning certificate'
+      ]
+    };
+    handleConfigChange('servicesList', [newService, ...currentList]);
+    setExpandedServiceIdx(0);
+    setNotificationMsg(isAr ? 'تمت إضافة خدمة جديدة بنجاح! يمكنك الآن تعديل بياناتها وصورتها.' : 'New service added successfully!');
+    setTimeout(() => setNotificationMsg(''), 3500);
+  };
+
+  const handleDeleteService = (serviceId: string) => {
+    if (typeof window !== 'undefined' && !window.confirm(isAr ? 'هل أنت متأكد من حذف هذه الخدمة من قائمة الخدمات؟' : 'Delete this service?')) return;
+    const currentList = config.servicesList || contentAr.services.list;
+    const updated = currentList.filter((s) => s.id !== serviceId);
+    handleConfigChange('servicesList', updated);
+    setExpandedServiceIdx(null);
+    setNotificationMsg(isAr ? 'تم حذف الخدمة بنجاح.' : 'Service deleted.');
+    setTimeout(() => setNotificationMsg(''), 3000);
+  };
+
+  const handleMoveService = (idx: number, direction: 'up' | 'down') => {
+    const currentList = [...(config.servicesList || contentAr.services.list)];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= currentList.length) return;
+    const temp = currentList[idx];
+    currentList[idx] = currentList[targetIdx];
+    currentList[targetIdx] = temp;
+    handleConfigChange('servicesList', currentList);
+    setExpandedServiceIdx(targetIdx);
+  };
+
+  const handleUpdateServiceField = (idx: number, field: keyof ServiceItem, val: any) => {
+    const currentList = [...(config.servicesList || contentAr.services.list)];
+    currentList[idx] = { ...currentList[idx], [field]: val };
+    handleConfigChange('servicesList', currentList);
   };
 
   // Filtered Leads
@@ -2333,97 +2430,350 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* 5. SERVICES CMS */}
-            {activeTab === 'services' && (
-              <div className={`p-6 rounded-2xl border space-y-6 ${
-                isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      <Layers className="w-5 h-5 text-[#00F2FE]" />
-                      <span>{isAr ? 'إدارة الخدمات والحلول الهندسية' : 'Services & Engineering Solutions CMS'}</span>
-                    </h3>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {isAr ? 'تعديل وتخصيص كافة خدمات الشركة المعروضة بالموقع والمواصفات الفنية' : 'Manage service cards, descriptions, and features'}
-                    </p>
+            {/* 5. SERVICES CMS (FULL CONTROL) */}
+            {activeTab === 'services' && (() => {
+              const allServices = config.servicesList || contentAr.services.list;
+              const filteredServices = allServices.map((srv, originalIdx) => ({ srv, originalIdx })).filter(({ srv }) => {
+                if (serviceCategoryFilter !== 'all' && srv.category !== serviceCategoryFilter) return false;
+                if (serviceSearch.trim()) {
+                  const q = serviceSearch.toLowerCase();
+                  return (
+                    srv.title?.toLowerCase().includes(q) ||
+                    srv.shortDesc?.toLowerCase().includes(q) ||
+                    srv.category?.toLowerCase().includes(q)
+                  );
+                }
+                return true;
+              });
+
+              return (
+                <div className={`p-6 rounded-2xl border space-y-6 ${
+                  isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  {/* Services Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                    <div>
+                      <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <Layers className="w-5 h-5 text-[#00F2FE]" />
+                        <span>{isAr ? 'إدارة منظومة الخدمات والحلول الهندسية (Services CMS)' : 'Services & Solutions CMS'}</span>
+                      </h3>
+                      <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {isAr ? 'تحكم شامل في بطاقات الخدمات: إضافة وتعديل وحذف، رفع الصور المباشرة للخادم، وتعديل المخرجات ونطاق العمل' : 'Full control: add, edit, delete, upload images to server, and customize deliverables'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleAddNewService}
+                        className="px-4 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-2 cursor-pointer shadow-md transition"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{isAr ? '+ إضافة خدمة جديدة' : '+ Add New Service'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(isAr ? 'هل تريد استعادة قائمة الخدمات الافتراضية؟' : 'Reset to default services?')) {
+                            handleConfigChange('servicesList', defaultEditableConfig.servicesList);
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{isAr ? 'استعادة الافتراضي' : 'Reset'}</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => handleConfigChange('servicesList', defaultEditableConfig.servicesList)}
-                    className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'استعادة الخدمات الافتراضية' : 'Reset Services'}</span>
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {(config.servicesList || contentAr.services.list).map((srv, idx) => (
-                    <div 
-                      key={srv.id || idx}
-                      className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-lg bg-[#10233D] flex items-center justify-center font-mono text-[11px] font-bold">
-                            {idx + 1}
-                          </span>
-                          <span>{srv.title}</span>
-                        </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
-                          {srv.category}
-                        </span>
-                      </div>
-
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'عنوان الخدمة' : 'Service Title'}</label>
-                          <input
-                            type="text"
-                            value={srv.title}
-                            onChange={(e) => {
-                              const updated = [...(config.servicesList || contentAr.services.list)];
-                              updated[idx] = { ...updated[idx], title: e.target.value };
-                              handleConfigChange('servicesList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'رابط صورة الخدمة' : 'Image URL'}</label>
-                          <input
-                            type="url"
-                            value={srv.image || ''}
-                            onChange={(e) => {
-                              const updated = [...(config.servicesList || contentAr.services.list)];
-                              updated[idx] = { ...updated[idx], image: e.target.value };
-                              handleConfigChange('servicesList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'الوصف المختصر' : 'Short Description'}</label>
-                          <textarea
-                            rows={2}
-                            value={srv.shortDesc}
-                            onChange={(e) => {
-                              const updated = [...(config.servicesList || contentAr.services.list)];
-                              updated[idx] = { ...updated[idx], shortDesc: e.target.value };
-                              handleConfigChange('servicesList', updated);
-                            }}
-                            className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
-                          />
-                        </div>
-                      </div>
+                  {/* Search and Category Filter */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-slate-400 absolute top-3 left-3 rtl:left-auto rtl:right-3" />
+                      <input
+                        type="text"
+                        value={serviceSearch}
+                        onChange={(e) => setServiceSearch(e.target.value)}
+                        placeholder={isAr ? 'بحث في الخدمات بالاسم، المحتوى، التصنيف...' : 'Search services...'}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl py-2 px-9 text-xs text-white placeholder-slate-500 outline-none focus:border-[#00F2FE]"
+                      />
                     </div>
-                  ))}
+
+                    <select
+                      value={serviceCategoryFilter}
+                      onChange={(e) => setServiceCategoryFilter(e.target.value)}
+                      className="bg-[#071120] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00F2FE]"
+                    >
+                      <option value="all">{isAr ? '📂 جميع تصنيفات الخدمات' : 'All Categories'}</option>
+                      <option value="security">{isAr ? '🛡️ أنظمة أمنية ومراقبة (Security)' : 'Security'}</option>
+                      <option value="network">{isAr ? '🌐 شبكات وبنية تحتية (Network)' : 'Network'}</option>
+                      <option value="software">{isAr ? '💻 برمجيات ومنصات (Software)' : 'Software'}</option>
+                      <option value="erp">{isAr ? '📊 تخطيط موارد وإدارة (ERP)' : 'ERP'}</option>
+                      <option value="consulting">{isAr ? '📋 استشارات ودراسات هندسية' : 'Consulting'}</option>
+                    </select>
+                  </div>
+
+                  {/* Services List Cards */}
+                  <div className="space-y-4">
+                    {filteredServices.map(({ srv, originalIdx }) => {
+                      const isExpanded = expandedServiceIdx === originalIdx;
+
+                      return (
+                        <div
+                          key={srv.id || originalIdx}
+                          className="rounded-2xl border border-white/10 bg-[#071120] hover:border-[#00F2FE]/40 transition overflow-hidden"
+                        >
+                          {/* Service Bar Summary */}
+                          <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0B1A2F]/60 border-b border-white/5">
+                            <div className="flex items-center gap-3">
+                              {/* Move Controls */}
+                              <div className="flex flex-col gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveService(originalIdx, 'up')}
+                                  disabled={originalIdx === 0}
+                                  className="p-1 rounded bg-[#10233D] hover:bg-[#152C4D] disabled:opacity-30 text-slate-300 hover:text-[#00F2FE] cursor-pointer"
+                                  title={isAr ? 'تقديم لأعلى' : 'Move Up'}
+                                >
+                                  <ArrowUp className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveService(originalIdx, 'down')}
+                                  disabled={originalIdx === allServices.length - 1}
+                                  className="p-1 rounded bg-[#10233D] hover:bg-[#152C4D] disabled:opacity-30 text-slate-300 hover:text-[#00F2FE] cursor-pointer"
+                                  title={isAr ? 'تأخير لأسفل' : 'Move Down'}
+                                >
+                                  <ArrowDown className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              {/* Thumbnail */}
+                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-950 border border-white/10 shrink-0 relative">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={srv.image || CURATED_IMAGE_PRESETS.cctv[0].url}
+                                  alt={srv.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute bottom-0 right-0 px-1 text-[9px] font-mono font-bold bg-black/80 text-[#00F2FE]">
+                                  #{originalIdx + 1}
+                                </span>
+                              </div>
+
+                              <div>
+                                <h4 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
+                                  <span>{srv.title}</span>
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                                    {srv.category}
+                                  </span>
+                                </h4>
+                                <p className="text-xs text-slate-400 line-clamp-1 mt-0.5 max-w-xl">
+                                  {srv.shortDesc}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Service Quick Actions */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteService(srv.id)}
+                                className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 cursor-pointer border border-rose-500/20"
+                                title={isAr ? 'حذف الخدمة' : 'Delete Service'}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setExpandedServiceIdx(isExpanded ? null : originalIdx)}
+                                className="px-3 py-1.5 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 text-[#00F2FE] text-xs font-bold flex items-center gap-1 cursor-pointer border border-[#00F2FE]/30"
+                              >
+                                <span>{isExpanded ? (isAr ? 'طي' : 'Collapse') : (isAr ? 'تعديل كامل' : 'Edit')}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded Service Editor */}
+                          {isExpanded && (
+                            <div className="p-5 space-y-5 bg-[#071120]">
+                              {/* 1. Identity & Classification */}
+                              <div className="grid sm:grid-cols-3 gap-4">
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'عنوان الخدمة' : 'Service Title'}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={srv.title}
+                                    onChange={(e) => handleUpdateServiceField(originalIdx, 'title', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'التصنيف' : 'Category'}
+                                  </label>
+                                  <select
+                                    value={srv.category}
+                                    onChange={(e) => handleUpdateServiceField(originalIdx, 'category', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                  >
+                                    <option value="security">{isAr ? '🛡️ مراقبة وأمن (Security)' : 'Security'}</option>
+                                    <option value="network">{isAr ? '🌐 شبكات وفيبر (Network)' : 'Network'}</option>
+                                    <option value="software">{isAr ? '💻 برمجيات وتطبيقات (Software)' : 'Software'}</option>
+                                    <option value="erp">{isAr ? '📊 نظم إدارة موارد (ERP)' : 'ERP'}</option>
+                                    <option value="consulting">{isAr ? '📋 استشارات هندسية (Consulting)' : 'Consulting'}</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                    {isAr ? 'الأيقونة' : 'Icon'}
+                                  </label>
+                                  <select
+                                    value={srv.iconName || 'ShieldCheck'}
+                                    onChange={(e) => handleUpdateServiceField(originalIdx, 'iconName', e.target.value)}
+                                    className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                  >
+                                    <option value="ShieldCheck">🛡️ ShieldCheck (حماية أمنية)</option>
+                                    <option value="Network">🌐 Network (شبكات وخوادم)</option>
+                                    <option value="Layers">📑 Layers (منظومات متكاملة)</option>
+                                    <option value="BarChart3">📊 BarChart3 (ERP وتحليلات)</option>
+                                    <option value="Lock">🔒 Lock (تحكم في الدخول)</option>
+                                    <option value="Cpu">⚡ Cpu (بنية تقنية)</option>
+                                    <option value="Globe">🌐 Globe (منصات سحابية)</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* 2. Short Description */}
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                  {isAr ? 'الوصف الهندسي والموجز للخدمة' : 'Short Description'}
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={srv.shortDesc}
+                                  onChange={(e) => handleUpdateServiceField(originalIdx, 'shortDesc', e.target.value)}
+                                  className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none leading-relaxed resize-none"
+                                />
+                              </div>
+
+                              {/* 3. Image Section with Server Upload */}
+                              <div className="p-4 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-3">
+                                <span className="text-xs font-bold text-[#00F2FE] flex items-center gap-1.5">
+                                  <Camera className="w-4 h-4" />
+                                  <span>{isAr ? 'صورة الخدمة والوسائط (يتم حفظها في خادم الموقع دائماً):' : 'Service Image (Saved permanently on server):'}</span>
+                                </span>
+
+                                <div className="grid sm:grid-cols-3 gap-4 items-center">
+                                  <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-white/10">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={srv.image || CURATED_IMAGE_PRESETS.cctv[0].url}
+                                      alt={srv.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+
+                                  <div className="sm:col-span-2 space-y-3">
+                                    <div>
+                                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                        {isAr ? 'رابط الصورة (URL)' : 'Image URL'}
+                                      </label>
+                                      <input
+                                        type="url"
+                                        value={srv.image || ''}
+                                        onChange={(e) => handleUpdateServiceField(originalIdx, 'image', e.target.value)}
+                                        placeholder="https://..."
+                                        className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
+                                      />
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <label className="px-3 py-1.5 rounded-lg bg-[#00F2FE]/20 hover:bg-[#00F2FE] text-[#00F2FE] hover:text-[#071120] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-[#00F2FE]/30">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>{isAr ? 'رفع صورة من جهازك للخادم' : 'Upload image to server'}</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => handleServiceImageUpload(e, originalIdx)}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                    </div>
+
+                                    {/* Quick Preset Buttons */}
+                                    <div className="pt-2 border-t border-white/5">
+                                      <span className="text-[10px] text-slate-400 block mb-1">
+                                        {isAr ? 'أو اختر صورة جاهزة عالية الجودة:' : 'High-res presets:'}
+                                      </span>
+                                      <div className="grid grid-cols-2 gap-1.5">
+                                        {(CURATED_IMAGE_PRESETS[srv.category as keyof typeof CURATED_IMAGE_PRESETS] || CURATED_IMAGE_PRESETS.cctv).slice(0, 2).map((pst, pIdx) => (
+                                          <button
+                                            key={pIdx}
+                                            type="button"
+                                            onClick={() => handleUpdateServiceField(originalIdx, 'image', pst.url)}
+                                            className="text-[10px] p-1.5 rounded bg-[#071120] hover:bg-[#10233D] text-slate-300 hover:text-[#00F2FE] truncate text-start border border-white/5 cursor-pointer"
+                                            title={pst.title}
+                                          >
+                                            {pst.title}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 4. Deliverables & Technical Points */}
+                              <div className="grid sm:grid-cols-2 gap-4">
+                                <div className="p-3.5 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-2">
+                                  <label className="block text-[11px] font-bold text-slate-200">
+                                    {isAr ? 'المخرجات الهندسية ومستندات التسليم (Deliverables - سطر لكل بند):' : 'Deliverables (one per line):'}
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={(srv.deliverables || []).join('\n')}
+                                    onChange={(e) => {
+                                      const lines = e.target.value.split('\n').filter((l) => l.trim().length > 0);
+                                      handleUpdateServiceField(originalIdx, 'deliverables', lines);
+                                    }}
+                                    placeholder={isAr ? "مخططات As-Built\nشهادة اختبار وتشغيل" : "As-Built Schematics\nTesting Certificate"}
+                                    className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none leading-relaxed resize-none"
+                                  />
+                                </div>
+
+                                <div className="p-3.5 rounded-xl bg-[#0B1A2F] border border-white/10 space-y-2">
+                                  <label className="block text-[11px] font-bold text-slate-200">
+                                    {isAr ? 'نقاط القوة والمعايير الفنية (Key Points - سطر لكل بند):' : 'Key Points (one per line):'}
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={(srv.points || []).join('\n')}
+                                    onChange={(e) => {
+                                      const lines = e.target.value.split('\n').filter((l) => l.trim().length > 0);
+                                      handleUpdateServiceField(originalIdx, 'points', lines);
+                                    }}
+                                    placeholder={isAr ? "توريد وتركيب معتمد\nعقود صيانة معتمدة" : "Certified installation\nSLA Warranty"}
+                                    className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00F2FE] outline-none leading-relaxed resize-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* 6. PROJECTS PORTFOLIO CMS */}
             {activeTab === 'projects' && (() => {
@@ -3480,17 +3830,20 @@ export default function SecureAdminPortalPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (uploadEvent) => {
-                            const result = uploadEvent.target?.result as string;
-                            if (result) {
-                              handleConfigChange('customLogoUrl', result);
+                          try {
+                            setNotificationMsg(isAr ? 'جاري رفع الشعار إلى الخادم...' : 'Uploading logo...');
+                            const result = await uploadImageToServer(file);
+                            if (result?.url) {
+                              handleConfigChange('customLogoUrl', result.url);
+                              setNotificationMsg(isAr ? 'تم رفع وحفظ الشعار بنجاح!' : 'Logo uploaded successfully!');
+                              setTimeout(() => setNotificationMsg(''), 3000);
                             }
-                          };
-                          reader.readAsDataURL(file);
+                          } catch (err) {
+                            console.error('Logo upload error:', err);
+                          }
                         }
                       }}
                       className="text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#00F2FE] file:text-[#071120] cursor-pointer"
@@ -3577,6 +3930,82 @@ export default function SecureAdminPortalPage() {
                       value={config.addressAr}
                       onChange={(e) => handleConfigChange('addressAr', e.target.value)}
                       className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'العنوان بالإنجليزية' : 'Address (English)'}</label>
+                    <input
+                      type="text"
+                      value={config.addressEn || ''}
+                      onChange={(e) => handleConfigChange('addressEn', e.target.value)}
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'مواعيد العمل (عربي)' : 'Working Hours (Arabic)'}</label>
+                    <input
+                      type="text"
+                      value={config.workingHoursAr || ''}
+                      onChange={(e) => handleConfigChange('workingHoursAr', e.target.value)}
+                      placeholder={isAr ? 'السبت - الخميس: 9:00 ص - 6:00 م' : 'Sat - Thu: 9:00 AM - 6:00 PM'}
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'مواعيد العمل (إنجليزي)' : 'Working Hours (English)'}</label>
+                    <input
+                      type="text"
+                      value={config.workingHoursEn || ''}
+                      onChange={(e) => handleConfigChange('workingHoursEn', e.target.value)}
+                      placeholder="Sat - Thu: 9:00 AM - 6:00 PM"
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رقم السجل التجاري' : 'Commercial Register'}</label>
+                    <input
+                      type="text"
+                      value={config.commercialRegister || ''}
+                      onChange={(e) => handleConfigChange('commercialRegister', e.target.value)}
+                      placeholder="182940"
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رقم البطاقة الضريبية' : 'Tax Card ID'}</label>
+                    <input
+                      type="text"
+                      value={config.taxId || ''}
+                      onChange={(e) => handleConfigChange('taxId', e.target.value)}
+                      placeholder="714-389-201"
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رابط LinkedIn' : 'LinkedIn URL'}</label>
+                    <input
+                      type="url"
+                      value={config.linkedinUrl || ''}
+                      onChange={(e) => handleConfigChange('linkedinUrl', e.target.value)}
+                      placeholder="https://linkedin.com/company/tech-bokra"
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-[#00F2FE] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'رابط Facebook' : 'Facebook URL'}</label>
+                    <input
+                      type="url"
+                      value={config.facebookUrl || ''}
+                      onChange={(e) => handleConfigChange('facebookUrl', e.target.value)}
+                      placeholder="https://facebook.com/techbokra"
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-[#00F2FE] outline-none"
                     />
                   </div>
                 </div>

@@ -65,7 +65,27 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
     }
   };
 
-  const rawProjects = customProjects && customProjects.length > 0 ? customProjects : data.projects.list;
+  // Language-aware project list resolution: preserve English text in English mode while syncing CMS images/drafts
+  const baseProjects = isAr
+    ? (customProjects && customProjects.length > 0 ? customProjects : data.projects.list)
+    : data.projects.list;
+
+  const rawProjects = baseProjects.map((p) => {
+    if (customProjects && customProjects.length > 0) {
+      const customMatch = customProjects.find((cp) => cp.id === p.id);
+      if (customMatch) {
+        return {
+          ...p,
+          image: customMatch.image || p.image,
+          liveUrl: customMatch.liveUrl || p.liveUrl,
+          isDraft: customMatch.isDraft !== undefined ? customMatch.isDraft : p.isDraft,
+          isUpcoming: customMatch.isUpcoming !== undefined ? customMatch.isUpcoming : p.isUpcoming,
+        };
+      }
+    }
+    return p;
+  });
+
   // Exclude projects marked as draft so only published projects appear to clients
   const activeProjects = rawProjects.filter((p) => p.isDraft !== true);
 

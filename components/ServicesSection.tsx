@@ -61,8 +61,20 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
     setExpandedSpecs((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Ensure all 6 specialized engineering solutions are always displayed with full fidelity
-  const activeList = (lang === 'ar' && customServices && customServices.length >= 6) ? customServices : data.services.list;
+  // Language-aware services resolution: preserve English text in English mode while syncing CMS images
+  const baseServices = isAr
+    ? (customServices && customServices.length > 0 ? customServices : data.services.list)
+    : data.services.list;
+
+  const activeList = baseServices.map((s) => {
+    if (customServices && customServices.length > 0) {
+      const match = customServices.find((cs) => cs.id === s.id);
+      if (match && match.image) {
+        return { ...s, image: match.image };
+      }
+    }
+    return s;
+  });
 
   const filteredServices = activeList.filter((s) => {
     if (activeFilter === 'all') return true;

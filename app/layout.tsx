@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Cairo, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { LanguageProvider } from '@/components/LanguageProvider';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -136,9 +137,11 @@ export default function RootLayout({
             }),
           }}
         />
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
