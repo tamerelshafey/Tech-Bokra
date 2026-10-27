@@ -334,7 +334,7 @@ export const SUB_SERVICES: SubService[] = [
       ar: 'منع دخول الأشخاص غير المصرح لهم للمناطق الحساسة (مثل غرف الخوادم، الخزائن، والمكاتب التنفيذية) وإنهاء إهدار الوقت والتكاليف الناتجة عن المفاتيح التقليدية مع إتاحة سجل تدقيق زمني كامل.',
       en: 'Preventing unauthorized access to critical zones (server rooms, vaults, executive areas) while eliminating physical key vulnerabilities through automated, time-stamped audit trails.',
     },
-    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80',
     capabilities: {
       ar: [
         'التحقق البيومتري الفوري ببصمة الوجه ثلاثية الأبعاد بدون تلامس وبصمة الإصبع',
@@ -1260,7 +1260,7 @@ export const DEFAULT_SERVICES_LIST_AR: LegacyServiceItem[] = [
     id: "elv-systems",
     category: "elv",
     iconName: "Radio",
-    image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80",
     title: "أنظمة التيار الخفيف (Low Current / ELV Systems)",
     shortDesc: "حلول متكاملة تشمل أنظمة الإنذار، والصوتيات، والاتصال الداخلي، والأنظمة المساندة؛ لدعم كفاءة التشغيل والسلامة داخل المنشأة.",
     points: [
@@ -1343,7 +1343,7 @@ export const DEFAULT_SERVICES_LIST_EN: LegacyServiceItem[] = [
     id: "elv-systems",
     category: "elv",
     iconName: "Radio",
-    image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80",
     title: "Low Current / ELV Systems",
     shortDesc: "Integrated fire alarm, public address, audio-visual distribution, and intercom systems safeguarding facility operations.",
     points: [

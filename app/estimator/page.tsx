@@ -62,6 +62,7 @@ export default function EstimatorPage() {
         brandBio={isAr ? customConfig.brandBioAr : customConfig.brandBioEn}
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
+        footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
       />
     </div>
   );

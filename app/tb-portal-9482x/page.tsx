@@ -99,19 +99,19 @@ const CURATED_IMAGE_PRESETS = {
     { title: 'كاميرات 4K مراقبة ذكية نهارية/ليلية', url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80' },
     { title: 'غرفة تحكم ومراقبة مركزية SOC Video Wall', url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&w=1200&q=80' },
     { title: 'كاميرا دوم ذكية بتقنية الذكاء الاصطناعي', url: 'https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=1200&q=80' },
-    { title: 'حماية وتأمين محيط المنشآت الحيوية', url: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32b?auto=format&fit=crop&w=1200&q=80' }
+    { title: 'حماية وتأمين محيط المنشآت الحيوية', url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80' }
   ],
   network: [
     { title: 'كبائن خوادم وشبكات مهيكلة فائقة الدقة', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80' },
     { title: 'ألياف ضوئية فايبر أوبتك عالية السرعة', url: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80' },
-    { title: 'سويتشات راوتر ومسارات كابلات Cat6A/7', url: 'https://images.unsplash.com/photo-1520869562399-e772f342b00a?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'سويتشات راوتر ومسارات كابلات Cat6A/7', url: 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?auto=format&fit=crop&w=1200&q=80' },
     { title: 'ممرات مراكز البيانات Data Center Cold Aisle', url: 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?auto=format&fit=crop&w=1200&q=80' }
   ],
   access: [
-    { title: 'بوابات مرور ذكية Speed Gates زجاجية', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'بوابات مرور ذكية Speed Gates زجاجية', url: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80' },
     { title: 'أجهزة بصمة وجه بيومترية بدون تلامس', url: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=1200&q=80' },
     { title: 'أنظمة بطاقات RFID وقفل كهرومغناطيسي', url: 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&w=1200&q=80' },
-    { title: 'مداخل برج إداري ذكية متكاملة', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80' }
+    { title: 'مداخل برج إداري ذكية متكاملة', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80' }
   ],
   cloud: [
     { title: 'بنية سحابية سيبرانية وأنظمة تحليلات ERP', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80' },
@@ -1912,7 +1912,7 @@ export default function SecureAdminPortalPage() {
                       { category: isAr ? 'غرف مراقبة SOC' : 'Control Center', title: 'شاشات مراقبة مركزية Video Wall', url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&w=1200&q=80' },
                       { category: isAr ? 'شبكات وفيبر Network' : 'Network & Fiber', title: 'كبائن خوادم وراك داتا سنتر', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80' },
                       { category: isAr ? 'ألياف ضوئية Fiber' : 'Fiber Optics', title: 'مسارات كابلات فايبر أوبتك', url: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80' },
-                      { category: isAr ? 'بوابات ذكية Access' : 'Smart Gates', title: 'بوابات سرعة زجاجية Speed Gates', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80' },
+                      { category: isAr ? 'بوابات ذكية Access' : 'Smart Gates', title: 'بوابات سرعة زجاجية Speed Gates', url: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80' },
                       { category: isAr ? 'بصمة وجه Biometric' : 'Face Recognition', title: 'أجهزة بصمة وجه بيومترية بدون تلامس', url: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=1200&q=80' },
                       { category: isAr ? 'منصات ERP وCloud' : 'Cloud & ERP', title: 'لوحات قيادة ERP وتحليلات بيانات', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80' },
                       { category: isAr ? 'مباني وأبراج ذكية' : 'Smart Facilities', title: 'برج إداري وبنية تحتية ذكية', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80' },
@@ -2394,12 +2394,22 @@ export default function SecureAdminPortalPage() {
                   </h4>
 
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'نبذة الشركة في الفوتر (عربي)' : 'Brand Bio (Arabic)'}</label>
                       <textarea
                         rows={2}
                         value={config.brandBioAr || ''}
                         onChange={(e) => handleConfigChange('brandBioAr', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'نبذة الشركة في الفوتر (إنجليزي)' : 'Brand Bio (English)'}</label>
+                      <textarea
+                        rows={2}
+                        value={config.brandBioEn || ''}
+                        onChange={(e) => handleConfigChange('brandBioEn', e.target.value)}
                         className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
                       />
                     </div>
@@ -2423,6 +2433,28 @@ export default function SecureAdminPortalPage() {
                         onChange={(e) => handleConfigChange('taxId', e.target.value)}
                         placeholder="714-389-201"
                         className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'نص حقوق الملكية في الفوتر (عربي)' : 'Footer Rights / Copyright (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.footerRightsAr || ''}
+                        onChange={(e) => handleConfigChange('footerRightsAr', e.target.value)}
+                        placeholder="© Tech Bokra. جميع الحقوق محفوظة."
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'نص حقوق الملكية في الفوتر (إنجليزي)' : 'Footer Rights / Copyright (English)'}</label>
+                      <input
+                        type="text"
+                        value={config.footerRightsEn || ''}
+                        onChange={(e) => handleConfigChange('footerRightsEn', e.target.value)}
+                        placeholder="© Tech Bokra. All Rights Reserved."
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
                       />
                     </div>
                   </div>

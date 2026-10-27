@@ -602,7 +602,7 @@ export const contentAr: SiteLanguageData = {
     quickLinksTitle: "روابط سريعة",
     contactTitle: "تواصل معنا",
     rights: "© Tech Bokra. جميع الحقوق محفوظة.",
-    taxId: "سجل تجاري 194022 • بطاقة ضريبية 682-901-443",
+    taxId: siteConfig.taxId.includes("[TO_CONFIRM") ? "[TO_CONFIRM: Commercial Register & Tax ID]" : `سجل تجاري: ${siteConfig.commercialRegister} • بطاقة ضريبية: ${siteConfig.taxId}`,
     addressVal: "مصر، القاهرة، مدينة نصر",
   },
 };
@@ -996,7 +996,7 @@ export const contentEn: SiteLanguageData = {
     quickLinksTitle: "Quick Links",
     contactTitle: "Contact Us",
     rights: "© Tech Bokra. All Rights Reserved.",
-    taxId: "CR: 194022 • Tax ID: 682-901-443",
+    taxId: siteConfig.taxId.includes("[TO_CONFIRM") ? "[TO_CONFIRM: Commercial Register & Tax ID]" : `CR: ${siteConfig.commercialRegister} • Tax ID: ${siteConfig.taxId}`,
     addressVal: "Nasr City, Cairo, Egypt",
   },
 };

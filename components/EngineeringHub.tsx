@@ -166,7 +166,204 @@ export interface TenderItem {
   deliverablesListEn: string[];
 }
 
-export const DEFAULT_TENDERS_RADAR: TenderItem[] = [];
+export const DEFAULT_TENDERS_RADAR: TenderItem[] = [
+  {
+    id: 'tender-1',
+    refNumber: 'EG-NUCA-SEC-2025-042',
+    titleAr: 'توريد وتركيب وتشغيل منظومة مراقبة ذكية (CCTV AI) وتحكم بالدخول للمقر الإداري والمرافق',
+    titleEn: 'Supply & Installation of AI-Powered IP CCTV & Biometric Access Control for Regional Admin HQ',
+    entityAr: 'هيئة المجتمعات العمرانية الجديدة - جهاز مدينة القاهرة الجديدة',
+    entityEn: 'New Urban Communities Authority (NUCA) - New Cairo City Authority',
+    category: 'security',
+    locationAr: 'التجمع الخامس، القاهرة الجديدة، مصر',
+    locationEn: 'New Cairo, Egypt',
+    deadline: '2025-04-15',
+    deadlineFormattedAr: '15 أبريل 2025 - 12:00 ظهراً',
+    deadlineFormattedEn: '15 April 2025 - 12:00 PM',
+    daysRemaining: 12,
+    urgency: 'urgent',
+    sessionDateAr: 'جلسة فتح المظاريف الفنية: 16 أبريل 2025',
+    sessionDateEn: 'Technical Opening Session: 16 April 2025',
+    status: 'open',
+    scopeAr: 'توريد وتركيب 180 كاميرا شبكية 4K داخلية وخارجية مع خوارزميات ذكاء اصطناعي للتعرف على لوحات المركبات (LPR) وكشف التسلل، منظومة NVR مركزية بسعة تخزين 120 يوماً مع RAID-6، وبوابات مرور إلكترونية Flap Barriers متكاملة مع قارئات بصمة الوجه وغرفة مراقبة مركزية مزودة بشاشات عرض جدارية Video Wall.',
+    scopeEn: 'Supply and installation of 180 enterprise 4K IP cameras with AI LPR and perimeter intrusion analytics, centralized NVR storage for 120 days with RAID-6 redundancy, optical flap turnstiles integrated with facial recognition access control, and a centralized control room Video Wall display.',
+    estimatedBudget: 'تقديري: 7.8 مليون ج.م',
+    submittalRequired: true,
+    sourceAr: 'بوابة التعاقدات العامة المصرية',
+    sourceEn: 'Egyptian Government Procurement Portal',
+    officialPortalUrl: 'https://etenders.gov.eg',
+    tenderFee: '2,500 ج.م',
+    bidBond: '120,000 ج.م',
+    deliverablesListAr: [
+      'جداول الامتثال والمقارنة الفنية (Technical Compliance Matrix) بنداً ببند',
+      'ملفات الاعتماد الفني للمواد والأجهزة (Material Submittal Sheets)',
+      'مخططات الورشة التنفيذية ومسارات الكوابل (CAD Shop Drawings & Single Line Diagram)',
+      'حسابات التخزين وعرض النطاق الترددي للشبكة (Bandwidth & Storage Calculations Sheet)'
+    ],
+    deliverablesListEn: [
+      'Line-by-line Technical Compliance Matrix against project specs',
+      'Material Submittal Sheets for cameras, VMS servers, and switchboards',
+      'CAD Shop Drawings and Single Line Diagrams for cable routing',
+      'Storage sizing and network bandwidth engineering calculations'
+    ]
+  },
+  {
+    id: 'tender-2',
+    refNumber: 'MOE-ICT-FBR-2025-118',
+    titleAr: 'تحديث وتمديد شبكة كابلات ألياف ضوئية وبنية تحتية Cat6A لمجمع كليات ومباني جامعية',
+    titleEn: 'Campus Structured Cabling & Fiber Optic Backbone Infrastructure Expansion',
+    entityAr: 'وزارة التعليم العالي - الإدارة المركزية للشؤون الهندسية والمشروعات',
+    entityEn: 'Ministry of Higher Education - Engineering Projects Sector',
+    category: 'network',
+    locationAr: 'العاصمة الإدارية / القاهرة، مصر',
+    locationEn: 'New Administrative Capital / Cairo, Egypt',
+    deadline: '2025-04-24',
+    deadlineFormattedAr: '24 أبريل 2025 - 01:00 ظهراً',
+    deadlineFormattedEn: '24 April 2025 - 01:00 PM',
+    daysRemaining: 21,
+    urgency: 'medium',
+    sessionDateAr: 'جلسة الاستفسارات: 14 أبريل 2025 | فتح المظاريف: 25 أبريل 2025',
+    sessionDateEn: 'Inquiries: 14 April 2025 | Opening: 25 April 2025',
+    status: 'open',
+    scopeAr: 'تمديد مسار ألياف ضوئية خارجي بطول 24 كم كابلات Armored Single-Mode 24 Core، وتوريد 620 نقطة بيانات Cat6A UTP للاتصال الصفي والإداري، مع توريد واختبار شهادات الفحص بجهاز Fluke DSX-8000 المعتمد، وتركيب سويتشات توزيع PoE+ 10Gbps Uplink ودواليب شبكة Server Racks 42U.',
+    scopeEn: 'Execution of 24km outdoor armored single-mode 24-core fiber backbone, installation of 620 Cat6A UTP data outlets with full Fluke DSX-8000 test certifications, managed PoE+ enterprise distribution switches with 10Gbps uplinks, and 42U floor-standing server racks.',
+    estimatedBudget: 'تقديري: 5.4 مليون ج.م',
+    submittalRequired: true,
+    sourceAr: 'بوابة التعاقدات العامة المصرية',
+    sourceEn: 'Egyptian Government Procurement Portal',
+    officialPortalUrl: 'https://etenders.gov.eg',
+    tenderFee: '1,800 ج.م',
+    bidBond: '85,000 ج.م',
+    deliverablesListAr: [
+      'تقارير الفحص والقياس بجهاز Fluke Networks لكافة مسارات الفايبر والنحاس',
+      'مخطط توزيع كبائن الشبكة ونقاط الربط (Network Rack Elevation Layout)',
+      'كراسة المواصفات والاعتماد الفني للكابلات والسويتشات'
+    ],
+    deliverablesListEn: [
+      'Fluke Networks certification test reports for fiber and copper channels',
+      'Rack elevation drawings and patch panel patching schedule',
+      'Technical submittal dossiers for passive cabling and active switches'
+    ]
+  },
+  {
+    id: 'tender-3',
+    refNumber: 'BAN-DC-FIT-2025-089',
+    titleAr: 'تجهيز وتأهيل مركز بيانات رئيسي وغرفة خوادم بمعايير Tier III لأنظمة حماية الطاقة والإطفاء التلقائي',
+    titleEn: 'Data Center Fit-out & Server Room Upgrading to Tier III Standards (FM-200 & Modular UPS)',
+    entityAr: 'مؤسسة مصرفية كبرى - قطاع البنية التحتية والتحول الرقمي',
+    entityEn: 'Leading Banking Institution - Digital Infrastructure Division',
+    category: 'datacenter',
+    locationAr: 'القرية الذكية، الجيزة، مصر',
+    locationEn: 'Smart Village, Giza, Egypt',
+    deadline: '2025-05-08',
+    deadlineFormattedAr: '08 مايو 2025 - 11:30 صباحاً',
+    deadlineFormattedEn: '08 May 2025 - 11:30 AM',
+    daysRemaining: 35,
+    urgency: 'normal',
+    sessionDateAr: 'جلسة الرد على الإيضاحات: 22 أبريل 2025',
+    sessionDateEn: 'Clarification Session: 22 April 2025',
+    status: 'open',
+    scopeAr: 'تنفيذ أعمال غرفة مركز البيانات شاملة: نظام تكييف دقيق In-Row Precision Cooling تكرار (N+1)، نظام إطفاء غازي نظيف FM-200 / Novec 1230 مع محطة إنذار مبكر VESDA، وحدات طاقة غير منقطعة UPS ثلاثية الأوجه Modular 120kVA مع بطاريات ليثيوم، ومنظومة مراقبة بيئية وإدارة بنية مركز البيانات (DCIM) لمراقبة درجات الحرارة والرطوبة وتسريب المياه لحظياً.',
+    scopeEn: 'Comprehensive data center infrastructure deployment including In-Row precision air conditioning (N+1 redundancy), clean agent gaseous fire suppression (FM-200 / Novec) with aspirating smoke detection (VESDA), modular 120kVA 3-phase UPS system with lithium-ion batteries, and central DCIM environmental telemetry monitoring.',
+    estimatedBudget: 'تقديري: 14.2 مليون ج.م',
+    submittalRequired: true,
+    sourceAr: 'بوابة التعاقدات والخدمات المصرفية',
+    sourceEn: 'Banking Procurement Portal',
+    officialPortalUrl: 'https://etenders.gov.eg',
+    tenderFee: '5,000 ج.م',
+    bidBond: '250,000 ج.م',
+    deliverablesListAr: [
+      'حسابات الأحمال الحرارية وتوزيع تدفق الهواء (Thermal & Airflow CFD Sizing)',
+      'حسابات تركيز الغاز وحجم الأسطوانات لنظام الإطفاء النظيف',
+      'تصاميم لوحات توزيع الطاقة الكهربائية ATS و PDU وحسابات زمن احتياطي البطاريات',
+      'ملف الاعتماد الفني الشامل ومطابقة مواصفات الاستشاري'
+    ],
+    deliverablesListEn: [
+      'Thermal load calculations and precision cooling airflow design',
+      'Clean agent gas concentration calculation hydraulic design',
+      'PDU/ATS electrical schematics and battery runtime sizing reports',
+      'Comprehensive consultant compliance sheets and data sheets'
+    ]
+  },
+  {
+    id: 'tender-4',
+    refNumber: 'MOH-ELV-SUB-2025-033',
+    titleAr: 'إعداد المظاريف الفنية والاعتمادات الهندسية لأنظمة التيار الخفيف وإنذار الحريق بمستشفى تخصصي',
+    titleEn: 'Preparation of Engineering Submittals & Shop Drawings for Hospital ELV & Fire Alarm Systems',
+    entityAr: 'الهيئة العامة للرعاية الصحية - قطاع المشروعات الهندسية',
+    entityEn: 'General Authority for Healthcare - Engineering Projects Sector',
+    category: 'consulting',
+    locationAr: 'مدينة الإسماعيلية، مصر',
+    locationEn: 'Ismailia City, Egypt',
+    deadline: '2025-04-12',
+    deadlineFormattedAr: '12 أبريل 2025 - 12:00 ظهراً',
+    deadlineFormattedEn: '12 April 2025 - 12:00 PM',
+    daysRemaining: 9,
+    urgency: 'urgent',
+    sessionDateAr: 'جلسة الاستفسارات منتهية | تسليم العروض سارٍ',
+    sessionDateEn: 'Inquiries Completed | Proposal Submissions Active',
+    status: 'open',
+    scopeAr: 'تقديم خدمات المكتب الفني المتخصصة لإعداد ملفات الاعتماد الفني للمواد (Material Submittals) لمنظومة إنذار الحريق المعنونة الذكية (Addressable Fire Alarm EN 54) وشبكة الإذاعة الداخلية والنداء العام (PA/BGM)، ومخططات التنفيذ التفصيلية (Shop Drawings) ومصفوفة الأسباب والنتائج (Cause & Effect Matrix) تمهيداً للاعتماد النهائي من استشاري المشروعات الكبرى والدفاع المدني.',
+    scopeEn: 'Engineering submittal services including preparation of comprehensive Material Submittals for intelligent addressable fire alarm (EN 54 compliant) and public address / voice evacuation systems, detailed CAD shop drawings, and Cause & Effect operational matrices for consultant and authority approvals.',
+    estimatedBudget: 'تقديري: 650,000 ج.م (أتعاب هندسية واعتمادات)',
+    submittalRequired: true,
+    sourceAr: 'إدارة المشروعات والتعاقدات الصحية',
+    sourceEn: 'Healthcare Engineering Procurement',
+    officialPortalUrl: 'https://etenders.gov.eg',
+    tenderFee: '1,000 ج.م',
+    bidBond: '15,000 ج.م',
+    deliverablesListAr: [
+      'ملف الاعتماد الفني للمواد والأجهزة (Material Submittal Dossier)',
+      'مخططات الورشة التنفيذية ومسارات المواسير والكوابل (CAD Shop Drawings)',
+      'جدول مصفوفة الأسباب والنتائج لاختبارات الإطفاء والإنذار (Cause & Effect Matrix)',
+      'حسابات هبوط الجهد وسعة البطاريات الاحتياطية (Voltage Drop & Battery Sizing)'
+    ],
+    deliverablesListEn: [
+      'Comprehensive material submittal dossiers with product compliance comparison',
+      'Coordinated CAD shop drawings for conduit containment and detector layouts',
+      'System Cause & Effect operational control matrix',
+      'Voltage drop calculations and 24h/30min battery standby sizing sheets'
+    ]
+  },
+  {
+    id: 'tender-5',
+    refNumber: 'PORT-ERP-SEC-2025-015',
+    titleAr: 'تطوير وتكامل منصة مركزية موحدة لإدارة الأنظمة الأمنية (PSIM) وربط كاميرات المراقبة بالبوابات الجمركية',
+    titleEn: 'Physical Security Information Management (PSIM) & Customs Gates Integration Platform',
+    entityAr: 'الهيئة العامة للموانئ البرية والجافة - ميناء السادس من أكتوبر',
+    entityEn: 'General Authority for Land & Dry Ports - 6th of October Logistics Hub',
+    category: 'software',
+    locationAr: 'المنطقة الصناعية، السادس من أكتوبر، مصر',
+    locationEn: 'Industrial Zone, 6th of October City, Egypt',
+    deadline: '2025-05-18',
+    deadlineFormattedAr: '18 مايو 2025 - 01:00 ظهراً',
+    deadlineFormattedEn: '18 May 2025 - 01:00 PM',
+    daysRemaining: 45,
+    urgency: 'normal',
+    sessionDateAr: 'جلسة الاستفسارات: 28 أبريل 2025',
+    sessionDateEn: 'Inquiries Session: 28 April 2025',
+    status: 'open',
+    scopeAr: 'تصميم وتنفيذ منصة برمجية مركزية موحدة من فئة PSIM لربط وتكامل 340 كاميرا مراقبة مع أنظمة التعرف على أرقام لوحات الشاحنات والحاويات (ANPR/ACCR)، وأجهزة فحص الأشعة السينية X-Ray، وبوابات الدخول الآلية RFID مع ربط قاعدة البيانات اللحظية بنظام إدارة الجمارك والمستودعات عبر بروتوكولات REST APIs المشفرة.',
+    scopeEn: 'Architecture and turnkey deployment of enterprise PSIM platform integrating 340 CCTV cameras with automated container/license plate recognition (ANPR/ACCR), cargo X-ray scanners, and automated RFID barrier gates with real-time encrypted REST API synchronization to customs warehouse ERP systems.',
+    estimatedBudget: 'تقديري: 9.6 مليون ج.م',
+    submittalRequired: true,
+    sourceAr: 'بوابة التعاقدات الحكومية',
+    sourceEn: 'Egyptian Government Procurement Portal',
+    officialPortalUrl: 'https://etenders.gov.eg',
+    tenderFee: '3,000 ج.م',
+    bidBond: '180,000 ج.م',
+    deliverablesListAr: [
+      'وثيقة المتطلبات البرمجية والمعمارية التقنية (Software Architecture & SRS)',
+      'مخطط واجهات التكامل والربط البرمجي المشفر (REST API Integration Blueprint)',
+      'خطة الأمن السيبراني واختبارات القبول الوظيفي للمنصة (User Acceptance Testing Plan)'
+    ],
+    deliverablesListEn: [
+      'Software Architecture Document and System Requirements Specification (SRS)',
+      'API Integration blueprint and data exchange encryption schema',
+      'Platform cybersecurity framework and formal User Acceptance Testing (UAT) plan'
+    ]
+  }
+];
 
 export default function EngineeringHub({ lang, data, onOpenConsultation }: EngineeringHubProps) {
   const isAr = lang === 'ar';

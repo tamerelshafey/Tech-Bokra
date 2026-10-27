@@ -22,6 +22,7 @@ interface FooterProps {
   brandBio?: string;
   commercialRegister?: string;
   taxId?: string;
+  footerRights?: string;
 }
 
 export default function Footer({ 
@@ -39,6 +40,7 @@ export default function Footer({
   brandBio,
   commercialRegister,
   taxId,
+  footerRights,
 }: FooterProps) {
   const isAr = lang === 'ar';
   const { theme, toggleTheme, isDark } = useTheme();
@@ -107,9 +109,14 @@ export default function Footer({
             </p>
 
             <div className={`pt-2 text-xs font-mono space-y-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-              <div>{taxId ? `${isAr ? 'البطاقة الضريبية: ' : 'Tax ID: '}${taxId}` : data.footer.taxId}</div>
-              {commercialRegister && (
+              {taxId && !taxId.includes('[TO_CONFIRM') && (
+                <div>{isAr ? 'البطاقة الضريبية: ' : 'Tax ID: '}{taxId}</div>
+              )}
+              {commercialRegister && !commercialRegister.includes('[TO_CONFIRM') && (
                 <div>{isAr ? 'السجل التجاري: ' : 'Commercial Reg: '}{commercialRegister}</div>
+              )}
+              {(!taxId || taxId.includes('[TO_CONFIRM')) && (!commercialRegister || commercialRegister.includes('[TO_CONFIRM')) && (
+                <div className="text-[11px] opacity-75">{isAr ? 'البيانات الضريبية والسجل التجاري: قيد الاعتماد الرسمي' : 'Tax ID & CR: Under Official Certification'}</div>
               )}
             </div>
           </div>
@@ -246,7 +253,7 @@ export default function Footer({
         {/* Bottom Rights, Theme switcher, Admin trigger & Back-to-Top */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex flex-wrap items-center gap-3">
-            <p>{data.footer.rights}</p>
+            <p>{footerRights || data.footer.rights}</p>
 
             {/* Quick Theme Switcher in Footer */}
             <button

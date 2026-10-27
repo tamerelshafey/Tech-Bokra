@@ -182,6 +182,8 @@ export function safeSaveConfigToStorage(
           brandBioEn: config.brandBioEn,
           commercialRegister: config.commercialRegister,
           taxId: config.taxId,
+          footerRightsAr: config.footerRightsAr,
+          footerRightsEn: config.footerRightsEn,
           showAnnouncement: config.showAnnouncement,
           announcementTextAr: config.announcementTextAr,
           announcementTextEn: config.announcementTextEn,

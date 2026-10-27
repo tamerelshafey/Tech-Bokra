@@ -134,6 +134,12 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
     ],
   } : null;
 
+  // Only deliver confirmed standards to the client so unconfirmed standards are never serialized to visitors
+  const clientSafeService = {
+    ...service,
+    standards: service.standards.filter((s) => s.confirmed),
+  };
+
   return (
     <>
       {jsonLd && (
@@ -142,7 +148,7 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ServiceDetailTemplate service={service} category={categoryObj} />
+      <ServiceDetailTemplate service={clientSafeService} category={categoryObj} />
     </>
   );
 }

@@ -99,6 +99,8 @@ export interface EditableConfig {
   brandBioEn?: string;
   commercialRegister?: string;
   taxId?: string;
+  footerRightsAr?: string;
+  footerRightsEn?: string;
 
   // Media Vault (Uploaded Assets Library)
   mediaVault?: MediaVaultItem[];
@@ -176,7 +178,7 @@ export const defaultEditableConfig: EditableConfig = {
   // Media & Images CMS
   heroCctvImage: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
   heroNetworkImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
-  heroAccessImage: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80',
+  heroAccessImage: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80',
   heroCloudImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
 
   // Projects CMS
@@ -196,6 +198,8 @@ export const defaultEditableConfig: EditableConfig = {
   brandBioEn: contentEn.footer.brandBio,
   commercialRegister: defaultSiteConfig.commercialRegister,
   taxId: defaultSiteConfig.taxId,
+  footerRightsAr: contentAr.footer.rights,
+  footerRightsEn: contentEn.footer.rights,
 
   // Media Vault default items
   mediaVault: [
@@ -218,7 +222,7 @@ export const defaultEditableConfig: EditableConfig = {
     {
       id: 'vault-3',
       name: 'بوابات الدخول الذكية والتحكم البيومتري Access',
-      url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=1200&q=80',
+      url: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80',
       size: '195 KB',
       date: '2025-01-14',
       tag: 'Access'
