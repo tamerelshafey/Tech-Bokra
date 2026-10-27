@@ -303,8 +303,8 @@ export const DEFAULT_TENDERS_RADAR: TenderItem[] = [
     sessionDateAr: 'جلسة الاستفسارات منتهية | تسليم العروض سارٍ',
     sessionDateEn: 'Inquiries Completed | Proposal Submissions Active',
     status: 'open',
-    scopeAr: 'تقديم خدمات المكتب الفني المتخصصة لإعداد ملفات الاعتماد الفني للمواد (Material Submittals) لمنظومة إنذار الحريق المعنونة الذكية (Addressable Fire Alarm EN 54) وشبكة الإذاعة الداخلية والنداء العام (PA/BGM)، ومخططات التنفيذ التفصيلية (Shop Drawings) ومصفوفة الأسباب والنتائج (Cause & Effect Matrix) تمهيداً للاعتماد النهائي من استشاري المشروعات الكبرى والدفاع المدني.',
-    scopeEn: 'Engineering submittal services including preparation of comprehensive Material Submittals for intelligent addressable fire alarm (EN 54 compliant) and public address / voice evacuation systems, detailed CAD shop drawings, and Cause & Effect operational matrices for consultant and authority approvals.',
+    scopeAr: 'تقديم خدمات المكتب الفني المتخصصة لإعداد ملفات الاعتماد الفني للمواد (Material Submittals) لمنظومة إنذار الحريق المعنونة الذكية وشبكة الإذاعة الداخلية والنداء العام (PA/BGM)، ومخططات التنفيذ التفصيلية (Shop Drawings) ومصفوفة الأسباب والنتائج (Cause & Effect Matrix) تمهيداً للاعتماد النهائي من استشاري المشروعات الكبرى والدفاع المدني.',
+    scopeEn: 'Engineering submittal services including preparation of comprehensive Material Submittals for intelligent addressable fire alarm and life-safety systems, public address / voice evacuation systems, detailed CAD shop drawings, and Cause & Effect operational matrices for consultant and authority approvals.',
     estimatedBudget: 'تقديري: 650,000 ج.م (أتعاب هندسية واعتمادات)',
     submittalRequired: true,
     sourceAr: 'إدارة المشروعات والتعاقدات الصحية',
@@ -1290,8 +1290,8 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
                     </h4>
                     <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-800 font-medium'}`}>
                       {isAr 
-                        ? 'إعداد ملف الاعتماد الفني المعتمد (Material Submittal)، جداول الامتثال الفني (Compliance Sheets) بنداً ببند، ومخططات الـ Shop Drawings لضمان القبول.' 
-                        : 'Formulating verified Material Submittals, line-by-line Compliance Matrices, and CAD Shop Drawings guaranteeing 100% consultant approval.'}
+                        ? 'إعداد ملف الاعتماد الفني المعتمد (Material Submittal)، جداول الامتثال الفني (Compliance Sheets) بنداً ببند، ومخططات الـ Shop Drawings لدعم القبول والاعتماد الاستشاري.' 
+                        : 'Formulating verified Material Submittals, line-by-line Compliance Matrices, and CAD Shop Drawings to streamline consultant review and approval.'}
                     </p>
                   </div>
                 </div>
@@ -1884,7 +1884,7 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
               <ul className="space-y-2 text-xs text-slate-400 border-t border-white/5 pt-3">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{isAr ? 'مطابقة مواصفات كراسة الشروط 100%' : '100% Tender Spec Compliance'}</span>
+                  <span>{isAr ? 'مطابقة دقيقة لمواصفات كراسة الشروط الفنية' : 'Strict Tender Specification Compliance'}</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

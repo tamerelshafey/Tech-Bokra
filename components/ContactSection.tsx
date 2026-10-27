@@ -724,39 +724,41 @@ export default function ContactSection({
           <div className="lg:col-span-5 space-y-4">
             
             {/* Direct Phone Card */}
-            <div 
-              className={`p-6 rounded-2xl border transition shadow-sm hover:shadow-md ${
-                isDark 
-                  ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/20 hover:border-[#00F2FE]/40' 
-                  : 'bg-white border-slate-200 hover:border-[#0284C7]/40'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div 
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isDark ? 'bg-[#10233D] text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
-                  }`}
-                >
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'الخط الساخن والمكالمات الفورية' : 'Engineering Hotline'}
-                  </h4>
-                  <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {isAr ? 'مهندسو الدعم في خدمتك' : 'Available for immediate consult'}
-                  </p>
-                </div>
-              </div>
-              <a
-                href={`tel:${whatsappNumber}`}
-                className={`block text-xl font-bold font-mono hover:underline mt-2 ltr:text-left rtl:text-right ${
-                  isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+            {hotlinePhone && !hotlinePhone.includes('TO_CONFIRM') && !hotlinePhone.includes('[') && hotlinePhone.replace(/[^0-9]/g, '').length >= 8 && (
+              <div 
+                className={`p-6 rounded-2xl border transition shadow-sm hover:shadow-md ${
+                  isDark 
+                    ? 'bg-[#0B1A2F]/90 border-[#00F2FE]/20 hover:border-[#00F2FE]/40' 
+                    : 'bg-white border-slate-200 hover:border-[#0284C7]/40'
                 }`}
               >
-                {hotlinePhone}
-              </a>
-            </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div 
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      isDark ? 'bg-[#10233D] text-[#00F2FE]' : 'bg-sky-50 text-[#0284C7]'
+                    }`}
+                  >
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'الخط الساخن والمكالمات الفورية' : 'Engineering Hotline'}
+                    </h4>
+                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {isAr ? 'مهندسو الدعم في خدمتك' : 'Available for immediate consult'}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={`tel:${hotlinePhone.replace(/[^0-9+]/g, '')}`}
+                  className={`block text-xl font-bold font-mono hover:underline mt-2 ltr:text-left rtl:text-right ${
+                    isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'
+                  }`}
+                >
+                  {hotlinePhone}
+                </a>
+              </div>
+            )}
 
             {/* Email Card */}
             <div 

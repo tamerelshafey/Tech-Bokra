@@ -23,6 +23,7 @@ export interface Project {
   statusBadge?: string;
   isUpcoming?: boolean;
   isDraft?: boolean;
+  verified?: boolean;
 }
 
 export interface ServiceItem {
@@ -198,9 +199,14 @@ export interface SiteLanguageData {
   };
 }
 
+const rawPhone = process.env.NEXT_PUBLIC_COMPANY_PHONE || "";
+const rawWhatsapp = process.env.NEXT_PUBLIC_COMPANY_WHATSAPP || "";
+const rawCR = process.env.NEXT_PUBLIC_COMPANY_CR || "";
+const rawTaxId = process.env.NEXT_PUBLIC_COMPANY_TAX_ID || "";
+
 export const siteConfig = {
-  phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || "+20 101 234 5678 [TO_CONFIRM]",
-  whatsappNumber: process.env.NEXT_PUBLIC_COMPANY_WHATSAPP || "201012345678",
+  phone: (rawPhone && !rawPhone.includes('TO_CONFIRM') && !rawPhone.includes('[')) ? rawPhone : "",
+  whatsappNumber: (rawWhatsapp && !rawWhatsapp.includes('TO_CONFIRM') && !rawWhatsapp.includes('[')) ? rawWhatsapp : "",
   email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || "Support@tech-bokra.com",
   secondaryEmail: process.env.NEXT_PUBLIC_COMPANY_SALES_EMAIL || "sales@tech-bokra.com",
   addressAr: process.env.NEXT_PUBLIC_COMPANY_ADDRESS_AR || "مصر، القاهرة، مكرم عبيد، مدينة نصر",
@@ -209,8 +215,8 @@ export const siteConfig = {
   workingHoursEn: "Sat - Thu: 9:00 AM - 6:00 PM (24/7 SLA for Contract Clients)",
   linkedinUrl: process.env.NEXT_PUBLIC_COMPANY_LINKEDIN || "https://linkedin.com/company/tech-bokra",
   facebookUrl: process.env.NEXT_PUBLIC_COMPANY_FACEBOOK || "https://facebook.com/techbokra",
-  commercialRegister: process.env.NEXT_PUBLIC_COMPANY_CR || "[TO_CONFIRM_CR]",
-  taxId: process.env.NEXT_PUBLIC_COMPANY_TAX_ID || "[TO_CONFIRM_TAX_ID]",
+  commercialRegister: (rawCR && !rawCR.includes('TO_CONFIRM') && !rawCR.includes('[')) ? rawCR : "",
+  taxId: (rawTaxId && !rawTaxId.includes('TO_CONFIRM') && !rawTaxId.includes('[')) ? rawTaxId : "",
 };
 
 export const contentAr: SiteLanguageData = {
@@ -350,6 +356,7 @@ export const contentAr: SiteLanguageData = {
           "تأمين استمرارية التغذية والتسجيل عبر وحدة طاقة مستمرة",
         ],
         statusBadge: "تم التنفيذ والتسليم (مع دعم فني وصيانة دورية)",
+        verified: false,
       },
       {
         id: "retail-structured-cabling",
@@ -387,6 +394,7 @@ export const contentAr: SiteLanguageData = {
           "ترقيم وتوثيق كافة النقاط وتسليم مخططات التوصيل وتقارير الفحص",
         ],
         statusBadge: "تم التنفيذ والتسليم بنجاح",
+        verified: false,
       },
       {
         id: "contracting-ops-platform",
@@ -425,6 +433,7 @@ export const contentAr: SiteLanguageData = {
         ],
         statusBadge: "قيد التطوير والتجهيز للتشغيل الداخلي (In Progress)",
         isUpcoming: true,
+        verified: false,
       },
       {
         id: "helio-property",
@@ -464,6 +473,7 @@ export const contentAr: SiteLanguageData = {
         statusBadge: "قيد التطوير والتجهيز (In Progress)",
         liveUrl: "https://helio-property.vercel.app/",
         isUpcoming: true,
+        verified: false,
       },
       {
         id: "alrehla",
@@ -503,6 +513,7 @@ export const contentAr: SiteLanguageData = {
         statusBadge: "قيد التطوير والاختبار (In Progress)",
         liveUrl: "https://www.alrehla.org/",
         isUpcoming: true,
+        verified: false,
       },
     ],
   },
@@ -602,7 +613,7 @@ export const contentAr: SiteLanguageData = {
     quickLinksTitle: "روابط سريعة",
     contactTitle: "تواصل معنا",
     rights: "© Tech Bokra. جميع الحقوق محفوظة.",
-    taxId: siteConfig.taxId.includes("[TO_CONFIRM") ? "[TO_CONFIRM: Commercial Register & Tax ID]" : `سجل تجاري: ${siteConfig.commercialRegister} • بطاقة ضريبية: ${siteConfig.taxId}`,
+    taxId: (siteConfig.taxId && siteConfig.commercialRegister) ? `سجل تجاري: ${siteConfig.commercialRegister} • بطاقة ضريبية: ${siteConfig.taxId}` : "",
     addressVal: "مصر، القاهرة، مدينة نصر",
   },
 };
@@ -744,6 +755,7 @@ export const contentEn: SiteLanguageData = {
           "Conditioned UPS backup ensuring continuous recording through power fluctuations",
         ],
         statusBadge: "Delivered & Supported (With Preventative Maintenance)",
+        verified: false,
       },
       {
         id: "retail-structured-cabling",
@@ -781,6 +793,7 @@ export const contentEn: SiteLanguageData = {
           "Clear sequential labeling and full As-Built schematics delivered at handover",
         ],
         statusBadge: "Successfully Completed & Handed Over",
+        verified: false,
       },
       {
         id: "contracting-ops-platform",
@@ -819,6 +832,7 @@ export const contentEn: SiteLanguageData = {
         ],
         statusBadge: "In Progress (Internal Staging & Testing)",
         isUpcoming: true,
+        verified: false,
       },
       {
         id: "helio-property",
@@ -858,6 +872,7 @@ export const contentEn: SiteLanguageData = {
         statusBadge: "In Progress (Prototype Development)",
         liveUrl: "https://helio-property.vercel.app/",
         isUpcoming: true,
+        verified: false,
       },
       {
         id: "alrehla",
@@ -897,6 +912,7 @@ export const contentEn: SiteLanguageData = {
         statusBadge: "In Progress (Platform Testing)",
         liveUrl: "https://www.alrehla.org/",
         isUpcoming: true,
+        verified: false,
       },
     ],
   },
@@ -996,7 +1012,7 @@ export const contentEn: SiteLanguageData = {
     quickLinksTitle: "Quick Links",
     contactTitle: "Contact Us",
     rights: "© Tech Bokra. All Rights Reserved.",
-    taxId: siteConfig.taxId.includes("[TO_CONFIRM") ? "[TO_CONFIRM: Commercial Register & Tax ID]" : `CR: ${siteConfig.commercialRegister} • Tax ID: ${siteConfig.taxId}`,
+    taxId: (siteConfig.taxId && siteConfig.commercialRegister) ? `CR: ${siteConfig.commercialRegister} • Tax ID: ${siteConfig.taxId}` : "",
     addressVal: "Nasr City, Cairo, Egypt",
   },
 };

@@ -24,7 +24,6 @@ import {
 import Image from 'next/image';
 import { useLanguage } from '@/components/LanguageProvider';
 import { 
-  SUB_SERVICES, 
   SERVICE_CATEGORIES, 
   ServiceCategoryKey, 
   getServicesByCategory,

@@ -54,7 +54,11 @@ import {
   ChevronUp,
   FolderPlus,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Users,
+  UserPlus,
+  UserX,
+  Mail
 } from 'lucide-react';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
@@ -72,7 +76,16 @@ import {
   testConnection,
   User 
 } from '@/lib/firebase';
-import { verifyAdminStatus, AdminVerificationResult, BOOTSTRAP_ADMIN_EMAIL } from '@/lib/authHelper';
+import { 
+  verifyAdminStatus, 
+  AdminVerificationResult, 
+  BOOTSTRAP_ADMIN_EMAIL,
+  AdminAccount,
+  AdminRole,
+  DEFAULT_ADMIN_ROSTER,
+  getAdminRoster,
+  saveAdminRoster
+} from '@/lib/authHelper';
 import { 
   FirestoreInquiry, 
   subscribeInquiries, 
@@ -132,7 +145,7 @@ function checkTimestampValid(timestamp: number): boolean {
 export default function SecureAdminPortalPage() {
   const { theme, toggleTheme, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'leads' | 'media' | 'content' | 'services' | 'projects' | 'faq' | 'branding' | 'contacts' | 'security' | 'vercel'
+    'overview' | 'leads' | 'media' | 'content' | 'services' | 'projects' | 'faq' | 'branding' | 'contacts' | 'security' | 'admins'
   >('overview');
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const isAr = lang === 'ar';
@@ -156,6 +169,27 @@ export default function SecureAdminPortalPage() {
   const [resetEmailSent, setResetEmailSent] = useState<boolean>(false);
   const [resetEmailMsg, setResetEmailMsg] = useState<string>('');
   const [isSendingReset, setIsSendingReset] = useState<boolean>(false);
+
+  // Admin Accounts & Multi-Admin Team State
+  const [adminList, setAdminList] = useState<AdminAccount[]>(DEFAULT_ADMIN_ROSTER);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState<boolean>(false);
+  const [editingAdmin, setEditingAdmin] = useState<AdminAccount | null>(null);
+  const [showAddAdminModal, setShowAddAdminModal] = useState<boolean>(false);
+  const [adminSearch, setAdminSearch] = useState<string>('');
+  const [adminActionNotice, setAdminActionNotice] = useState<string>('');
+  const [newAdminForm, setNewAdminForm] = useState<{
+    name: string;
+    email: string;
+    role: AdminRole;
+    department: string;
+    phone: string;
+  }>({
+    name: '',
+    email: '',
+    role: 'admin',
+    department: '',
+    phone: '',
+  });
 
   // Config State
   const [config, setConfig] = useState<EditableConfig>(defaultEditableConfig);
@@ -323,6 +357,33 @@ export default function SecureAdminPortalPage() {
     };
   }, [isAuthenticated, currentUser]);
 
+  // 6. Admin Team Roster Loader (Authoritative sync from settings/admin_roster)
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      return;
+    }
+
+    let isMounted = true;
+    getAdminRoster()
+      .then((roster) => {
+        if (isMounted && roster && roster.length > 0) {
+          setAdminList(roster);
+        }
+      })
+      .catch((err) => {
+        console.warn('Admin roster load error:', err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingAdmins(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, currentUser]);
+
   // Google OAuth One-Click Sign-In (Recommended for tam.elshafey@gmail.com)
   const handleGoogleLogin = async () => {
     setLoginError('');
@@ -458,6 +519,194 @@ export default function SecureAdminPortalPage() {
     setInquiries([]);
     setAdminPasswordInput('');
     setNotificationMsg(isAr ? 'تم قفل اللوحة وإنهاء الجلسة المشفرة بنجاح.' : 'Session ended and locked successfully.');
+  };
+
+  // Multi-Admin Management Handlers
+  const handleAddNewAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = newAdminForm.email.trim().toLowerCase();
+    if (!cleanEmail || !newAdminForm.name.trim()) {
+      setAdminActionNotice(isAr ? 'يرجى إدخال اسم المسؤول والبريد الإلكتروني.' : 'Please enter admin name and email.');
+      return;
+    }
+
+    // Check duplicate
+    if (adminList.some((a) => a.email.toLowerCase() === cleanEmail)) {
+      setAdminActionNotice(isAr ? 'هذا البريد مضاف بالفعل في قائمة المسؤولين.' : 'This email is already in the admin roster.');
+      return;
+    }
+
+    const newAccount: AdminAccount = {
+      id: `admin-${Date.now()}`,
+      email: cleanEmail,
+      name: newAdminForm.name.trim(),
+      role: newAdminForm.role,
+      department: newAdminForm.department.trim() || undefined,
+      phone: newAdminForm.phone.trim() || undefined,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...adminList, newAccount];
+    setAdminList(updated);
+    setShowAddAdminModal(false);
+    setNewAdminForm({
+      name: '',
+      email: '',
+      role: 'admin',
+      department: '',
+      phone: '',
+    });
+
+    try {
+      await saveAdminRoster(updated);
+      try {
+        await sendPasswordResetEmail(auth, cleanEmail);
+        setAdminActionNotice(
+          isAr 
+            ? `تمت إضافة المسؤول (${cleanEmail}) بنجاح وإرسال رابط تعيين كلمة المرور إلى بريده!` 
+            : `Admin added successfully! Setup link sent to ${cleanEmail}.`
+        );
+      } catch {
+        setAdminActionNotice(
+          isAr 
+            ? `تمت إضافة المسؤول (${cleanEmail}) بنجاح وحفظ الصلاحيات في السحابة.` 
+            : `Admin added and permissions saved in cloud.`
+        );
+      }
+    } catch (err: any) {
+      console.error('Error saving admin roster:', err);
+      setAdminActionNotice(
+        isAr 
+          ? 'حدث خطأ أثناء حفظ قائمة المسؤولين في السحابة.' 
+          : 'Error saving admin roster to cloud.'
+      );
+    }
+    setTimeout(() => setAdminActionNotice(''), 6000);
+  };
+
+  const handleUpdateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAdmin) return;
+
+    let targetRole = editingAdmin.role;
+    let targetStatus = editingAdmin.status;
+
+    // Super Admin safeguard for bootstrap account
+    if (editingAdmin.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) {
+      targetRole = 'super_admin';
+      targetStatus = 'active';
+    }
+
+    const sanitizedAdmin: AdminAccount = {
+      ...editingAdmin,
+      name: editingAdmin.name.trim(),
+      role: targetRole,
+      status: targetStatus,
+      department: editingAdmin.department?.trim() || undefined,
+      phone: editingAdmin.phone?.trim() || undefined,
+    };
+
+    const updated = adminList.map((a) =>
+      a.email.toLowerCase() === sanitizedAdmin.email.toLowerCase() ? sanitizedAdmin : a
+    );
+
+    setAdminList(updated);
+    setEditingAdmin(null);
+
+    try {
+      await saveAdminRoster(updated);
+      setAdminActionNotice(
+        isAr ? `تم تحديث بيانات وصلاحيات المسؤول (${sanitizedAdmin.email}) بنجاح.` : 'Admin account updated successfully.'
+      );
+    } catch (err) {
+      console.error('Error updating admin:', err);
+      setAdminActionNotice(isAr ? 'حدث خطأ أثناء تحديث بيانات المسؤول.' : 'Error updating admin account.');
+    }
+    setTimeout(() => setAdminActionNotice(''), 5000);
+  };
+
+  const handleToggleAdminStatus = async (target: AdminAccount) => {
+    if (target.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) {
+      setAdminActionNotice(
+        isAr ? 'لا يمكن تعطيل حساب المدير العام الأساسي (Super Admin) لضمان عدم إقفال النظام.' : 'Cannot deactivate primary Super Admin.'
+      );
+      setTimeout(() => setAdminActionNotice(''), 5000);
+      return;
+    }
+
+    const nextStatus: 'active' | 'inactive' = target.status === 'active' ? 'inactive' : 'active';
+    const updated: AdminAccount[] = adminList.map((a) =>
+      a.email.toLowerCase() === target.email.toLowerCase() ? { ...a, status: nextStatus } : a
+    );
+
+    setAdminList(updated);
+
+    try {
+      await saveAdminRoster(updated);
+      setAdminActionNotice(
+        isAr 
+          ? `تم تغيير حالة (${target.email}) إلى ${nextStatus === 'active' ? 'نشط' : 'معطل'}.` 
+          : `Admin status toggled to ${nextStatus}.`
+      );
+    } catch (err) {
+      console.error('Error toggling admin status:', err);
+      setAdminActionNotice(isAr ? 'حدث خطأ أثناء تغيير الحالة.' : 'Error toggling admin status.');
+    }
+    setTimeout(() => setAdminActionNotice(''), 5000);
+  };
+
+  const handleDeleteAdmin = async (target: AdminAccount) => {
+    if (target.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) {
+      setAdminActionNotice(
+        isAr ? 'لا يمكن حذف حساب المدير العام الأساسي (Super Admin).' : 'Cannot delete primary Super Admin.'
+      );
+      setTimeout(() => setAdminActionNotice(''), 5000);
+      return;
+    }
+
+    const confirmed = typeof window !== 'undefined' 
+      ? window.confirm(
+          isAr 
+            ? `هل أنت متأكد من حذف حساب المسؤول (${target.name || target.email}) وإلغاء صلاحياته تماماً؟`
+            : `Are you sure you want to revoke access and delete admin account (${target.email})?`
+        )
+      : true;
+
+    if (!confirmed) return;
+
+    const updated = adminList.filter((a) => a.email.toLowerCase() !== target.email.toLowerCase());
+    setAdminList(updated);
+
+    try {
+      await saveAdminRoster(updated);
+      setAdminActionNotice(
+        isAr ? `تم حذف حساب المسؤول (${target.email}) وسحب صلاحياته بنجاح.` : `Admin revoked and removed.`
+      );
+    } catch (err) {
+      console.error('Error removing admin:', err);
+      setAdminActionNotice(isAr ? 'حدث خطأ أثناء حذف الحساب.' : 'Error removing admin.');
+    }
+    setTimeout(() => setAdminActionNotice(''), 5000);
+  };
+
+  const handleSendAdminResetLink = async (targetEmail: string) => {
+    try {
+      await sendPasswordResetEmail(auth, targetEmail);
+      setAdminActionNotice(
+        isAr 
+          ? `تم إرسال رابط تعيين كلمة المرور إلى (${targetEmail}) بنجاح!` 
+          : `Password reset link sent to (${targetEmail}) successfully!`
+      );
+    } catch (err) {
+      console.warn('Error sending reset link to admin:', err);
+      setAdminActionNotice(
+        isAr 
+          ? 'تعذر إرسال الرابط. تأكد من تفعيل خدمة البريد وصحة العنوان.' 
+          : 'Could not send reset link. Please verify email service.'
+      );
+    }
+    setTimeout(() => setAdminActionNotice(''), 5000);
   };
 
   const handleConfigChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
@@ -1319,7 +1568,7 @@ export default function SecureAdminPortalPage() {
                   { id: 'branding', labelAr: 'الهوية والشعار والخطوط', labelEn: 'Brand & Logo CMS', icon: Sparkles },
                   { id: 'contacts', labelAr: 'بيانات الاتصال ومقر العمل', labelEn: 'Contact & Addresses', icon: Phone },
                   { id: 'security', labelAr: 'الأمان وكلمات المرور', labelEn: 'Security & Access Keys', icon: ShieldCheck },
-                  { id: 'vercel', labelAr: 'دليل النشر (Vercel & Domains)', labelEn: 'Vercel Deployment', icon: Settings },
+                  { id: 'admins', labelAr: 'فريق الإدارة والصلاحيات', labelEn: 'Admin Accounts & Roles', icon: Users, badge: adminList.length },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -4181,64 +4430,534 @@ export default function SecureAdminPortalPage() {
               </div>
             )}
 
-            {/* 11. VERCEL DEPLOYMENT & CLOUD GUIDE */}
-            {activeTab === 'vercel' && (
+            {/* 11. ADMIN TEAM & ROLES MANAGEMENT */}
+            {activeTab === 'admins' && (
               <div className={`p-6 rounded-2xl border space-y-6 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
               }`}>
-                <div>
-                  <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'دليل النشر والاستضافة على Vercel و Firebase' : 'Vercel Deployment & Cloud Guide'}
-                  </h3>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {isAr ? 'إجابة كاملة وواضحة: هل تحتاج لتعديل أي إعداد في Vercel؟' : 'Clear deployment guide for Vercel'}
-                  </p>
-                </div>
-
-                {/* Direct Answer Callout */}
-                <div className={`p-5 rounded-2xl border ${
-                  isDark ? 'bg-[#00F2FE]/10 border-[#00F2FE]/30' : 'bg-sky-50 border-sky-200'
-                }`}>
-                  <div className="flex items-start gap-3">
-                    <Check className="w-6 h-6 text-[#00F2FE] shrink-0 mt-0.5" />
-                    <div className="space-y-2 text-xs leading-relaxed">
-                      <h4 className="text-sm font-bold text-white">
-                        {isAr ? 'الإجابة المباشرة: هل تحتاج لإضافة أي شيء في Vercel؟' : 'Do you need to add anything in Vercel?'}
-                      </h4>
-                      <p className={isDark ? 'text-slate-200' : 'text-slate-700'}>
-                        {isAr
-                          ? '1. في إعدادات Vercel نفسها (Environment Variables): لا تحتاج لإضافة أي مفاتيح أو تعديلات إضافية! ملف تكوين Firebase مدمج ومبني تلقائياً داخل الكود ويعمل بنقرة واحدة.'
-                          : '1. In Vercel Environment Variables: No extra environment variables needed. Firebase client configuration is bundled within the build.'}
-                      </p>
-                      <p className={isDark ? 'text-slate-200' : 'text-slate-700'}>
-                        {isAr
-                          ? '2. النطاقات المصرح بها (Authorized Domains): تم التحقق من إضافة النطاقين بنجاح في Firebase Console!'
-                          : '2. Authorized Domains: Both domains are successfully added in Firebase Console!'}
+                {/* Header & Add Admin CTA */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#00F2FE]/15 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {isAr ? 'فريق الإدارة والصلاحيات وتعدد المسؤولين' : 'Admin Accounts & Role-Based Access'}
+                      </h3>
+                      <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {isAr 
+                          ? 'إدارة حسابات لوحة التحكم، تحديد الأدوار (Super Admin / Admin / Editor)، وتفعيل أو إلغاء الحسابات فورياً في السحابة.' 
+                          : 'Manage administrator accounts, assign access tiers, and sync permissions across Firebase Cloud.'}
                       </p>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => setShowAddAdminModal(true)}
+                    className="px-4 py-2.5 rounded-xl font-bold text-xs bg-linear-to-r from-[#00F2FE] to-[#4FACFE] text-[#071120] hover:shadow-lg hover:shadow-cyan-500/20 flex items-center justify-center gap-2 transition cursor-pointer shrink-0"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>{isAr ? 'إضافة مسؤول جديد' : 'Add New Admin'}</span>
+                  </button>
                 </div>
 
-                {/* Verified Domains Badge Box */}
-                <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#071120] border-emerald-500/30' : 'bg-emerald-50 border-emerald-200'}`}>
-                  <span className="text-xs font-bold text-emerald-400 block mb-2">
-                    {isAr ? 'النطاقات المعتمدة حالياً للاتصال وقواعد البيانات:' : 'Active Authorized Domains:'}
-                  </span>
-                  <div className="flex flex-wrap gap-2 text-xs font-mono">
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>bota-tech.vercel.app</span>
+                {/* Real-time Notice Alert */}
+                {adminActionNotice && (
+                  <div className="p-3.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-xs flex items-center justify-between animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{adminActionNotice}</span>
+                    </div>
+                    <button onClick={() => setAdminActionNotice('')} className="p-1 hover:text-white">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#071120] border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                    <span className="text-[11px] text-slate-400 block mb-1">{isAr ? 'إجمالي الحسابات' : 'Total Admins'}</span>
+                    <span className={`text-2xl font-mono font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminList.length}</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl border bg-cyan-950/30 border-cyan-500/30">
+                    <span className="text-[11px] text-cyan-300 block mb-1">{isAr ? 'المديرون العامون (Super)' : 'Super Admins'}</span>
+                    <span className="text-2xl font-mono font-black text-[#00F2FE]">
+                      {adminList.filter((a) => a.role === 'super_admin').length}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>www.tech-bokra.com</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl border bg-emerald-950/30 border-emerald-500/30">
+                    <span className="text-[11px] text-emerald-300 block mb-1">{isAr ? 'الحسابات النشطة' : 'Active Accounts'}</span>
+                    <span className="text-2xl font-mono font-black text-emerald-400">
+                      {adminList.filter((a) => a.status === 'active').length}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-sky-950/60 text-[#00F2FE] border border-sky-500/40 flex items-center gap-1.5" title="يُفضل إضافته أيضاً">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>tech-bokra.com (نطاق بدون www)</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl border bg-indigo-950/30 border-indigo-500/30">
+                    <span className="text-[11px] text-indigo-300 block mb-1">{isAr ? 'حماية القواعد السحابية' : 'Zero-Trust RBAC'}</span>
+                    <span className="text-xs font-mono font-bold text-indigo-300 flex items-center gap-1 mt-1.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                      <span>Firestore Rules Active</span>
                     </span>
                   </div>
                 </div>
+
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className={`w-4 h-4 absolute ${isAr ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-slate-400`} />
+                    <input
+                      type="text"
+                      value={adminSearch}
+                      onChange={(e) => setAdminSearch(e.target.value)}
+                      placeholder={isAr ? 'البحث بالاسم أو البريد الإلكتروني أو القسم أو الدور...' : 'Search by name, email, department, role...'}
+                      className={`w-full ${isAr ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                        isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  {adminSearch && (
+                    <button
+                      onClick={() => setAdminSearch('')}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white border border-white/10 transition"
+                    >
+                      {isAr ? 'مسح التصفية' : 'Clear'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Admins Table / Cards */}
+                {isLoadingAdmins ? (
+                  <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#00F2FE]" />
+                    <span>{isAr ? 'جاري تحميل قائمة المسؤولين من السحابة...' : 'Loading admin roster from cloud...'}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {adminList
+                      .filter((admin) => {
+                        const q = adminSearch.toLowerCase().trim();
+                        if (!q) return true;
+                        return (
+                          admin.name.toLowerCase().includes(q) ||
+                          admin.email.toLowerCase().includes(q) ||
+                          admin.role.toLowerCase().includes(q) ||
+                          (admin.department && admin.department.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((admin) => {
+                        const isBootstrap = admin.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase();
+                        const roleColor = 
+                          admin.role === 'super_admin' 
+                            ? 'bg-cyan-950/60 text-[#00F2FE] border-cyan-500/40' 
+                            : admin.role === 'admin'
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                            : 'bg-amber-950/60 text-amber-300 border-amber-500/40';
+
+                        const roleLabel =
+                          admin.role === 'super_admin'
+                            ? (isAr ? 'مدير عام (Super Admin)' : 'Super Admin')
+                            : admin.role === 'admin'
+                            ? (isAr ? 'مدير معتمد (Admin)' : 'Admin')
+                            : (isAr ? 'محرر محتوى (Editor)' : 'Content Editor');
+
+                        return (
+                          <div
+                            key={admin.email}
+                            className={`p-4 rounded-xl border transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                              isDark ? 'bg-[#071120] border-white/5 hover:border-white/15' : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
+                                admin.role === 'super_admin'
+                                  ? 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40 shadow-sm shadow-cyan-500/20'
+                                  : 'bg-slate-800 text-slate-200 border-white/10'
+                              }`}>
+                                {admin.name.charAt(0).toUpperCase() || 'A'}
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {admin.name}
+                                  </span>
+                                  {isBootstrap && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30">
+                                      {isAr ? 'الحساب المؤسس' : 'Primary Super Admin'}
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleColor}`}>
+                                    {roleLabel}
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                  <span className="font-mono text-slate-300">{admin.email}</span>
+                                  {admin.department && (
+                                    <span>• {isAr ? `القسم: ${admin.department}` : `Dept: ${admin.department}`}</span>
+                                  )}
+                                  {admin.phone && (
+                                    <span className="font-mono">• {admin.phone}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status & Actions Toolbar */}
+                            <div className="flex flex-wrap items-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-white/5">
+                              {/* Status Badge */}
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 ${
+                                admin.status === 'active'
+                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                                  : 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${admin.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                                <span>{admin.status === 'active' ? (isAr ? 'حساب نشط' : 'Active') : (isAr ? 'معطل' : 'Inactive')}</span>
+                              </span>
+
+                              {/* Send Reset / Invitation Email */}
+                              <button
+                                onClick={() => handleSendAdminResetLink(admin.email)}
+                                title={isAr ? 'إرسال رابط تعيين كلمة المرور إلى البريد' : 'Send password setup / reset link'}
+                                className="p-2 rounded-lg border border-white/10 hover:border-sky-400 text-slate-300 hover:text-sky-300 bg-white/5 transition cursor-pointer text-xs flex items-center gap-1"
+                              >
+                                <Mail className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">{isAr ? 'إرسال رابط التعيين' : 'Send Reset'}</span>
+                              </button>
+
+                              {/* Edit Admin */}
+                              <button
+                                onClick={() => setEditingAdmin(admin)}
+                                title={isAr ? 'تعديل بيانات وصلاحيات المسؤول' : 'Edit admin details'}
+                                className="p-2 rounded-lg border border-white/10 hover:border-[#00F2FE] text-slate-300 hover:text-[#00F2FE] bg-white/5 transition cursor-pointer text-xs flex items-center gap-1"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">{isAr ? 'تعديل' : 'Edit'}</span>
+                              </button>
+
+                              {/* Toggle Status (Active/Inactive) */}
+                              {!isBootstrap && (
+                                <button
+                                  onClick={() => handleToggleAdminStatus(admin)}
+                                  title={admin.status === 'active' ? (isAr ? 'تعطيل الحساب' : 'Deactivate') : (isAr ? 'تفعيل الحساب' : 'Activate')}
+                                  className={`p-2 rounded-lg border text-xs transition cursor-pointer flex items-center gap-1 ${
+                                    admin.status === 'active'
+                                      ? 'border-amber-500/30 text-amber-300 hover:bg-amber-950/40'
+                                      : 'border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/40'
+                                  }`}
+                                >
+                                  {admin.status === 'active' ? (
+                                    <>
+                                      <UserX className="w-3.5 h-3.5" />
+                                      <span className="hidden sm:inline">{isAr ? 'تعطيل' : 'Disable'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="w-3.5 h-3.5" />
+                                      <span className="hidden sm:inline">{isAr ? 'تفعيل' : 'Enable'}</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {/* Delete Admin */}
+                              {!isBootstrap ? (
+                                <button
+                                  onClick={() => handleDeleteAdmin(admin)}
+                                  title={isAr ? 'حذف الحساب وسحب الصلاحية' : 'Revoke and delete admin account'}
+                                  className="p-2 rounded-lg border border-rose-500/30 text-rose-300 hover:bg-rose-950/50 hover:border-rose-400 transition cursor-pointer text-xs flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">{isAr ? 'حذف' : 'Delete'}</span>
+                                </button>
+                              ) : (
+                                <div title={isAr ? 'حساب أساسي محمي لا يمكن حذفه' : 'Protected bootstrap account'} className="p-2 text-slate-500 cursor-not-allowed">
+                                  <Lock className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+
+                {/* Add Admin Modal */}
+                {showAddAdminModal && (
+                  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className={`w-full max-w-lg p-6 rounded-2xl border space-y-5 shadow-2xl animate-in zoom-in-95 ${
+                      isDark ? 'bg-[#0B1A2F] border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    }`}>
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <UserPlus className="w-5 h-5 text-[#00F2FE]" />
+                          <h4 className="font-bold text-base">
+                            {isAr ? 'إضافة مسؤول جديد للوحة التحكم' : 'Add New Admin Account'}
+                          </h4>
+                        </div>
+                        <button onClick={() => setShowAddAdminModal(false)} className="p-1 hover:text-[#00F2FE]">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleAddNewAdmin} className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                            {isAr ? 'اسم المسؤول بالكامل *' : 'Full Name *'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={newAdminForm.name}
+                            onChange={(e) => setNewAdminForm({ ...newAdminForm, name: e.target.value })}
+                            placeholder={isAr ? 'مثال: م. أحمد عبد العزيز' : 'e.g. Eng. Ahmed Aziz'}
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                              isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                            {isAr ? 'البريد الإلكتروني الرسمي *' : 'Official Email Address *'}
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={newAdminForm.email}
+                            onChange={(e) => setNewAdminForm({ ...newAdminForm, email: e.target.value })}
+                            placeholder="name@tech-bokra.com or name@gmail.com"
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono border focus:outline-none focus:border-[#00F2FE] ${
+                              isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                            }`}
+                          />
+                          <span className="text-[10px] text-slate-400 mt-1 block">
+                            {isAr ? 'يمكن للمسؤول الدخول بحساب Google (One-Click) أو عبر تعيين كلمة مرور خاصة به.' : 'Admin can sign in via Google OAuth or set a password.'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'الدور والصلاحيات *' : 'Access Role *'}
+                            </label>
+                            <select
+                              value={newAdminForm.role}
+                              onChange={(e) => setNewAdminForm({ ...newAdminForm, role: e.target.value as AdminRole })}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            >
+                              <option value="admin">{isAr ? 'مدير معتمد (Admin) - تحكم كامل' : 'Admin (Full Control)'}</option>
+                              <option value="super_admin">{isAr ? 'مدير عام (Super Admin) - إدارة الفريق والأمان' : 'Super Admin (Security & Team)'}</option>
+                              <option value="editor">{isAr ? 'محرر محتوى (Editor) - تعديل النصوص والوسائط فقط' : 'Editor (Content & Media Only)'}</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'القسم أو التخصص' : 'Department'}
+                            </label>
+                            <input
+                              type="text"
+                              value={newAdminForm.department}
+                              onChange={(e) => setNewAdminForm({ ...newAdminForm, department: e.target.value })}
+                              placeholder={isAr ? 'مثال: أمن الشبكات / إدارة العمليات' : 'e.g. IT Operations / Sales'}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                            {isAr ? 'رقم الهاتف / الواتساب (اختياري)' : 'Phone / WhatsApp (Optional)'}
+                          </label>
+                          <input
+                            type="text"
+                            value={newAdminForm.phone}
+                            onChange={(e) => setNewAdminForm({ ...newAdminForm, phone: e.target.value })}
+                            placeholder="+20 10 1234 5678"
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono border focus:outline-none focus:border-[#00F2FE] ${
+                              isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Cloud Sync info note */}
+                        <div className="p-3 rounded-xl bg-sky-950/40 border border-sky-500/30 text-[11px] text-sky-200 flex items-start gap-2">
+                          <Sparkles className="w-4 h-4 text-[#00F2FE] shrink-0 mt-0.5" />
+                          <span>
+                            {isAr 
+                              ? 'بمجرد الحفظ، يتم تحديث قواعد الحماية السحابية فوراً وإرسال بريد رسمي تلقائي للمسؤول لتفعيل حسابه وتعيين كلمة مروره.' 
+                              : 'Upon saving, cloud authorization updates instantly and an activation email is dispatched.'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddAdminModal(false)}
+                            className="px-4 py-2 rounded-xl text-xs font-bold border border-white/10 text-slate-300 hover:text-white"
+                          >
+                            {isAr ? 'إلغاء' : 'Cancel'}
+                          </button>
+
+                          <button
+                            type="submit"
+                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-linear-to-r from-[#00F2FE] to-[#4FACFE] text-[#071120] hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            <span>{isAr ? 'إضافة المسؤول وتفعيله' : 'Create & Activate Admin'}</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Edit Admin Modal */}
+                {editingAdmin && (
+                  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className={`w-full max-w-lg p-6 rounded-2xl border space-y-5 shadow-2xl animate-in zoom-in-95 ${
+                      isDark ? 'bg-[#0B1A2F] border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    }`}>
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <Edit3 className="w-5 h-5 text-[#00F2FE]" />
+                          <h4 className="font-bold text-base">
+                            {isAr ? 'تعديل بيانات وصلاحيات المسؤول' : 'Edit Admin Account'}
+                          </h4>
+                        </div>
+                        <button onClick={() => setEditingAdmin(null)} className="p-1 hover:text-[#00F2FE]">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleUpdateAdmin} className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                            {isAr ? 'البريد الإلكتروني (ثابت)' : 'Email (Fixed)'}
+                          </label>
+                          <input
+                            type="email"
+                            disabled
+                            value={editingAdmin.email}
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono border opacity-70 cursor-not-allowed ${
+                              isDark ? 'bg-[#071120] border-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
+                            }`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                            {isAr ? 'اسم المسؤول' : 'Admin Name'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={editingAdmin.name}
+                            onChange={(e) => setEditingAdmin({ ...editingAdmin, name: e.target.value })}
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                              isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'الدور والصلاحيات' : 'Role'}
+                            </label>
+                            <select
+                              disabled={editingAdmin.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()}
+                              value={editingAdmin.role}
+                              onChange={(e) => setEditingAdmin({ ...editingAdmin, role: e.target.value as AdminRole })}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            >
+                              <option value="admin">{isAr ? 'مدير معتمد (Admin)' : 'Admin'}</option>
+                              <option value="super_admin">{isAr ? 'مدير عام (Super Admin)' : 'Super Admin'}</option>
+                              <option value="editor">{isAr ? 'محرر محتوى (Editor)' : 'Content Editor'}</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'حالة الحساب' : 'Account Status'}
+                            </label>
+                            <select
+                              disabled={editingAdmin.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()}
+                              value={editingAdmin.status}
+                              onChange={(e) => setEditingAdmin({ ...editingAdmin, status: e.target.value as 'active' | 'inactive' })}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            >
+                              <option value="active">{isAr ? 'نشط (Active)' : 'Active'}</option>
+                              <option value="inactive">{isAr ? 'معطل (Inactive)' : 'Inactive'}</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'القسم' : 'Department'}
+                            </label>
+                            <input
+                              type="text"
+                              value={editingAdmin.department || ''}
+                              onChange={(e) => setEditingAdmin({ ...editingAdmin, department: e.target.value })}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold mb-1.5 text-slate-300">
+                              {isAr ? 'رقم الهاتف' : 'Phone'}
+                            </label>
+                            <input
+                              type="text"
+                              value={editingAdmin.phone || ''}
+                              onChange={(e) => setEditingAdmin({ ...editingAdmin, phone: e.target.value })}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono border focus:outline-none focus:border-[#00F2FE] ${
+                                isDark ? 'bg-[#071120] border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setEditingAdmin(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-bold border border-white/10 text-slate-300 hover:text-white"
+                          >
+                            {isAr ? 'إلغاء' : 'Cancel'}
+                          </button>
+
+                          <button
+                            type="submit"
+                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-linear-to-r from-[#00F2FE] to-[#4FACFE] text-[#071120] hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Save className="w-4 h-4" />
+                            <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

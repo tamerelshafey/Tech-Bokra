@@ -45,36 +45,69 @@ export default function TechBokraLogo({
   const idSuffix = isLight ? 'lt' : 'dk';
   const gradPrimary = `tb-primary-${idSuffix}`;
   const gradAccent = `tb-accent-${idSuffix}`;
+  const gradPlate = `tb-plate-${idSuffix}`;
+  const filterGlow = `tb-glow-${idSuffix}`;
 
-  // 1. Clean Bold Modern TB Monogram (Zero noise, high visibility)
+  // 1. Clean Bold Modern TB Monogram (High contrast, luminous in dark theme)
   const renderModernTBEmblem = () => (
     <svg
       viewBox="0 0 100 100"
-      className="w-full h-full overflow-visible drop-shadow-sm"
+      className={`w-full h-full overflow-visible transition-all duration-300 ${
+        isLight ? 'drop-shadow-sm' : 'drop-shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+      }`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <defs>
         <linearGradient id={gradPrimary} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={isLight ? '#0284C7' : '#00F2FE'} />
+          <stop offset="0%" stopColor={isLight ? '#0284C7' : '#FFFFFF'} />
+          <stop offset="25%" stopColor={isLight ? '#0284C7' : '#00F2FE'} />
           <stop offset="100%" stopColor={isLight ? '#0369A1' : '#0284C7'} />
         </linearGradient>
         <linearGradient id={gradAccent} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor={isLight ? '#0EA5E9' : '#38BDF8'} />
           <stop offset="100%" stopColor={isLight ? '#0284C7' : '#00F2FE'} />
         </linearGradient>
+        <linearGradient id={gradPlate} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={isLight ? '#F8FAFC' : '#0E223D'} />
+          <stop offset="100%" stopColor={isLight ? '#E2E8F0' : '#061324'} />
+        </linearGradient>
+        <filter id={filterGlow} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00F2FE" floodOpacity="0.5" />
+        </filter>
       </defs>
 
-      {/* Rounded Hexagonal Base Plate */}
+      {/* Hexagonal Base Plate with crisp luminous edge */}
       <polygon
         points="50,6 88,28 88,72 50,94 12,72 12,28"
-        fill={isLight ? '#F1F5F9' : '#0B1C30'}
+        fill={`url(#${gradPlate})`}
         stroke={isLight ? '#0284C7' : '#00F2FE'}
-        strokeWidth="2.5"
-        strokeOpacity={isLight ? '0.7' : '0.8'}
+        strokeWidth={isLight ? '2.5' : '2.8'}
+        strokeOpacity={isLight ? '0.7' : '1'}
         strokeLinejoin="round"
       />
+
+      {/* Futuristic Inner Accent Rings for Dark Theme */}
+      {!isLight && (
+        <>
+          <polygon
+            points="50,13 82,31 82,69 50,87 18,69 18,31"
+            fill="none"
+            stroke="#00F2FE"
+            strokeWidth="0.75"
+            strokeOpacity="0.3"
+            strokeDasharray="4 2"
+          />
+          {/* Subtle Corner Dots */}
+          <circle cx="50" cy="13" r="1.5" fill="#00F2FE" opacity="0.8" />
+          <circle cx="82" cy="31" r="1.5" fill="#00F2FE" opacity="0.8" />
+          <circle cx="82" cy="69" r="1.5" fill="#00F2FE" opacity="0.8" />
+          <circle cx="50" cy="87" r="1.5" fill="#00F2FE" opacity="0.8" />
+          <circle cx="18" cy="69" r="1.5" fill="#00F2FE" opacity="0.8" />
+          <circle cx="18" cy="31" r="1.5" fill="#00F2FE" opacity="0.8" />
+        </>
+      )}
 
       {/* Stylized Interlocking 'T' and 'B' Monogram */}
       {/* 'T' Top Bar & Stem */}
@@ -84,6 +117,7 @@ export default function TechBokraLogo({
         strokeWidth="7"
         strokeLinecap="round"
         strokeLinejoin="round"
+        filter={!isLight ? `url(#${filterGlow})` : undefined}
       />
 
       {/* 'B' Right Double Loop connected to stem */}
@@ -95,12 +129,25 @@ export default function TechBokraLogo({
         strokeLinejoin="round"
       />
 
-      {/* Subtle Precision Center Core Notch */}
+      {/* White Edge Highlight on 'T' Top Bar for Crisp Contrast */}
+      {!isLight && (
+        <path
+          d="M 32 30.5 L 68 30.5"
+          stroke="#FFFFFF"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          opacity="0.9"
+        />
+      )}
+
+      {/* Precision Center Core Notch */}
       <circle
         cx="50"
         cy="53"
-        r="3.5"
+        r="4"
         fill={isLight ? '#0284C7' : '#00F2FE'}
+        stroke={isLight ? '#FFFFFF' : '#FFFFFF'}
+        strokeWidth="1"
       />
     </svg>
   );
@@ -109,7 +156,9 @@ export default function TechBokraLogo({
   const renderSecurityShieldEmblem = () => (
     <svg
       viewBox="0 0 100 100"
-      className="w-full h-full overflow-visible drop-shadow-sm"
+      className={`w-full h-full overflow-visible transition-all duration-300 ${
+        isLight ? 'drop-shadow-sm' : 'drop-shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+      }`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
@@ -119,11 +168,15 @@ export default function TechBokraLogo({
           <stop offset="0%" stopColor={isLight ? '#0284C7' : '#00F2FE'} />
           <stop offset="100%" stopColor={isLight ? '#0369A1' : '#0284C7'} />
         </linearGradient>
+        <linearGradient id={`${gradPlate}-shield`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={isLight ? '#F8FAFC' : '#0E223D'} />
+          <stop offset="100%" stopColor={isLight ? '#E2E8F0' : '#061324'} />
+        </linearGradient>
       </defs>
       {/* Outer Shield Path */}
       <path
         d="M 50 8 L 86 22 C 86 62, 66 86, 50 94 C 34 86, 14 62, 14 22 Z"
-        fill={isLight ? '#F8FAFC' : '#0B1C30'}
+        fill={`url(#${gradPlate}-shield)`}
         stroke={isLight ? '#0284C7' : '#00F2FE'}
         strokeWidth="3"
         strokeLinejoin="round"
@@ -131,7 +184,7 @@ export default function TechBokraLogo({
       {/* Aperture Optical Ring */}
       <circle cx="50" cy="48" r="18" stroke={isLight ? '#0284C7' : '#00F2FE'} strokeWidth="2.5" />
       <circle cx="50" cy="48" r="11" fill={`url(#${gradPrimary}-shield)`} />
-      <circle cx="50" cy="48" r="4.5" fill={isLight ? '#FFFFFF' : '#071120'} />
+      <circle cx="50" cy="48" r="4.5" fill={isLight ? '#FFFFFF' : '#FFFFFF'} />
     </svg>
   );
 
@@ -139,7 +192,9 @@ export default function TechBokraLogo({
   const renderCyberCubeEmblem = () => (
     <svg
       viewBox="0 0 100 100"
-      className="w-full h-full overflow-visible drop-shadow-sm"
+      className={`w-full h-full overflow-visible transition-all duration-300 ${
+        isLight ? 'drop-shadow-sm' : 'drop-shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+      }`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
@@ -212,14 +267,14 @@ export default function TechBokraLogo({
           <div className="flex items-center gap-1.5 flex-nowrap">
             <span
               className={`font-black tracking-tight font-sans ${dimensions.textTech} ${
-                isLight ? 'text-slate-950 font-black' : 'text-white'
+                isLight ? 'text-slate-950 font-black' : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
               }`}
             >
               Tech
             </span>
             <span
               className={`font-black tracking-tight font-sans ${dimensions.textBokra} ${
-                isLight ? 'text-[#0284C7]' : 'text-[#00F2FE]'
+                isLight ? 'text-[#0284C7]' : 'text-[#00F2FE] drop-shadow-[0_0_12px_rgba(0,242,254,0.4)]'
               }`}
             >
               Bokra
@@ -229,7 +284,7 @@ export default function TechBokraLogo({
                 className={`rounded-md font-bold font-cairo border ${dimensions.badge} ${
                   isLight
                     ? 'bg-sky-50 text-sky-950 border-sky-300 font-black'
-                    : 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40 font-bold'
+                    : 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/40 font-bold shadow-[0_0_8px_rgba(0,242,254,0.18)]'
                 }`}
               >
                 تيك بكرة
@@ -239,7 +294,7 @@ export default function TechBokraLogo({
           {showSubtitle && (
             <span
               className={`mt-1 font-semibold tracking-wide ${dimensions.sub} ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
+                isLight ? 'text-slate-700' : 'text-slate-300 drop-shadow-sm'
               }`}
             >
               {lang === 'ar' ? 'حلول الأنظمة الأمنية والبنية التحتية' : 'Security & IT Infrastructure'}
@@ -259,15 +314,15 @@ export default function TechBokraLogo({
       <div className="flex flex-col text-start leading-tight justify-center min-w-0">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
           <span
-            className={`font-black tracking-tight font-sans ${dimensions.textTech} ${
-              isLight ? 'text-slate-950' : 'text-white'
+            className={`font-black tracking-tight font-sans transition-colors ${dimensions.textTech} ${
+              isLight ? 'text-slate-950 font-black' : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
             }`}
           >
             Tech
           </span>
           <span
-            className={`font-black tracking-tight font-sans ${dimensions.textBokra} ${
-              isLight ? 'text-[#0284C7]' : 'text-[#00F2FE]'
+            className={`font-black tracking-tight font-sans transition-colors ${dimensions.textBokra} ${
+              isLight ? 'text-[#0284C7]' : 'text-[#00F2FE] drop-shadow-[0_0_12px_rgba(0,242,254,0.4)]'
             }`}
           >
             Bokra
@@ -276,10 +331,10 @@ export default function TechBokraLogo({
           {/* Bilingual Arabic Badge */}
           {showArabicBadge && (
             <span
-              className={`rounded-md font-bold font-cairo border shrink-0 ${dimensions.badge} ${
+              className={`rounded-md font-bold font-cairo border shrink-0 transition-all ${dimensions.badge} ${
                 isLight
                   ? 'bg-sky-50 text-sky-950 border-sky-300 font-black'
-                  : 'bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE]/40 font-bold'
+                  : 'bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/40 font-bold shadow-[0_0_8px_rgba(0,242,254,0.18)]'
               }`}
             >
               تيك بكرة
@@ -291,7 +346,7 @@ export default function TechBokraLogo({
         {showSubtitle && (
           <span
             className={`mt-0.5 font-semibold tracking-wide hidden sm:inline-block truncate ${dimensions.sub} ${
-              isLight ? 'text-slate-700' : 'text-slate-300'
+              isLight ? 'text-slate-700' : 'text-slate-300 drop-shadow-sm'
             }`}
           >
             {lang === 'ar' ? 'حلول الأنظمة الأمنية والبنية التحتية والبرمجيات' : 'Security, Infrastructure & Software'}

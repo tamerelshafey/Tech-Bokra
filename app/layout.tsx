@@ -87,10 +87,10 @@ export default function RootLayout({
 }) {
   return (
     <html 
-      lang="ar" 
-      dir="rtl" 
+      lang="en" 
+      dir="ltr" 
       suppressHydrationWarning 
-      className={`dark ${cairo.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${inter.variable} ${cairo.variable} ${jetbrainsMono.variable}`}
     >
       <body className="antialiased selection:bg-[#00F2FE] selection:text-[#071120]" suppressHydrationWarning>
         <script
@@ -124,12 +124,18 @@ export default function RootLayout({
                 addressLocality: 'مدينة نصر، القاهرة',
                 addressCountry: 'EG',
               },
-              contactPoint: {
-                '@type': 'ContactPoint',
-                telephone: '+20-101-234-5678',
-                contactType: 'customer service',
-                availableLanguage: ['Arabic', 'English'],
-              },
+              ...((process.env.NEXT_PUBLIC_COMPANY_PHONE && 
+                   !process.env.NEXT_PUBLIC_COMPANY_PHONE.includes('TO_CONFIRM') && 
+                   !process.env.NEXT_PUBLIC_COMPANY_PHONE.includes('['))
+                ? {
+                    contactPoint: {
+                      '@type': 'ContactPoint',
+                      telephone: process.env.NEXT_PUBLIC_COMPANY_PHONE,
+                      contactType: 'customer service',
+                      availableLanguage: ['Arabic', 'English'],
+                    },
+                  }
+                : {}),
               sameAs: [
                 'https://linkedin.com/company/tech-bokra',
                 'https://facebook.com/techbokra',

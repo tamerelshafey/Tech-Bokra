@@ -54,7 +54,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const subServices = getServicesByCategory(categoryKey);
+  const subServices = getServicesByCategory(categoryKey).map((s) => ({
+    ...s,
+    standards: s.standards.filter((std) => std.confirmed),
+  }));
 
   return <CategoryView category={catObj} subServices={subServices} />;
 }

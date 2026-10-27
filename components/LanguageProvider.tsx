@@ -20,8 +20,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const LANGUAGE_STORAGE_KEY = 'tech_bokra_language_pref_v2';
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Always initialize with 'ar' for SSR and first client hydration to prevent React mismatches
-  const [lang, setLangState] = useState<Language>('ar');
+  // Default language is 'en' (English) as requested
+  const [lang, setLangState] = useState<Language>('en');
   const [mounted, setMounted] = useState<boolean>(false);
 
   // Sync saved user preference on mount
@@ -32,6 +32,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
         if (stored === 'en' || stored === 'ar') {
           setLangState(stored);
+        } else {
+          setLangState('en');
         }
       } catch {
         // Ignore storage errors

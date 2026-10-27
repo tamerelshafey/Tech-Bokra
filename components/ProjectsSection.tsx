@@ -86,8 +86,8 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
     return p;
   });
 
-  // Exclude projects marked as draft so only published projects appear to clients
-  const activeProjects = rawProjects.filter((p) => p.isDraft !== true);
+  // Exclude projects marked as draft or unverified so only verified projects appear to visitors
+  const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true);
 
   const filteredProjects = activeProjects.filter((p) => {
     if (filter === 'all') return true;
@@ -183,8 +183,18 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
         </div>
 
         {/* Projects Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map((project) => {
+        {filteredProjects.length === 0 ? (
+          <div className={`text-center py-16 px-6 rounded-2xl border max-w-2xl mx-auto ${isDark ? 'bg-[#0B1A2F]/60 border-white/10 text-slate-300' : 'bg-white border-slate-200 text-slate-600 shadow-sm'}`}>
+            <p className="font-bold text-base mb-2">
+              {isAr ? 'سابقة الأعمال قيد المراجعة والاعتماد الهندسي' : 'Case studies are currently under engineering verification'}
+            </p>
+            <p className="text-xs text-slate-400">
+              {isAr ? 'يتم عرض المشروعات المعتمدة وتحديثها تباعاً وفق اشتراطات الكود الفني واتفاقيات عدم الإفصاح.' : 'Verified project portfolios are updated continuously in accordance with technical codes and confidentiality agreements.'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProjects.map((project) => {
             const Icon = getProjectIcon(project.icon);
 
             return (
@@ -381,6 +391,7 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
             );
           })}
         </div>
+        )}
 
         {/* Link to Dedicated Full Projects Page */}
         <div className="mt-14 text-center">

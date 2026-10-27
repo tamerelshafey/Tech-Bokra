@@ -24,13 +24,15 @@ service cloud.firestore {
         request.auth.token.email_verified == true;
     }
 
-    // Regular Admin: Signed in + verified email + active record in /admins/{uid} matching email & role
+    // Regular Admin: Signed in + verified email + active record in /admins/{uid} or email in /settings/admin_roster
     function isRegularAdmin() {
       return isSignedIn() && 
         request.auth.token.email_verified == true && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin'] &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.email == request.auth.token.email;
+        ((exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin', 'editor'] &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.email == request.auth.token.email) ||
+         (exists(/databases/$(database)/documents/settings/admin_roster) &&
+          request.auth.token.email in get(/databases/$(database)/documents/settings/admin_roster).data.allowedEmails));
     }
 
     function isAdmin() {

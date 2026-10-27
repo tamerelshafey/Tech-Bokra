@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, MessageSquare, Menu, X, Globe, Sun, Moon } from 'lucide-react';
+import { Shield, Menu, X, Globe, Sun, Moon } from 'lucide-react';
 import { SiteLanguageData, siteConfig } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
@@ -172,21 +172,6 @@ export default function Navbar({
               <span className="font-mono uppercase font-bold">{lang === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
 
-            {/* Direct WhatsApp Call */}
-            <a
-              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                lang === 'ar'
-                  ? 'مرحباً مهندسي تيك بكرة، أود الاستفسار عن الأنظمة الأمنية والشبكات لمنشأتي.'
-                  : 'Hello Tech Bokra team, I would like to inquire about your security and IT solutions.'
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] text-xs font-bold transition-all shadow-sm"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{lang === 'ar' ? 'واتساب' : 'WhatsApp'}</span>
-            </a>
-
             {/* Primary CTA button linking to /contact */}
             <Link
               href="/contact"
@@ -288,16 +273,6 @@ export default function Navbar({
               <Shield className="w-4 h-4" />
               <span>{data.nav.surveyCta}</span>
             </Link>
-
-            <a
-              href={`https://wa.me/${whatsappNumber}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full text-center py-2.5 rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 text-[#25D366] font-bold text-sm flex items-center justify-center gap-2"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>{lang === 'ar' ? 'تحدث مباشرة عبر واتساب' : 'Chat via WhatsApp'}</span>
-            </a>
           </div>
         </div>
       )}

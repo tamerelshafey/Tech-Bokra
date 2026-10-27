@@ -350,21 +350,26 @@ export default function HomePage() {
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-slate-700" />}
         </button>
 
-        {/* Floating WhatsApp Quick Action */}
-        <a
-          href={`https://wa.me/${customConfig.whatsappNumber}?text=${encodeURIComponent(
-            isAr
-              ? 'مرحباً تيك بكرة، أود الاستفسار عن الأنظمة الأمنية والشبكات لمنشأتي.'
-              : 'Hello Tech Bokra, I would like to inquire about surveillance and network systems.'
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group"
-          title={isAr ? 'محادثة فورية عبر واتساب' : 'Chat on WhatsApp'}
-          aria-label={isAr ? 'تواصل عبر واتساب' : 'Contact via WhatsApp'}
-        >
-          <MessageSquare className="w-7 h-7 group-hover:animate-pulse" />
-        </a>
+        {/* Floating WhatsApp Quick Action - Only rendered if valid confirmed phone exists */}
+        {customConfig.whatsappNumber && 
+         !customConfig.whatsappNumber.includes('TO_CONFIRM') && 
+         !customConfig.whatsappNumber.includes('[') && 
+         customConfig.whatsappNumber.replace(/[^0-9]/g, '').length >= 8 && (
+          <a
+            href={`https://wa.me/${customConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+              isAr
+                ? 'مرحباً تيك بكرة، أود الاستفسار عن الأنظمة الأمنية والشبكات لمنشأتي.'
+                : 'Hello Tech Bokra, I would like to inquire about surveillance and network systems.'
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group"
+            title={isAr ? 'محادثة فورية عبر واتساب' : 'Chat on WhatsApp'}
+            aria-label={isAr ? 'تواصل عبر واتساب' : 'Contact via WhatsApp'}
+          >
+            <MessageSquare className="w-7 h-7 group-hover:animate-pulse" />
+          </a>
+        )}
       </aside>
     </div>
   );

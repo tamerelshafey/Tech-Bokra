@@ -30,8 +30,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const stored = localStorage.getItem(THEME_STORAGE_KEY);
         if (stored === 'light' || stored === 'dark') {
           setThemeState(stored);
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-          setThemeState('light');
+        } else {
+          setThemeState('dark');
         }
       } catch {
         // Ignore storage errors

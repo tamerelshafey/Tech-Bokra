@@ -243,10 +243,7 @@ export const SUB_SERVICES: SubService[] = [
         'Server room and IDF locations, cable tray pathways, and clean UPS power availability',
       ],
     },
-    standards: [
-      { name: 'ONVIF Profile S / G / T Protocols', confirmed: false },
-      { name: 'IEC 62676 Video Surveillance Systems for Security Applications', confirmed: false },
-    ],
+    standards: [],
     deliverables: {
       ar: [
         'مخططات التوزيع الهندسي للكاميرات وحسابات زوايا الرؤية (Camera Layout & FOV Drawings)',
@@ -294,8 +291,8 @@ export const SUB_SERVICES: SubService[] = [
           en: 'Does the system support mixing camera brands on a unified recording platform?',
         },
         a: {
-          ar: 'نعم، نعتمد أجهزة وبرمجيات متوافقة مع معيار ONVIF العالمي (Profiles S/G/T)، مما يتيح دمج كاميرات متعددة المصادر وربطها بسلاسة تحت واجهة إدارة موحدة.',
-          en: 'Yes. We deploy hardware and software fully conforming to open ONVIF standards (Profiles S/G/T), allowing seamless multi-vendor camera integration under a single pane of glass.',
+          ar: 'نعم، نعتمد أجهزة وبرمجيات تدعم بروتوكولات الفيديو الشبكية القياسية المفتوحة، مما يتيح دمج كاميرات متعددة المصادر وربطها بسلاسة تحت واجهة إدارة موحدة.',
+          en: 'Yes. We deploy hardware and software conforming to open IP video streaming protocols, allowing seamless multi-vendor camera integration under a single pane of glass.',
         },
       },
     ],
@@ -385,11 +382,7 @@ export const SUB_SERVICES: SubService[] = [
         'Fire alarm dry-contact interface specifications for life-safety compliance',
       ],
     },
-    standards: [
-      { name: 'UL 294 Standard for Access Control System Units', confirmed: false },
-      { name: 'NFPA 101 Life Safety Code - Egress & Door Release', confirmed: false },
-      { name: 'ISO/IEC 14443 Contactless Smart Cards Specification', confirmed: false },
-    ],
+    standards: [],
     deliverables: {
       ar: [
         'مخطط توزيع نقاط التحكم ومخططات الأسلاك الصاعدة (Access Control Riser Diagram)',
@@ -517,12 +510,7 @@ export const SUB_SERVICES: SubService[] = [
         'Bandwidth and PoE budget requirements for endpoint devices (APs, VoIP, IP Cameras)',
       ],
     },
-    standards: [
-      { name: 'ANSI/TIA-568.2-D Balanced Twisted-Pair Telecommunications Cabling', confirmed: false },
-      { name: 'ISO/IEC 11801 Information Technology - Generic Cabling', confirmed: false },
-      { name: 'ANSI/TIA-568.3-D Optical Fiber Cabling Components Standard', confirmed: false },
-      { name: 'ANSI/TIA-606-C Administration Standard for Telecommunications Infrastructure', confirmed: false },
-    ],
+    standards: [],
     deliverables: {
       ar: [
         'مخططات التوزيع الشبكي ومواقع النقاط المرقمة (Network Outlets Layout Plan)',
@@ -650,11 +638,7 @@ export const SUB_SERVICES: SubService[] = [
         'Designated locations for main panels, emergency evacuation exits, and egress paths',
       ],
     },
-    standards: [
-      { name: 'NFPA 72 National Fire Alarm and Signaling Code', confirmed: false },
-      { name: 'EN 54', confirmed: false },
-      { name: 'Egyptian Fire & Civil Defense Code Requirements', confirmed: false },
-    ],
+    standards: [],
     deliverables: {
       ar: [
         'مخططات توزيع الكواشف والسارينات وحسابات التغطية طبقاً للمسافات القياسية',
@@ -757,14 +741,14 @@ export const SUB_SERVICES: SubService[] = [
         'وحدات تحكم رقمية مباشرة معمارية (Direct Digital Controllers - DDC)',
         'حساسات حرارة ورطوبة وضغط تفاضلي وجودة هواء (CO2/VOC) معتمدة للمباني',
         'محابس ومحركات تحكم آلية (Motorized Valves & Damper Actuators)',
-        'عدادات طاقة كهربائية ذكية تدعم بروتوكولات Modbus و BACnet',
+        'عدادات طاقة كهربائية ذكية تدعم بروتوكولات Modbus و بروتوكولات الأتمتة المفتوحة',
         'محطة عمل وخادم مركزي مثبت عليه برمجيات إدارة المبنى (BMS Server Workstation)',
       ],
       en: [
-        'Modular Direct Digital Controllers (DDC) with native BACnet/IP communications',
+        'Modular Direct Digital Controllers (DDC) with native fieldbus and IP communications',
         'Calibrated duct/room temperature, humidity, differential pressure, and indoor air quality sensors',
         'Proportional motorized control valves and electronic damper actuators',
-        'Digital multi-function power meters communicating over Modbus RTU / BACnet MSTP',
+        'Digital multi-function power meters communicating over Modbus RTU / Fieldbus',
         'Enterprise BMS server software suite with web-based multi-user visualization client',
       ],
     },
@@ -773,20 +757,16 @@ export const SUB_SERVICES: SubService[] = [
         'المخططات الميكانيكية والتكييف وجداول معدات التبريد (Chiller / AHU / FCU Schedules)',
         'المخططات الكهربائية للوحات التوزيع ولوحات تشغيل المحركات (MCC Panels)',
         'قائمة النقاط الهندسية المراد مراقبتها والتحكم بها (Input/Output Points Schedule)',
-        'اشتراطات بروتوكول الاتصال المفضل للمنشأة (BACnet/IP, Modbus, LonWorks)',
+        'اشتراطات بروتوكول الاتصال المفضل للمنشأة (Fieldbus, Modbus, IP)',
       ],
       en: [
         'Mechanical HVAC schematics and equipment schedules (Chiller, AHU, FCU, Exhaust Fans)',
         'Single-line electrical schematics and Motor Control Center (MCC) interlock drawings',
         'Target Input/Output (I/O) control points list (Physical DI/DO/AI/AO and Software Points)',
-        'Specified communication protocol standards (e.g., native BACnet/IP, Modbus, or MQTT)',
+        'Specified communication protocol standards (e.g., native Fieldbus/IP, Modbus, or MQTT)',
       ],
     },
-    standards: [
-      { name: 'BACnet Protocol Specification (ANSI/ASHRAE Standard 135 / ISO 16484-5)', confirmed: false },
-      { name: 'Modbus Protocol for Industrial & Energy Automation', confirmed: false },
-      { name: 'ASHRAE Guideline 13 Specifying Building Automation Systems', confirmed: false },
-    ],
+    standards: [],
     deliverables: {
       ar: [
         'جدول النقاط التفصيلي للتحكم والمراقبة (Comprehensive BMS Points List)',
@@ -797,7 +777,7 @@ export const SUB_SERVICES: SubService[] = [
       ],
       en: [
         'Comprehensive BMS Input/Output (I/O) Points Schedule and sequence of operations',
-        'DDC control panel schematics and BACnet field-bus riser topology drawings',
+        'DDC control panel schematics and field-bus riser topology drawings',
         'Tailored 2D/3D graphical plant displays and floor plan dashboard interfaces',
         'Final As-Built documentation and field sensor calibration verification sheets',
         'Facility engineering training curriculum and preventive maintenance operation manuals',
@@ -805,13 +785,13 @@ export const SUB_SERVICES: SubService[] = [
     },
     integrations: {
       ar: [
-        'التكامل مع وحدات التكييف عبر بروتوكولات BACnet و Modbus لقراءة درجات الحرارة والأعطال',
+        'التكامل مع وحدات التكييف عبر بروتوكولات الأتمتة المفتوحة و Modbus لقراءة درجات الحرارة والأعطال',
         'الربط مع لوحة إنذار الحريق لتشغيل مراوح سحب الدخان وقطع التكييف آلياً',
         'التكامل مع عدادات الطاقة الرقمية لمتابعة استهلاك الكهرباء وتحديد ساعات الذروة',
         'الربط مع أنظمة إدارة المرافق والصيانة الوقائية (CAFM / CMMS)',
       ],
       en: [
-        'Direct interface with HVAC chillers and VRF systems over BACnet/IP for rich operational metrics',
+        'Direct interface with HVAC chillers and VRF systems over industrial IP protocols for rich operational metrics',
         'Safety interlock with fire alarm panel to activate stairwell pressurization and smoke exhaust',
         'Integration with digital power meters for sub-metering and energy baseline trending',
         'Automated work-order generation via Computer-Aided Facility Management (CAFM) APIs',
@@ -1121,7 +1101,11 @@ export function getRelatedServices(slug: string): SubService[] {
   }
   return service.relatedServices
     .map((rSlug) => getServiceBySlug(rSlug))
-    .filter((s): s is SubService => s !== undefined);
+    .filter((s): s is SubService => s !== undefined)
+    .map((s) => ({
+      ...s,
+      standards: s.standards.filter((std) => std.confirmed),
+    }));
 }
 
 /**
