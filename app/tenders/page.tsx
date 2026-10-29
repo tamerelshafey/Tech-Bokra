@@ -35,12 +35,17 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, notFound } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 
 export default function TendersPage() {
   const { lang, isAr, toggleLanguage, data } = useLanguage();
   const [customConfig] = useCustomConfig();
+
+  if (customConfig.showTenders === false) {
+    notFound();
+  }
+
   const [tenderCategoryFilter, setTenderCategoryFilter] = useState<string>('all');
   const [tenderSearch, setTenderSearch] = useState<string>('');
   const [expandedTenderId, setExpandedTenderId] = useState<string | null>(null);

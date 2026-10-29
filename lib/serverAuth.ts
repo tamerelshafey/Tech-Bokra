@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import firebaseConfig from '@/firebase-applet-config.json';
-import { BOOTSTRAP_ADMIN_EMAIL } from '@/lib/authHelper';
 
 export const SESSION_COOKIE_NAME = 'tb_admin_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24; // 24 hours
 
 export interface AdminSessionPayload {
   email: string;
+  emailVerified: boolean;
   role: string;
   iat: number;
   exp: number;
@@ -143,26 +143,28 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<{
 
 /**
  * Check if the verified email belongs to the list of authorized administrators.
- * Reads from ADMIN_ALLOWED_EMAILS environment variable (comma-separated).
+ * Reads strictly from ADMIN_ALLOWED_EMAILS environment variable (comma-separated).
+ * Fails closed with a clear error if the variable is not configured.
  */
 export function isEmailAuthorizedAdmin(email: string): boolean {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase();
 
   const allowedEnv = process.env.ADMIN_ALLOWED_EMAILS;
-  if (allowedEnv && allowedEnv.trim().length > 0) {
-    const allowedList = allowedEnv
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    if (allowedList.includes(cleanEmail)) {
-      return true;
-    }
+  if (!allowedEnv || allowedEnv.trim().length === 0) {
+    throw new Error('Server security error: ADMIN_ALLOWED_EMAILS environment variable is not configured');
   }
 
-  // Fallback to primary bootstrap admin if env list not explicitly specified
-  const bootstrap = (process.env.BOOTSTRAP_ADMIN_EMAIL || BOOTSTRAP_ADMIN_EMAIL).toLowerCase();
-  return cleanEmail === bootstrap;
+  const allowedList = allowedEnv
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (allowedList.length === 0) {
+    throw new Error('Server security error: ADMIN_ALLOWED_EMAILS contains no valid email addresses');
+  }
+
+  return allowedList.includes(cleanEmail);
 }
 
 /**
@@ -225,6 +227,10 @@ export function verifySessionToken(token: string): { valid: boolean; payload?: A
 
     if (!payload.email || typeof payload.email !== 'string') {
       return { valid: false, reason: 'Session token lacks valid email subject' };
+    }
+
+    if (payload.emailVerified !== true) {
+      return { valid: false, reason: 'Session token email has not been verified' };
     }
 
     if (!isEmailAuthorizedAdmin(payload.email)) {

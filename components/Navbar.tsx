@@ -21,6 +21,10 @@ interface NavbarProps {
   showLogoArabicBadge?: boolean;
   customLogoHeight?: number;
   customProjects?: any[];
+  showProjectsSection?: boolean;
+  showEstimator?: boolean;
+  showTenders?: boolean;
+  showEngineeringHub?: boolean;
 }
 
 export default function Navbar({ 
@@ -36,6 +40,10 @@ export default function Navbar({
   showLogoArabicBadge = true,
   customLogoHeight,
   customProjects,
+  showProjectsSection = true,
+  showEstimator = false,
+  showTenders = false,
+  showEngineeringHub = false,
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,15 +59,18 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const showProjects = hasVerifiedProjects(customProjects);
+  const showProjects = (showProjectsSection ?? true) && hasVerifiedProjects(customProjects);
+  const showEst = showEstimator ?? false;
+  const showTnd = showTenders ?? false;
+  const showEng = showEngineeringHub ?? false;
 
   const navLinks = [
     { id: 'home', href: '/', label: data.nav.home },
     { id: 'services', href: '/services', label: data.nav.services },
-    { id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' },
-    { id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' },
-    ...(showProjects ? [{ id: 'projects', href: '/projects', label: data.nav.projects }] : []),
-    { id: 'estimator', href: '/estimator', label: data.nav.estimator },
+    ...(showProjects ? [{ id: 'projects', href: '/projects', label: isAr ? 'المشاريع وسابقة الأعمال' : 'Projects & Portfolio' }] : []),
+    ...(showEng ? [{ id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' }] : []),
+    ...(showTnd ? [{ id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' }] : []),
+    ...(showEst ? [{ id: 'estimator', href: '/estimator', label: data.nav.estimator }] : []),
     { id: 'contact', href: '/contact', label: data.nav.contact },
   ];
 

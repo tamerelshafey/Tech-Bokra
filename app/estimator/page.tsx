@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProjectEstimator from '@/components/ProjectEstimator';
@@ -16,6 +16,10 @@ export default function EstimatorPage() {
   const [customConfig] = useCustomConfig();
   const router = useRouter();
   const { isDark } = useTheme();
+
+  if (customConfig.showEstimator === false) {
+    notFound();
+  }
 
   const handleBookSurveyWithScope = (scopeSummary: string) => {
     router.push(`/contact?scope=${encodeURIComponent(scopeSummary)}`);

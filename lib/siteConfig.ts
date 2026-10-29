@@ -41,13 +41,21 @@ export interface EditableConfig {
   heroSubAr: string;
   heroSubEn: string;
 
-  // Announcement Banner
   showAnnouncement: boolean;
   announcementBadgeAr: string;
   announcementBadgeEn: string;
   announcementTextAr: string;
   announcementTextEn: string;
   announcementLink: string;
+
+  // Section Visibility Toggles (تحكم الظهور والإخفاء لأقسام وصفحات الموقع)
+  showProjectsSection: boolean;   // سابقة الأعمال والمشاريع الحالية (الافتراضي: true)
+  showEstimator: boolean;         // حاسبة وتخطيط تكلفة المشروع (الافتراضي: false)
+  showTenders: boolean;           // مرصد المناقصات والممارسات (الافتراضي: false)
+  showEngineeringHub: boolean;     // أدوات وحاسبة المهندسين (الافتراضي: false)
+  showPartnersSection: boolean;   // منصات وتقنيات نعمل بها (الافتراضي: false)
+  showProcessSection: boolean;    // آلية ومراحل العمل (الافتراضي: true)
+  showFaqSection: boolean;        // الأسئلة الشائعة (الافتراضي: true)
 
   // Trust Stats Section Control (Default hidden pending verification)
   showStatsSection: boolean;
@@ -144,6 +152,15 @@ export const defaultEditableConfig: EditableConfig = {
   announcementTextAr: 'نقدم استشارات هندسية متخصصة في أنظمة المراقبة والشبكات والتيار الخفيف',
   announcementTextEn: 'Specialized engineering consultations in surveillance, networking, and ELV systems',
   announcementLink: '',
+
+  // Section Visibility Toggles (تحكم الظهور والإخفاء لأقسام وصفحات الموقع)
+  showProjectsSection: true,      // سابقة الأعمال والمشاريع الحالية (مفعلة)
+  showEstimator: false,          // حاسبة وتخطيط تكلفة المشروع (ملغاة افتراضياً بطلب المستخدم)
+  showTenders: false,            // مرصد المناقصات والممارسات (ملغاة افتراضياً بطلب المستخدم)
+  showEngineeringHub: false,      // أدوات وحاسبة المهندسين (ملغاة افتراضياً بطلب المستخدم)
+  showPartnersSection: false,    // منصات وتقنيات نعمل بها (افتراضي غير مفعل حتى التأكيد)
+  showProcessSection: true,      // آلية ومراحل العمل (مفعلة)
+  showFaqSection: true,          // الأسئلة الشائعة (مفعلة)
 
   // Stats - Default hidden pending official verification
   showStatsSection: false,

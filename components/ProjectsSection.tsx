@@ -32,7 +32,7 @@ interface ProjectsSectionProps {
   customProjects?: Project[];
 }
 
-type FilterCategory = 'all' | 'upcoming' | 'security' | 'network' | 'software' | 'erp';
+type FilterCategory = 'all' | 'ongoing' | 'completed' | 'security' | 'network' | 'elv' | 'software';
 
 export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides, customProjects }: ProjectsSectionProps) {
   const [filter, setFilter] = useState<FilterCategory>('all');
@@ -80,20 +80,33 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
           liveUrl: customMatch.liveUrl || p.liveUrl,
           isDraft: customMatch.isDraft !== undefined ? customMatch.isDraft : p.isDraft,
           isUpcoming: customMatch.isUpcoming !== undefined ? customMatch.isUpcoming : p.isUpcoming,
+          projectStatus: customMatch.projectStatus || p.projectStatus,
+          showOnSite: customMatch.showOnSite !== undefined ? customMatch.showOnSite : p.showOnSite,
         };
       }
     }
     return p;
   });
 
-  // Exclude projects marked as draft or unverified so only verified projects appear to visitors
-  const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true);
+  // Exclude projects marked as draft or explicitly hidden from site
+  const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false);
 
   const filteredProjects = activeProjects.filter((p) => {
     if (filter === 'all') return true;
-    if (filter === 'upcoming') return p.isUpcoming === true;
+    if (filter === 'ongoing') return p.projectStatus === 'ongoing' || p.isUpcoming === true;
+    if (filter === 'completed') return p.projectStatus === 'completed' || (!p.isUpcoming && p.projectStatus !== 'ongoing');
     return p.category === filter;
   });
+
+  const filterTabs = [
+    { id: 'all', label: data.projects.filterAll },
+    { id: 'ongoing', label: isAr ? 'المشاريع التي نعمل عليها (جاري التنفيذ)' : 'Ongoing Projects', isSpecial: true },
+    { id: 'completed', label: isAr ? 'سابقة الأعمال المنفذة' : 'Completed Works (Portfolio)' },
+    { id: 'security', label: data.projects.filterSecurity },
+    { id: 'network', label: data.projects.filterNetwork },
+    { id: 'elv', label: isAr ? 'أنظمة التيار الخفيف' : 'ELV Systems' },
+    { id: 'software', label: data.projects.filterSoftware },
+  ];
 
   return (
     <section 
@@ -116,7 +129,7 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>{isAr ? 'سجل الإنجازات والمنصات الذكية' : 'Proven Implementations & Platforms'}</span>
+            <span>{isAr ? 'المشاريع الجارية وسابقة الأعمال' : 'Ongoing Projects & Delivered Works'}</span>
           </div>
 
           <h2 
@@ -146,14 +159,7 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
 
         {/* Filter Navigation */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {[
-            { id: 'all', label: data.projects.filterAll },
-            { id: 'upcoming', label: data.projects.filterUpcoming || (isAr ? 'منصات قيد التجهيز / شقيقة' : 'Upcoming & Sister Platforms'), isSpecial: true },
-            { id: 'security', label: data.projects.filterSecurity },
-            { id: 'network', label: data.projects.filterNetwork },
-            { id: 'software', label: data.projects.filterSoftware },
-            { id: 'erp', label: data.projects.filterERP },
-          ].map((tab) => {
+          {filterTabs.map((tab) => {
             const isActive = filter === tab.id;
             return (
               <button
@@ -241,11 +247,16 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                       {project.tag}
                     </span>
 
-                    {/* Prominent Status Badge if upcoming / sister platform */}
-                    {project.statusBadge && (
-                      <span className="absolute top-3 left-3 rtl:left-3 rtl:right-auto ltr:right-3 ltr:left-auto text-[10px] font-bold text-amber-200 bg-amber-950/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-amber-500/50 flex items-center gap-1 shadow-lg">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                        <span>{project.statusBadge}</span>
+                    {/* Prominent Status Badge: Ongoing vs Completed */}
+                    {project.projectStatus === 'ongoing' || project.isUpcoming ? (
+                      <span className="absolute top-3 left-3 rtl:left-3 rtl:right-auto ltr:right-3 ltr:left-auto text-[11px] font-bold text-amber-200 bg-amber-950/90 backdrop-blur-md px-3 py-1 rounded-full border border-amber-500/50 flex items-center gap-1.5 shadow-lg">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                        <span>{isAr ? 'مشروع جاري العمل عليه' : 'Ongoing Project'}</span>
+                      </span>
+                    ) : (
+                      <span className="absolute top-3 left-3 rtl:left-3 rtl:right-auto ltr:right-3 ltr:left-auto text-[11px] font-bold text-emerald-200 bg-emerald-950/90 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/50 flex items-center gap-1.5 shadow-lg">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{isAr ? 'سابقة أعمال منفذة' : 'Delivered Portfolio'}</span>
                       </span>
                     )}
                   </div>

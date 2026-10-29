@@ -3,130 +3,105 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 1. Global Default Deny
+    // 1. Global Default Deny for any unlisted collection or path
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Hardened Helper Primitives
-    function isSignedIn() {
-      return request.auth != null;
+    // Helper: Verify administrative identity and verified email status
+    function isVerifiedAdmin() {
+      return ((request.auth != null) &&
+              (request.auth.token.email_verified == true) &&
+              (request.auth.token.email in ['tam.elshafey@gmail.com', 'admin@tech-bokra.com']));
     }
 
+    // Helper: Valid document ID
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return ((id is string) && (id.size() <= 128) && (id.matches('^[a-zA-Z0-9_\\-]+$')));
     }
 
-    // Super Admin: Strictly the bootstrapped owner email + verified
-    function isSuperAdmin() {
-      return isSignedIn() && 
-        request.auth.token.email == 'tam.elshafey@gmail.com' &&
-        request.auth.token.email_verified == true;
+    // 2. Settings Documents:
+    // settings/general: Public read for website rendering; write restricted strictly to verified admin
+    match /settings/general {
+      allow read: if true;
+      allow write: if isVerifiedAdmin();
     }
 
-    // Regular Admin: Signed in + verified email + active record in /admins/{uid} or email in /settings/admin_roster
-    function isRegularAdmin() {
-      return isSignedIn() && 
-        request.auth.token.email_verified == true && 
-        ((exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin', 'editor'] &&
-          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.email == request.auth.token.email) ||
-         (exists(/databases/$(database)/documents/settings/admin_roster) &&
-          request.auth.token.email in get(/databases/$(database)/documents/settings/admin_roster).data.allowedEmails));
+    // settings/admin_vault: Strictly admin-only (read & write)
+    match /settings/admin_vault {
+      allow read, write: if isVerifiedAdmin();
     }
 
-    function isAdmin() {
-      return isSuperAdmin() || isRegularAdmin();
+    // settings/admin_roster: Strictly admin-only (read & write)
+    match /settings/admin_roster {
+      allow read, write: if isVerifiedAdmin();
     }
 
-    // 2. Settings:
-    // Only 'general' document is public for live website rendering.
-    // Any other document under /settings (e.g. internal configs, audit logs) is strictly admin-only.
-    match /settings/{settingsId} {
-      allow get: if settingsId == 'general' || (isAdmin() && isValidId(settingsId));
-      allow list: if isAdmin();
-      allow create, update, delete: if isAdmin() && isValidId(settingsId);
-    }
-
-    // Strict Schema & Field Whitelist Validator for Customer Inquiries Creation
+    // 3. Customer Inquiries & Quote Requests (/inquiries/{inquiryId})
     function isValidNewInquiry(data) {
-      return data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source']) &&
-        data.keys().hasOnly([
-          'id',
-          'clientName', 
-          'phone', 
-          'email', 
-          'facilityType', 
-          'selectedSystems', 
-          'notes', 
-          'source', 
-          'status', 
-          'createdAt'
-        ]) &&
-        (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
-        data.clientName is string &&
-        data.clientName.size() >= 2 &&
-        data.clientName.size() <= 100 &&
-        data.phone is string &&
-        data.phone.size() >= 6 &&
-        data.phone.size() <= 32 &&
-        data.status == 'new' &&
-        data.source in ['contact_form', 'estimator', 'custom_quote'] &&
-        data.createdAt is string &&
-        data.createdAt.size() <= 64 &&
-        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
-        (!('facilityType' in data) || (data.facilityType is string && data.facilityType.size() <= 60)) &&
-        (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
-        (!('selectedSystems' in data) || (
-          data.selectedSystems is list && 
-          data.selectedSystems.size() <= 10 &&
-          data.selectedSystems.hasOnly([
-            'cctv', 
-            'network', 
-            'access', 
-            'software', 
-            'erp', 
-            'consulting', 
-            'all', 
-            'datacenter', 
-            'security'
-          ])
-        ));
+      return (data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source'])) &&
+             (data.keys().hasOnly([
+               'id',
+               'clientName', 
+               'phone', 
+               'email', 
+               'facilityType', 
+               'selectedSystems', 
+               'notes', 
+               'source', 
+               'status', 
+               'createdAt'
+             ])) &&
+             ((!('id' in data)) || ((data.id is string) && (data.id.size() <= 64))) &&
+             (data.clientName is string) &&
+             (data.clientName.size() >= 2) &&
+             (data.clientName.size() <= 100) &&
+             (data.phone is string) &&
+             (data.phone.size() >= 6) &&
+             (data.phone.size() <= 32) &&
+             (data.status == 'new') &&
+             (data.source in ['contact_form', 'estimator', 'custom_quote']) &&
+             (data.createdAt is string) &&
+             (data.createdAt.size() <= 64) &&
+             ((!('email' in data)) || ((data.email is string) && (data.email.size() <= 100))) &&
+             ((!('facilityType' in data)) || ((data.facilityType is string) && (data.facilityType.size() <= 60))) &&
+             ((!('notes' in data)) || ((data.notes is string) && (data.notes.size() <= 2000))) &&
+             ((!('selectedSystems' in data)) || (
+               (data.selectedSystems is list) && 
+               (data.selectedSystems.size() <= 10) &&
+               (data.selectedSystems.hasOnly([
+                 'cctv', 
+                 'network', 
+                 'access', 
+                 'software', 
+                 'erp', 
+                 'consulting', 
+                 'all', 
+                 'datacenter', 
+                 'security'
+               ]))
+             ));
     }
 
-    // Validation for Admin Updating Inquiry Status
-    function isValidInquiryUpdate(incoming, existing) {
-      return incoming.diff(existing).affectedKeys().hasOnly(['status', 'updatedAt']) &&
-        incoming.status in ['new', 'contacted', 'survey_scheduled', 'contracted', 'archived'] &&
-        (!('updatedAt' in incoming) || (incoming.updatedAt is string && incoming.updatedAt.size() <= 64));
+    function isValidInquiryStatusUpdate(incoming, existing) {
+      return (incoming.diff(existing).affectedKeys().hasOnly(['status', 'updatedAt'])) &&
+             (incoming.status in ['new', 'contacted', 'survey_scheduled', 'contracted', 'archived']) &&
+             ((!('updatedAt' in incoming)) || ((incoming.updatedAt is string) && (incoming.updatedAt.size() <= 64)));
     }
 
-    // 3. Customer Inquiries & Quote Requests
     match /inquiries/{inquiryId} {
-      // Anyone can submit a new inquiry / lead (create), strictly validated against schema
-      allow create: if isValidId(inquiryId) && isValidNewInquiry(request.resource.data);
+      // Anyone can submit a lead (create only), strictly validated against schema
+      allow create: if (isValidId(inquiryId)) && (isValidNewInquiry(request.resource.data));
 
-      // PII Protection: Only authorized admins can get or list customer leads
-      allow get, list: if isAdmin() && isValidId(inquiryId);
-
-      // Only authorized admins can update inquiry status
-      allow update: if isAdmin() && isValidId(inquiryId) && isValidInquiryUpdate(request.resource.data, resource.data);
-
-      // Only authorized admins can delete inquiry records
-      allow delete: if isAdmin() && isValidId(inquiryId);
+      // Absolutely NO read, list, update, or delete for public/unauthenticated
+      allow get, list: if isVerifiedAdmin();
+      allow update: if (isVerifiedAdmin()) && (isValidInquiryStatusUpdate(request.resource.data, resource.data));
+      allow delete: if isVerifiedAdmin();
     }
 
-    // 4. Authorized Admins Collection
+    // 4. Authorized Admins Roster Collection
     match /admins/{adminId} {
-      // Super admin can get any admin doc; regular signed-in users can only get their own admin doc to verify their role
-      allow get: if isValidId(adminId) && (isSuperAdmin() || (isSignedIn() && request.auth.uid == adminId));
-
-      // Only verified admins can list the admin roster
-      allow list: if isAdmin();
-
-      // CRITICAL: ONLY Super Admin can create, modify, or delete admin records.
-      // Regular admins CANNOT grant admin roles or self-escalate privileges.
-      allow create, update, delete: if isSuperAdmin() && isValidId(adminId);
+      allow read, write: if isVerifiedAdmin();
     }
   }
 }

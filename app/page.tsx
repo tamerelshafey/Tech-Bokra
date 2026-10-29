@@ -202,6 +202,10 @@ export default function HomePage() {
         showLogoArabicBadge={customConfig.showLogoArabicBadge}
         customLogoHeight={customConfig.customLogoHeight}
         customProjects={customConfig.projectsList}
+        showProjectsSection={customConfig.showProjectsSection ?? true}
+        showEstimator={customConfig.showEstimator ?? false}
+        showTenders={customConfig.showTenders ?? false}
+        showEngineeringHub={customConfig.showEngineeringHub ?? false}
       />
 
       {/* Main Content Sections */}
@@ -212,6 +216,7 @@ export default function HomePage() {
           data={data}
           onOpenEstimator={scrollToEstimator}
           onOpenContact={scrollToContact}
+          showEstimator={customConfig.showEstimator ?? false}
           heroOverrides={{
             badge: isAr ? customConfig.heroBadgeAr : customConfig.heroBadgeEn,
             titleLine1: isAr ? customConfig.heroTitleLine1Ar : customConfig.heroTitleLine1En,
@@ -253,30 +258,34 @@ export default function HomePage() {
           customServices={customConfig.servicesList}
         />
 
-        {/* Practical Engineering Hub, CCTV Storage & Bandwidth Calculator & Tenders Radar */}
-        <EngineeringHub
-          lang={lang}
-          data={data}
-          onOpenConsultation={(scopeSummary?: string) => {
-            if (scopeSummary) {
-              handleBookSurveyWithScope(scopeSummary);
-            } else {
-              scrollToContact();
-            }
-          }}
-        />
+        {/* Practical Engineering Hub (when enabled) */}
+        {(customConfig.showEngineeringHub ?? false) && (
+          <EngineeringHub
+            lang={lang}
+            data={data}
+            onOpenConsultation={(scopeSummary?: string) => {
+              if (scopeSummary) {
+                handleBookSurveyWithScope(scopeSummary);
+              } else {
+                scrollToContact();
+              }
+            }}
+          />
+        )}
 
-        {/* Interactive Project Cost & Scope Estimator */}
-        <ProjectEstimator
-          lang={lang}
-          data={data}
-          onBookSurveyWithScope={handleBookSurveyWithScope}
-          whatsappNumber={customConfig.whatsappNumber}
-          email={customConfig.email}
-        />
+        {/* Interactive Project Cost & Scope Estimator (when enabled) */}
+        {(customConfig.showEstimator ?? false) && (
+          <ProjectEstimator
+            lang={lang}
+            data={data}
+            onBookSurveyWithScope={handleBookSurveyWithScope}
+            whatsappNumber={customConfig.whatsappNumber}
+            email={customConfig.email}
+          />
+        )}
 
         {/* Featured Real Projects & Case Studies with live dynamic links and CMS */}
-        {hasVerifiedProjects(customConfig.projectsList) && (
+        {(customConfig.showProjectsSection ?? true) && hasVerifiedProjects(customConfig.projectsList) && (
           <ProjectsSection
             lang={lang}
             data={data}
@@ -286,22 +295,28 @@ export default function HomePage() {
           />
         )}
 
-        {/* 4-Step Engineering Lifecycle */}
-        <ProcessSection
-          lang={lang}
-          data={data}
-          onBookSurvey={scrollToContact}
-        />
+        {/* 4-Step Engineering Lifecycle (when enabled) */}
+        {(customConfig.showProcessSection ?? true) && (
+          <ProcessSection
+            lang={lang}
+            data={data}
+            onBookSurvey={scrollToContact}
+          />
+        )}
 
-        {/* Hardware & Cloud Vendors Ecosystem */}
-        <TechPartners lang={lang} data={data} />
+        {/* Hardware & Cloud Vendors Ecosystem (when enabled) */}
+        {(customConfig.showPartnersSection ?? false) && (
+          <TechPartners lang={lang} data={data} />
+        )}
 
         {/* Frequently Asked Questions with CMS */}
-        <FaqSection
-          lang={lang}
-          data={data}
-          customFaq={customConfig.faqList}
-        />
+        {(customConfig.showFaqSection ?? true) && (
+          <FaqSection
+            lang={lang}
+            data={data}
+            customFaq={customConfig.faqList}
+          />
+        )}
 
         {/* Smart Quote & Inquiry Request with live custom contacts */}
         <ContactSection
@@ -333,6 +348,10 @@ export default function HomePage() {
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
         customProjects={customConfig.projectsList}
+        showProjectsSection={customConfig.showProjectsSection ?? true}
+        showEstimator={customConfig.showEstimator ?? false}
+        showTenders={customConfig.showTenders ?? false}
+        showEngineeringHub={customConfig.showEngineeringHub ?? false}
       />
 
       {/* Floating Action Buttons */}

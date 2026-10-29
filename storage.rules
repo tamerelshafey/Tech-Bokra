@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 1. Default Deny all unspecified storage paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Helper: Verify administrative identity and verified email status
+    function isVerifiedAdmin() {
+      return ((request.auth != null) &&
+              (request.auth.token.email_verified == true) &&
+              (request.auth.token.email in ['tam.elshafey@gmail.com', 'admin@tech-bokra.com']));
+    }
+
+    // 2. Uploads folder for brand logos, portfolio assets, and service imagery
+    match /uploads/{fileName} {
+      // Public read for website visitors and media rendering
+      allow read: if true;
+
+      // Write restricted to verified administrators only
+      // Enforce image MIME type and strict file size under 5MB (5242880 bytes)
+      allow write: if ((isVerifiedAdmin()) &&
+                       (request.resource != null) &&
+                       (request.resource.size < 5242880) &&
+                       (request.resource.contentType.matches('image/.*')));
+    }
+  }
+}

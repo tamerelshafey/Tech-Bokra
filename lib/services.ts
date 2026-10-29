@@ -437,7 +437,7 @@ export const SUB_SERVICES: SubService[] = [
         en: 'Enterprise biometric access control, smart card door security, and fire alarm interlock systems in Egypt.',
       },
     },
-    status: 'coming-soon',
+    status: 'live',
   },
 
   // -----------------------------------------------------------------------

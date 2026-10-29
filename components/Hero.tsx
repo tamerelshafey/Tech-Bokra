@@ -17,7 +17,8 @@ import {
   Headphones,
   FileCheck,
   Globe,
-  Server
+  Server,
+  Briefcase
 } from 'lucide-react';
 import { SiteLanguageData } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
@@ -27,6 +28,8 @@ interface HeroProps {
   data: SiteLanguageData;
   onOpenEstimator: () => void;
   onOpenContact: () => void;
+  onOpenProjects?: () => void;
+  showEstimator?: boolean;
   heroOverrides?: {
     badge?: string;
     titleLine1?: string;
@@ -39,7 +42,15 @@ interface HeroProps {
   };
 }
 
-export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroOverrides }: HeroProps) {
+export default function Hero({ 
+  lang, 
+  data, 
+  onOpenEstimator, 
+  onOpenContact, 
+  onOpenProjects,
+  showEstimator = false,
+  heroOverrides 
+}: HeroProps) {
   const [activeTab, setActiveTab] = useState<'cctv' | 'network' | 'software' | 'erp' | 'consulting' | 'access'>('cctv');
   const [heroImageError, setHeroImageError] = useState(false);
   const { isDark } = useTheme();
@@ -222,18 +233,36 @@ export default function Hero({ lang, data, onOpenEstimator, onOpenContact, heroO
                 <ArrowIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
 
-              <button
-                type="button"
-                onClick={onOpenEstimator}
-                className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl border font-bold text-base transition-all transform active:scale-95 cursor-pointer ${
-                  isDark
-                    ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/30 text-white hover:border-[#00F2FE]'
-                    : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-sm hover:border-[#0284C7]'
-                }`}
-              >
-                <Calculator className={`w-5 h-5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
-                <span>{data.hero.btnEstimate}</span>
-              </button>
+              {showEstimator ? (
+                <button
+                  type="button"
+                  onClick={onOpenEstimator}
+                  className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl border font-bold text-base transition-all transform active:scale-95 cursor-pointer ${
+                    isDark
+                      ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/30 text-white hover:border-[#00F2FE]'
+                      : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-sm hover:border-[#0284C7]'
+                  }`}
+                >
+                  <Calculator className={`w-5 h-5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                  <span>{data.hero.btnEstimate}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenProjects || (() => {
+                    const el = document.getElementById('projects');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  })}
+                  className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl border font-bold text-base transition-all transform active:scale-95 cursor-pointer ${
+                    isDark
+                      ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/30 text-white hover:border-[#00F2FE]'
+                      : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-sm hover:border-[#0284C7]'
+                  }`}
+                >
+                  <Briefcase className={`w-5 h-5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                  <span>{isAr ? 'المشاريع وسابقة الأعمال' : 'Projects & Portfolio'}</span>
+                </button>
+              )}
             </div>
 
             {/* Guarantee Checkmarks */}

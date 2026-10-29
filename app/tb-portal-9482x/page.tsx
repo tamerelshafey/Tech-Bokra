@@ -977,6 +977,9 @@ export default function SecureAdminPortalPage() {
       solutions: [isAr ? 'تنفيذ بنية تحتية معزولة ومحمية بكابلات معتمدة' : 'Isolated, high-availability architecture'],
       isDraft: false,
       isUpcoming: false,
+      verified: true,
+      projectStatus: 'completed',
+      showOnSite: true,
       statusBadge: isAr ? 'مشروع مكتمل' : 'Completed',
       liveUrl: '',
     };
@@ -1725,6 +1728,173 @@ export default function SecureAdminPortalPage() {
                       <span className="text-xs font-bold block text-white">{isAr ? 'تعديل أرقام التواصل' : 'Edit Contacts'}</span>
                       <span className="text-[10px] text-slate-400">{isAr ? 'الواتساب والهاتف والإيميل' : 'Phone & WhatsApp'}</span>
                     </button>
+                  </div>
+                </div>
+
+                {/* Site Sections & Pages Visibility Switchboard */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3 mb-4">
+                    <div>
+                      <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <SlidersHorizontal className="w-4 h-4 text-[#00F2FE]" />
+                        <span>{isAr ? 'لوحة التحكم في ظهور وإخفاء أقسام وصفحات الموقع' : 'Site Sections & Pages Visibility Switchboard'}</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {isAr ? 'مفاتيح فورية لضبط ظهور أو إخفاء أي قسم أو صفحة في الموقع وحفظها سحابياً في Firestore' : 'Live switches to show/hide any section or page across the entire platform'}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 self-start sm:self-auto font-bold">
+                      LIVE CLOUD TOGGLE
+                    </span>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {/* 1. Projects Section & Page */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'المشاريع وسابقة الأعمال' : 'Projects & Portfolio'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'المشاريع الجارية وسابقة الأعمال المنفذة' : 'Active & completed projects (/projects)'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showProjectsSection ?? true}
+                          onChange={(e) => handleConfigChange('showProjectsSection', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 2. Estimator */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'حاسبة وتخطيط التكلفة' : 'Project Estimator'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'الحاسبة الذكية للمشروع (/estimator)' : 'Smart project calculator (/estimator)'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showEstimator ?? false}
+                          onChange={(e) => handleConfigChange('showEstimator', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 3. Tenders Radar */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'مرصد المناقصات والممارسات' : 'Tenders Radar'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'رادار المناقصات الحكومية والخاصة (/tenders)' : 'Tenders radar page (/tenders)'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showTenders ?? false}
+                          onChange={(e) => handleConfigChange('showTenders', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 4. Engineering Hub */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'حاسبة السعات التخزينية والفلوك (/engineering-hub)' : 'Bandwidth & CCTV sizing calculators'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showEngineeringHub ?? false}
+                          onChange={(e) => handleConfigChange('showEngineeringHub', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 5. Process Lifecycle */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'مراحل العمل الهندسية' : 'Engineering Process'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'دورة حياة المشروع من المعاينة للتسليم' : '4-step lifecycle in homepage'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showProcessSection ?? true}
+                          onChange={(e) => handleConfigChange('showProcessSection', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 6. FAQ Section */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'الأسئلة الشائعة' : 'FAQ Section'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'قسم الأسئلة الهندسية الشائعة' : 'Frequently asked questions'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showFaqSection ?? true}
+                          onChange={(e) => handleConfigChange('showFaqSection', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    {/* 7. Tech Partners */}
+                    <div className="p-3.5 rounded-xl bg-[#071120] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold block text-white">
+                          {isAr ? 'شركاء التقنية والمنصات' : 'Tech Partners'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {isAr ? 'شعار الموردين والشركات العالمية' : 'Hardware & cloud vendor logos'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={config.showPartnersSection ?? false}
+                          onChange={(e) => handleConfigChange('showPartnersSection', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -3331,9 +3501,21 @@ export default function SecureAdminPortalPage() {
                                     </span>
                                   )}
 
-                                  {proj.isUpcoming && (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-[#00F2FE] border border-sky-500/40">
-                                      {isAr ? 'قيد التطوير' : 'Upcoming'}
+                                  {proj.showOnSite === false && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                                      {isAr ? 'معطل في الموقع' : 'Hidden from Site'}
+                                    </span>
+                                  )}
+
+                                  {proj.projectStatus === 'ongoing' || proj.isUpcoming ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                      <span>{isAr ? 'جاري العمل عليه' : 'Ongoing'}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      <span>{isAr ? 'سابقة أعمال منفذة' : 'Completed Work'}</span>
                                     </span>
                                   )}
 
@@ -3445,18 +3627,47 @@ export default function SecureAdminPortalPage() {
                                     </label>
                                   </div>
 
-                                  {/* Upcoming Switch */}
+                                  {/* Show on Site Switch */}
                                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#071120] border border-white/5">
                                     <input
                                       type="checkbox"
-                                      id={`upcoming-toggle-${proj.id}`}
-                                      checked={proj.isUpcoming === true}
-                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'isUpcoming', e.target.checked)}
-                                      className="w-4 h-4 text-[#00F2FE] rounded cursor-pointer"
+                                      id={`site-toggle-${proj.id}`}
+                                      checked={proj.showOnSite !== false}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'showOnSite', e.target.checked)}
+                                      className="w-4 h-4 text-emerald-400 rounded cursor-pointer"
                                     />
-                                    <label htmlFor={`upcoming-toggle-${proj.id}`} className="text-xs font-bold text-slate-200 cursor-pointer">
-                                      {isAr ? 'مشروع قادم / قيد التطوير' : 'Upcoming / In Development'}
+                                    <label htmlFor={`site-toggle-${proj.id}`} className="text-xs font-bold text-slate-200 cursor-pointer">
+                                      {isAr ? 'ظاهر في الموقع للزوار' : 'Show on Site'}
                                     </label>
+                                  </div>
+
+                                  {/* Status: Ongoing vs Completed */}
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                      {isAr ? 'حالة العمل (سابقة أعمال / جاري)' : 'Phase (Portfolio / Ongoing)'}
+                                    </label>
+                                    <select
+                                      value={proj.projectStatus || (proj.isUpcoming ? 'ongoing' : 'completed')}
+                                      onChange={(e) => {
+                                        const val = e.target.value as 'completed' | 'ongoing';
+                                        handleUpdateProjectField(originalIdx, 'projectStatus', val);
+                                        if (val === 'ongoing') {
+                                          handleUpdateProjectField(originalIdx, 'isUpcoming', true);
+                                          if (!proj.statusBadge || proj.statusBadge === 'مشروع مكتمل' || proj.statusBadge === 'Completed') {
+                                            handleUpdateProjectField(originalIdx, 'statusBadge', isAr ? 'مشروع جاري العمل عليه' : 'In Progress');
+                                          }
+                                        } else {
+                                          handleUpdateProjectField(originalIdx, 'isUpcoming', false);
+                                          if (proj.statusBadge === 'مشروع جاري العمل عليه' || proj.statusBadge === 'In Progress') {
+                                            handleUpdateProjectField(originalIdx, 'statusBadge', isAr ? 'مشروع مكتمل' : 'Completed');
+                                          }
+                                        }
+                                      }}
+                                      className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
+                                    >
+                                      <option value="completed">{isAr ? '✅ سابقة أعمال منفذة ومسلمة' : 'Completed Work'}</option>
+                                      <option value="ongoing">{isAr ? '⏳ مشروع نعمل عليه حالياً (جاري التنفيذ)' : 'Active / Ongoing Project'}</option>
+                                    </select>
                                   </div>
 
                                   {/* Status Badge Text */}
@@ -3468,7 +3679,7 @@ export default function SecureAdminPortalPage() {
                                       type="text"
                                       value={proj.statusBadge || ''}
                                       onChange={(e) => handleUpdateProjectField(originalIdx, 'statusBadge', e.target.value)}
-                                      placeholder={isAr ? 'مثال: مشروع مكتمل، قيد التدشين' : 'e.g. Completed'}
+                                      placeholder={isAr ? 'مثال: مشروع مكتمل، جاري التنفيذ' : 'e.g. Completed'}
                                       className="w-full bg-[#071120] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[#00F2FE]"
                                     />
                                   </div>
@@ -3485,6 +3696,7 @@ export default function SecureAdminPortalPage() {
                                     >
                                       <option value="security">{isAr ? '🛡️ أنظمة المراقبة والأمن (Security)' : 'Security'}</option>
                                       <option value="network">{isAr ? '🌐 الشبكات والبنية التحتية (Network)' : 'Network'}</option>
+                                      <option value="elv">{isAr ? '⚡ أنظمة التيار الخفيف والمباني الذكية (ELV & Smart)' : 'ELV & Smart Systems'}</option>
                                       <option value="software">{isAr ? '💻 البرمجيات والتطبيقات (Software)' : 'Software'}</option>
                                       <option value="erp">{isAr ? '📊 حلول ERP وإدارة الموارد (ERP)' : 'ERP'}</option>
                                     </select>

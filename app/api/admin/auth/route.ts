@@ -49,6 +49,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Strictly require verified email in Firebase Authentication
+    if (tokenResult.emailVerified !== true) {
+      recordFailedLogin(ip);
+      console.warn(`[SECURITY] Login attempt with unverified email: ${tokenResult.email} from IP: ${ip}`);
+      return NextResponse.json(
+        { error: 'Access denied: Email address has not been verified in Firebase Authentication.' },
+        { status: 403 }
+      );
+    }
+
     const verifiedEmail = tokenResult.email;
 
     // 3. Strict Admin Whitelist Verification
@@ -68,6 +78,7 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
     const payload = {
       email: verifiedEmail,
+      emailVerified: true,
       role: 'admin',
       iat: now,
       exp: now + SESSION_MAX_AGE_SECONDS * 1000,

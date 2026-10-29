@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Default Deny for any unlisted collection or path
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper: Verify administrative identity and verified email status
+    function isVerifiedAdmin() {
+      return ((request.auth != null) &&
+              (request.auth.token.email_verified == true) &&
+              (request.auth.token.email in ['tam.elshafey@gmail.com', 'admin@tech-bokra.com']));
+    }
+
+    // Helper: Valid document ID
+    function isValidId(id) {
+      return ((id is string) && (id.size() <= 128) && (id.matches('^[a-zA-Z0-9_\\-]+$')));
+    }
+
+    // 2. Settings Documents:
+    // settings/general: Public read for website rendering; write restricted strictly to verified admin
+    match /settings/general {
+      allow read: if true;
+      allow write: if isVerifiedAdmin();
+    }
+
+    // settings/admin_vault: Strictly admin-only (read & write)
+    match /settings/admin_vault {
+      allow read, write: if isVerifiedAdmin();
+    }
+
+    // settings/admin_roster: Strictly admin-only (read & write)
+    match /settings/admin_roster {
+      allow read, write: if isVerifiedAdmin();
+    }
+
+    // 3. Customer Inquiries & Quote Requests (/inquiries/{inquiryId})
+    function isValidNewInquiry(data) {
+      return (data.keys().hasAll(['clientName', 'phone', 'status', 'createdAt', 'source'])) &&
+             (data.keys().hasOnly([
+               'id',
+               'clientName', 
+               'phone', 
+               'email', 
+               'facilityType', 
+               'selectedSystems', 
+               'notes', 
+               'source', 
+               'status', 
+               'createdAt'
+             ])) &&
+             ((!('id' in data)) || ((data.id is string) && (data.id.size() <= 64))) &&
+             (data.clientName is string) &&
+             (data.clientName.size() >= 2) &&
+             (data.clientName.size() <= 100) &&
+             (data.phone is string) &&
+             (data.phone.size() >= 6) &&
+             (data.phone.size() <= 32) &&
+             (data.status == 'new') &&
+             (data.source in ['contact_form', 'estimator', 'custom_quote']) &&
+             (data.createdAt is string) &&
+             (data.createdAt.size() <= 64) &&
+             ((!('email' in data)) || ((data.email is string) && (data.email.size() <= 100))) &&
+             ((!('facilityType' in data)) || ((data.facilityType is string) && (data.facilityType.size() <= 60))) &&
+             ((!('notes' in data)) || ((data.notes is string) && (data.notes.size() <= 2000))) &&
+             ((!('selectedSystems' in data)) || (
+               (data.selectedSystems is list) && 
+               (data.selectedSystems.size() <= 10) &&
+               (data.selectedSystems.hasOnly([
+                 'cctv', 
+                 'network', 
+                 'access', 
+                 'software', 
+                 'erp', 
+                 'consulting', 
+                 'all', 
+                 'datacenter', 
+                 'security'
+               ]))
+             ));
+    }
+
+    function isValidInquiryStatusUpdate(incoming, existing) {
+      return (incoming.diff(existing).affectedKeys().hasOnly(['status', 'updatedAt'])) &&
+             (incoming.status in ['new', 'contacted', 'survey_scheduled', 'contracted', 'archived']) &&
+             ((!('updatedAt' in incoming)) || ((incoming.updatedAt is string) && (incoming.updatedAt.size() <= 64)));
+    }
+
+    match /inquiries/{inquiryId} {
+      // Anyone can submit a lead (create only), strictly validated against schema
+      allow create: if (isValidId(inquiryId)) && (isValidNewInquiry(request.resource.data));
+
+      // Absolutely NO read, list, update, or delete for public/unauthenticated
+      allow get, list: if isVerifiedAdmin();
+      allow update: if (isVerifiedAdmin()) && (isValidInquiryStatusUpdate(request.resource.data, resource.data));
+      allow delete: if isVerifiedAdmin();
+    }
+
+    // 4. Authorized Admins Roster Collection
+    match /admins/{adminId} {
+      allow read, write: if isVerifiedAdmin();
+    }
+  }
+}

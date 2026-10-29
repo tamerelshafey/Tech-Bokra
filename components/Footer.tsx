@@ -24,6 +24,10 @@ interface FooterProps {
   taxId?: string;
   footerRights?: string;
   customProjects?: any[];
+  showProjectsSection?: boolean;
+  showEstimator?: boolean;
+  showTenders?: boolean;
+  showEngineeringHub?: boolean;
 }
 
 export default function Footer({ 
@@ -43,6 +47,10 @@ export default function Footer({
   taxId,
   footerRights,
   customProjects,
+  showProjectsSection = true,
+  showEstimator = false,
+  showTenders = false,
+  showEngineeringHub = false,
 }: FooterProps) {
   const isAr = lang === 'ar';
   const { theme, toggleTheme, isDark } = useTheme();
@@ -139,27 +147,31 @@ export default function Footer({
                   {data.nav.services}
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/engineering-hub"
-                  className={`transition text-start block ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub & Tools'}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/tenders"
-                  className={`transition text-start block ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {isAr ? 'مرصد أحدث المناقصات' : 'Tenders Radar'}
-                </Link>
-              </li>
-              {hasVerifiedProjects(customProjects) && (
+              {showEngineeringHub && (
+                <li>
+                  <Link
+                    href="/engineering-hub"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub & Tools'}
+                  </Link>
+                </li>
+              )}
+              {showTenders && (
+                <li>
+                  <Link
+                    href="/tenders"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {isAr ? 'مرصد أحدث المناقصات' : 'Tenders Radar'}
+                  </Link>
+                </li>
+              )}
+              {(showProjectsSection ?? true) && hasVerifiedProjects(customProjects) && (
                 <li>
                   <Link
                     href="/projects"
@@ -167,20 +179,22 @@ export default function Footer({
                       isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                     }`}
                   >
-                    {data.nav.projects}
+                    {isAr ? 'المشاريع وسابقة الأعمال' : data.nav.projects}
                   </Link>
                 </li>
               )}
-              <li>
-                <Link
-                  href="/estimator"
-                  className={`transition text-start block ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {data.nav.estimator}
-                </Link>
-              </li>
+              {showEstimator && (
+                <li>
+                  <Link
+                    href="/estimator"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {data.nav.estimator}
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/contact"
