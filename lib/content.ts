@@ -233,14 +233,14 @@ export const siteConfig = {
 export const contentAr: SiteLanguageData = {
   nav: {
     home: "الرئيسية",
-    services: "حلولنا الهندسية",
-    projects: "مشاريعنا وقصص النجاح",
-    architecture: "أدوات ومرصد المهندسين",
+    services: "خدماتنا وحلولنا",
+    projects: "المشاريع وسابقة الأعمال",
+    architecture: "أدوات وحاسبة المهندسين",
     estimator: "حاسبة التكلفة",
     process: "آلية العمل",
     faq: "الأسئلة الشائعة",
-    contact: "طلب أو استفسار",
-    surveyCta: "طلب أو استفسار",
+    contact: "تواصل معنا",
+    surveyCta: "طلب معاينة واستفسار",
   },
   hero: {
     badge: "حلول تقنية متكاملة للأنظمة الأمنية والبنية التحتية والبرمجيات",
@@ -633,14 +633,14 @@ export const contentAr: SiteLanguageData = {
 export const contentEn: SiteLanguageData = {
   nav: {
     home: "Home",
-    services: "Engineering Solutions",
-    projects: "Projects & Success",
-    architecture: "Engineering Tools & Radar",
+    services: "Services & Solutions",
+    projects: "Projects & Portfolio",
+    architecture: "Engineering Hub",
     estimator: "Cost Estimator",
-    process: "Process",
+    process: "Our Process",
     faq: "FAQ",
-    contact: "Inquiry & Contact",
-    surveyCta: "Inquiry & Contact",
+    contact: "Contact Us",
+    surveyCta: "Request Survey & Quote",
   },
   hero: {
     badge: "Integrated Technology Solutions for Security, Infrastructure & Software",

@@ -25,6 +25,8 @@ interface FooterProps {
   footerRights?: string;
   customProjects?: any[];
   showProjectsSection?: boolean;
+  showProcessSection?: boolean;
+  showFaqSection?: boolean;
   showEstimator?: boolean;
   showTenders?: boolean;
   showEngineeringHub?: boolean;
@@ -48,6 +50,8 @@ export default function Footer({
   footerRights,
   customProjects,
   showProjectsSection = true,
+  showProcessSection = true,
+  showFaqSection = true,
   showEstimator = false,
   showTenders = false,
   showEngineeringHub = false,
@@ -179,7 +183,31 @@ export default function Footer({
                       isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                     }`}
                   >
-                    {isAr ? 'المشاريع وسابقة الأعمال' : data.nav.projects}
+                    {data.nav.projects}
+                  </Link>
+                </li>
+              )}
+              {(showProcessSection ?? true) && (
+                <li>
+                  <Link
+                    href="/#process"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {data.nav.process}
+                  </Link>
+                </li>
+              )}
+              {(showFaqSection ?? true) && (
+                <li>
+                  <Link
+                    href="/#faq"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {data.nav.faq}
                   </Link>
                 </li>
               )}

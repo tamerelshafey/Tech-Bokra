@@ -22,6 +22,8 @@ interface NavbarProps {
   customLogoHeight?: number;
   customProjects?: any[];
   showProjectsSection?: boolean;
+  showProcessSection?: boolean;
+  showFaqSection?: boolean;
   showEstimator?: boolean;
   showTenders?: boolean;
   showEngineeringHub?: boolean;
@@ -41,6 +43,8 @@ export default function Navbar({
   customLogoHeight,
   customProjects,
   showProjectsSection = true,
+  showProcessSection = true,
+  showFaqSection = true,
   showEstimator = false,
   showTenders = false,
   showEngineeringHub = false,
@@ -60,6 +64,8 @@ export default function Navbar({
   }, []);
 
   const showProjects = (showProjectsSection ?? true) && hasVerifiedProjects(customProjects);
+  const showProc = showProcessSection ?? true;
+  const showFaq = showFaqSection ?? true;
   const showEst = showEstimator ?? false;
   const showTnd = showTenders ?? false;
   const showEng = showEngineeringHub ?? false;
@@ -67,12 +73,38 @@ export default function Navbar({
   const navLinks = [
     { id: 'home', href: '/', label: data.nav.home },
     { id: 'services', href: '/services', label: data.nav.services },
-    ...(showProjects ? [{ id: 'projects', href: '/projects', label: isAr ? 'المشاريع وسابقة الأعمال' : 'Projects & Portfolio' }] : []),
+    ...(showProjects ? [{ id: 'projects', href: '/projects', label: data.nav.projects }] : []),
+    ...(showProc ? [{ id: 'process', href: '/#process', label: data.nav.process }] : []),
+    ...(showFaq ? [{ id: 'faq', href: '/#faq', label: data.nav.faq }] : []),
     ...(showEng ? [{ id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' }] : []),
     ...(showTnd ? [{ id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' }] : []),
     ...(showEst ? [{ id: 'estimator', href: '/estimator', label: data.nav.estimator }] : []),
     { id: 'contact', href: '/contact', label: data.nav.contact },
   ];
+
+  const isLinkActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    if (href.startsWith('/#') || href.startsWith('#')) {
+      return false;
+    }
+    return pathname === href || (href !== '/' && pathname.startsWith(href + '/'));
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('/#') || href.startsWith('#')) {
+      const targetId = href.replace('/#', '').replace('#', '');
+      if (pathname === '/') {
+        e.preventDefault();
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth' });
+        }
+        setMobileMenuOpen(false);
+      }
+    }
+  };
 
   return (
     <nav
@@ -109,12 +141,13 @@ export default function Navbar({
           {/* Desktop Navigation Links (Routes & Internal Pages) */}
           <div className="hidden xl:flex items-center gap-4 2xl:gap-6 mx-3 sm:mx-6">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+              const isActive = isLinkActive(link.href);
 
               return (
                 <Link
                   key={link.id}
                   href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
                   className={`text-xs sm:text-sm transition-colors relative py-1 group ${
                     isActive
                       ? isDark
@@ -139,7 +172,7 @@ export default function Navbar({
           </div>
 
           {/* Right Action Controls */}
-          <div className="hidden lg:flex items-center gap-2.5">
+          <div className="hidden xl:flex items-center gap-2.5">
             {/* Dark / Light Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -187,9 +220,18 @@ export default function Navbar({
               <span className="font-mono uppercase font-bold">{lang === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
 
-            {/* Primary CTA button linking to /contact */}
+            {/* Primary CTA button linking to /contact or smooth scrolling to #contact on homepage */}
             <Link
               href="/contact"
+              onClick={(e) => {
+                if (pathname === '/') {
+                  e.preventDefault();
+                  const targetElement = document.getElementById('contact');
+                  if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#0369A1] text-[#071120] font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_25px_rgba(0,242,254,0.45)] transition-all transform active:scale-95 cursor-pointer"
             >
               <Shield className="w-4 h-4" />
@@ -252,13 +294,16 @@ export default function Navbar({
         >
           <div className="grid grid-cols-2 gap-2 pt-2">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive = isLinkActive(link.href);
 
               return (
                 <Link
                   key={link.id}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e, link.href);
+                    setMobileMenuOpen(false);
+                  }}
                   className={`px-3 py-2.5 rounded-lg border text-xs sm:text-sm font-bold transition text-start ${
                     isActive
                       ? isDark
@@ -278,7 +323,16 @@ export default function Navbar({
           <div className="pt-2 flex flex-col gap-2">
             <Link
               href="/contact"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => {
+                if (pathname === '/') {
+                  e.preventDefault();
+                  const targetElement = document.getElementById('contact');
+                  if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-center py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition ${
                 isDark
                   ? 'bg-gradient-to-r from-[#00F2FE] to-[#0284C7] text-[#071120] shadow-[0_0_15px_rgba(0,242,254,0.3)]'

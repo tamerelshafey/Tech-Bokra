@@ -92,6 +92,13 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
         whatsappNumber={customConfig.whatsappNumber}
         logoEmblemStyle={customConfig.logoEmblemStyle}
         customLogoUrl={customConfig.customLogoUrl}
+        showProjectsSection={customConfig.showProjectsSection}
+        showProcessSection={customConfig.showProcessSection}
+        showFaqSection={customConfig.showFaqSection}
+        showEstimator={customConfig.showEstimator}
+        showTenders={customConfig.showTenders}
+        showEngineeringHub={customConfig.showEngineeringHub}
+        customProjects={customConfig.projectsList}
       />
 
       <main className="pt-28 pb-20">
@@ -596,6 +603,13 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
+        showProjectsSection={customConfig.showProjectsSection}
+        showProcessSection={customConfig.showProcessSection}
+        showFaqSection={customConfig.showFaqSection}
+        showEstimator={customConfig.showEstimator}
+        showTenders={customConfig.showTenders}
+        showEngineeringHub={customConfig.showEngineeringHub}
+        customProjects={customConfig.projectsList}
       />
     </div>
   );

@@ -203,6 +203,8 @@ export default function HomePage() {
         customLogoHeight={customConfig.customLogoHeight}
         customProjects={customConfig.projectsList}
         showProjectsSection={customConfig.showProjectsSection ?? true}
+        showProcessSection={customConfig.showProcessSection ?? true}
+        showFaqSection={customConfig.showFaqSection ?? true}
         showEstimator={customConfig.showEstimator ?? false}
         showTenders={customConfig.showTenders ?? false}
         showEngineeringHub={customConfig.showEngineeringHub ?? false}
@@ -349,6 +351,8 @@ export default function HomePage() {
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
         customProjects={customConfig.projectsList}
         showProjectsSection={customConfig.showProjectsSection ?? true}
+        showProcessSection={customConfig.showProcessSection ?? true}
+        showFaqSection={customConfig.showFaqSection ?? true}
         showEstimator={customConfig.showEstimator ?? false}
         showTenders={customConfig.showTenders ?? false}
         showEngineeringHub={customConfig.showEngineeringHub ?? false}

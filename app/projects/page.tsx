@@ -107,6 +107,13 @@ export default function ProjectsPage() {
         whatsappNumber={customConfig.whatsappNumber}
         logoEmblemStyle={customConfig.logoEmblemStyle}
         customLogoUrl={customConfig.customLogoUrl}
+        showProjectsSection={customConfig.showProjectsSection ?? true}
+        showProcessSection={customConfig.showProcessSection ?? true}
+        showFaqSection={customConfig.showFaqSection ?? true}
+        showEstimator={customConfig.showEstimator ?? false}
+        showTenders={customConfig.showTenders ?? false}
+        showEngineeringHub={customConfig.showEngineeringHub ?? false}
+        customProjects={customConfig.projectsList}
       />
 
       <main className="pt-28 pb-20">
@@ -396,6 +403,13 @@ export default function ProjectsPage() {
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
+        customProjects={customConfig.projectsList}
+        showProjectsSection={customConfig.showProjectsSection ?? true}
+        showProcessSection={customConfig.showProcessSection ?? true}
+        showFaqSection={customConfig.showFaqSection ?? true}
+        showEstimator={customConfig.showEstimator ?? false}
+        showTenders={customConfig.showTenders ?? false}
+        showEngineeringHub={customConfig.showEngineeringHub ?? false}
       />
     </div>
   );
