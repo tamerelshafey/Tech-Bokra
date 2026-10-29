@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowUp, Phone, Mail, MapPin, Sun, Moon } from 'lucide-react';
-import { SiteLanguageData, siteConfig } from '@/lib/content';
+import { SiteLanguageData, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -23,6 +23,7 @@ interface FooterProps {
   commercialRegister?: string;
   taxId?: string;
   footerRights?: string;
+  customProjects?: any[];
 }
 
 export default function Footer({ 
@@ -41,6 +42,7 @@ export default function Footer({
   commercialRegister,
   taxId,
   footerRights,
+  customProjects,
 }: FooterProps) {
   const isAr = lang === 'ar';
   const { theme, toggleTheme, isDark } = useTheme();
@@ -157,16 +159,18 @@ export default function Footer({
                   {isAr ? 'مرصد أحدث المناقصات' : 'Tenders Radar'}
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/projects"
-                  className={`transition text-start block ${
-                    isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
-                  }`}
-                >
-                  {data.nav.projects}
-                </Link>
-              </li>
+              {hasVerifiedProjects(customProjects) && (
+                <li>
+                  <Link
+                    href="/projects"
+                    className={`transition text-start block ${
+                      isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
+                    }`}
+                  >
+                    {data.nav.projects}
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/estimator"

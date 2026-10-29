@@ -144,7 +144,7 @@ export default function ProjectEstimator({
       phone: 'طلب فوري عبر واتساب',
       facilityType: facilityTypes.find((f) => f.id === facility)?.[isAr ? 'labelAr' : 'labelEn'] || facility,
       selectedSystems: selectedSystems,
-      notes: `حجم المنشأة: ${scale} | الضمان: ${slaTier === 'standard' ? 'سنتين' : '24/7 SLA'} | مدة تقديرية: ${getEstimatedDays()}`,
+      notes: `حجم المنشأة: ${scale} | الضمان: ${slaTier === 'standard' ? (isAr ? 'الضمان وفق سياسة الشركة المصنّعة وبنود التعاقد' : 'Warranty per manufacturer policy & contract terms') : (isAr ? 'عقد صيانة ودعم فني' : 'Maintenance SLA')} | مدة تقديرية: ${getEstimatedDays()}`,
       source: 'estimator',
     }).catch((err) => console.warn('Estimator lead save warning:', err));
 
@@ -392,7 +392,7 @@ export default function ProjectEstimator({
                       isDark ? 'text-slate-400' : 'text-slate-500'
                     }`}
                   >
-                    {isAr ? 'ضمان سنتين إلى 3 سنوات على العتاد' : '2-3 Years Hardware Agency Coverage'}
+                    {isAr ? 'الضمان وفق سياسة الشركة المصنّعة وبنود التعاقد' : 'Warranty subject to manufacturer policy & contract terms'}
                   </div>
                 </button>
 
@@ -565,7 +565,7 @@ export default function ProjectEstimator({
                     {isAr ? 'مستوى الضمان:' : 'SLA & Warranty:'}
                   </span>
                   <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {slaTier === 'standard' ? (isAr ? 'ضمان سنتين' : '2 Years Warranty') : (isAr ? 'عقد صيانة 24/7' : '24/7 SLA')}
+                    {slaTier === 'standard' ? (isAr ? 'الضمان وفق سياسة الشركة المصنّعة وبنود التعاقد' : 'Warranty per manufacturer policy & contract terms') : (isAr ? 'عقد صيانة ودعم فني' : 'Maintenance SLA')}
                   </span>
                 </div>
               </div>

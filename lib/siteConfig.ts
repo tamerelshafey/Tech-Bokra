@@ -138,12 +138,12 @@ export const defaultEditableConfig: EditableConfig = {
   heroSubEn: contentEn.hero.sub,
 
   // Announcement
-  showAnnouncement: true,
-  announcementBadgeAr: 'مشروعات جديدة',
-  announcementBadgeEn: 'New Projects',
-  announcementTextAr: 'نعمل حالياً على تجهيز منصة هليو بروبرتي العقارية ومنصة الرحلة التفاعلية',
-  announcementTextEn: 'Currently engineering Helio Property PropTech and Al-Rehla Interactive Platform',
-  announcementLink: 'https://helio-property.vercel.app/',
+  showAnnouncement: false,
+  announcementBadgeAr: 'مشروعات وحلول',
+  announcementBadgeEn: 'Solutions & Projects',
+  announcementTextAr: 'نقدم استشارات هندسية متخصصة في أنظمة المراقبة والشبكات والتيار الخفيف',
+  announcementTextEn: 'Specialized engineering consultations in surveillance, networking, and ELV systems',
+  announcementLink: '',
 
   // Stats - Default hidden pending official verification
   showStatsSection: false,
@@ -171,9 +171,9 @@ export const defaultEditableConfig: EditableConfig = {
   stat4DescAr: contentAr.stats.stat4Desc,
   stat4DescEn: contentEn.stats.stat4Desc,
 
-  // Live Projects
-  helioPropertyUrl: 'https://helio-property.vercel.app/',
-  alrehlaUrl: 'https://www.alrehla.org/',
+  // Live Projects (Cleared)
+  helioPropertyUrl: '',
+  alrehlaUrl: '',
 
   // Media & Images CMS
   heroCctvImage: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',

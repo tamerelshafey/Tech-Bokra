@@ -6,7 +6,7 @@ import Hero from '@/components/Hero';
 import TrustStats from '@/components/TrustStats';
 import ServicesSection from '@/components/ServicesSection';
 import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
-import { contentAr, contentEn, siteConfig } from '@/lib/content';
+import { contentAr, contentEn, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import { MessageSquare, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { testConnection } from '@/lib/firebase';
@@ -201,6 +201,7 @@ export default function HomePage() {
         showLogoSubtitle={customConfig.showLogoSubtitle}
         showLogoArabicBadge={customConfig.showLogoArabicBadge}
         customLogoHeight={customConfig.customLogoHeight}
+        customProjects={customConfig.projectsList}
       />
 
       {/* Main Content Sections */}
@@ -275,16 +276,15 @@ export default function HomePage() {
         />
 
         {/* Featured Real Projects & Case Studies with live dynamic links and CMS */}
-        <ProjectsSection
-          lang={lang}
-          data={data}
-          onConsultProject={handleSelectServiceForQuote}
-          projectUrlOverrides={{
-            'helio-property': customConfig.helioPropertyUrl,
-            'alrehla': customConfig.alrehlaUrl,
-          }}
-          customProjects={customConfig.projectsList}
-        />
+        {hasVerifiedProjects(customConfig.projectsList) && (
+          <ProjectsSection
+            lang={lang}
+            data={data}
+            onConsultProject={handleSelectServiceForQuote}
+            projectUrlOverrides={{}}
+            customProjects={customConfig.projectsList}
+          />
+        )}
 
         {/* 4-Step Engineering Lifecycle */}
         <ProcessSection
@@ -332,6 +332,7 @@ export default function HomePage() {
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
+        customProjects={customConfig.projectsList}
       />
 
       {/* Floating Action Buttons */}

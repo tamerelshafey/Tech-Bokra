@@ -85,6 +85,7 @@ export async function uploadImageToServer(file: File): Promise<{ url: string; si
     const res = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
+      credentials: 'include',
     });
     if (!res.ok) {
       throw new Error(`Upload server responded with ${res.status}`);

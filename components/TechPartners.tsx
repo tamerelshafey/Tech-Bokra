@@ -9,52 +9,75 @@ interface TechPartnersProps {
   data: SiteLanguageData;
 }
 
-export default function TechPartners({ lang, data }: TechPartnersProps) {
+export interface TechPartnerItem {
+  name: string;
+  role: string;
+  badge: string;
+  confirmed: boolean;
+}
+
+export default function TechPartners({ lang }: TechPartnersProps) {
   const isAr = lang === 'ar';
   const { isDark } = useTheme();
 
-  const partners = [
+  // All brands have confirmed: boolean defaulting to false
+  const partners: TechPartnerItem[] = [
     { 
       name: 'Cisco Systems', 
       role: isAr ? 'سويتشات وشبكات رئيسية' : 'Enterprise Switches & Routing', 
-      badge: isAr ? 'بنية شبكية' : 'Networking' 
+      badge: isAr ? 'بنية شبكية' : 'Networking',
+      confirmed: false,
     },
     { 
       name: 'Hikvision', 
       role: isAr ? 'كاميرات مراقبة رقمية 4K' : '4K IP Video Surveillance', 
-      badge: isAr ? 'أمن مادي' : 'Surveillance' 
+      badge: isAr ? 'أمن مادي' : 'Surveillance',
+      confirmed: false,
     },
     { 
       name: 'Schneider Electric', 
       role: isAr ? 'كابلات مهيكلة وحاويات خوادم' : 'Structured Cabling & Racks', 
-      badge: isAr ? 'بنية تحتية' : 'Cabling & Racks' 
+      badge: isAr ? 'بنية تحتية' : 'Cabling & Racks',
+      confirmed: false,
     },
     { 
       name: 'Dahua Technology', 
       role: isAr ? 'كاميرات ومراقبة محيطية' : 'Thermal & Perimeter Cameras', 
-      badge: isAr ? 'أمن مادي' : 'Surveillance' 
+      badge: isAr ? 'أمن مادي' : 'Surveillance',
+      confirmed: false,
     },
     { 
       name: 'Ubiquiti UniFi', 
       role: isAr ? 'روابط شبكية ولاسلكية' : 'Wireless Bridges & Mesh', 
-      badge: isAr ? 'بنية شبكية' : 'Wireless' 
+      badge: isAr ? 'بنية شبكية' : 'Wireless',
+      confirmed: false,
     },
     { 
       name: 'Legrand', 
       role: isAr ? 'مسارات كابلات وتجهيزات كبائن' : 'Cable Trays & Enclosures', 
-      badge: isAr ? 'بنية تحتية' : 'Enclosures' 
+      badge: isAr ? 'بنية تحتية' : 'Enclosures',
+      confirmed: false,
     },
     { 
       name: 'Odoo Enterprise', 
       role: isAr ? 'منظومات ERP وتكامل الضرائب' : 'ERP & Tax System Integration', 
-      badge: isAr ? 'برمجيات' : 'Enterprise ERP' 
+      badge: isAr ? 'برمجيات' : 'Enterprise ERP',
+      confirmed: false,
     },
     { 
       name: 'Fluke Networks', 
       role: isAr ? 'أجهزة فحص واختبار الشبكات' : 'Structured Cable Testing Tools', 
-      badge: isAr ? 'فحص واختبار' : 'Diagnostic Hardware' 
+      badge: isAr ? 'فحص واختبار' : 'Diagnostic Hardware',
+      confirmed: false,
     },
   ];
+
+  // Zero-leakage: only confirmed items are displayed to visitors
+  const visiblePartners = partners.filter((p) => p.confirmed === true);
+
+  if (visiblePartners.length === 0) {
+    return null;
+  }
 
   return (
     <section 
@@ -66,15 +89,15 @@ export default function TechPartners({ lang, data }: TechPartnersProps) {
         
         <div className="text-center max-w-2xl mx-auto mb-10">
           <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {data.partners.title}
+            {isAr ? 'منصات وتقنيات نعمل بها' : 'Platforms & Technologies We Work With'}
           </h3>
           <p className={`text-xs sm:text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            {data.partners.subtitle}
+            {isAr ? 'تقنيات ومنظومات معتمدة يجري توظيفها وفق متطلبات المشروعات الهندسية' : 'Confirmed enterprise platforms and technologies deployed per project specifications'}
           </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {partners.map((partner, idx) => (
+          {visiblePartners.map((partner, idx) => (
             <div
               key={idx}
               className={`p-4 rounded-xl border transition-all text-center group ${

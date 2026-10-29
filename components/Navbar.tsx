@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Shield, Menu, X, Globe, Sun, Moon } from 'lucide-react';
-import { SiteLanguageData, siteConfig } from '@/lib/content';
+import { SiteLanguageData, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -20,6 +20,7 @@ interface NavbarProps {
   showLogoSubtitle?: boolean;
   showLogoArabicBadge?: boolean;
   customLogoHeight?: number;
+  customProjects?: any[];
 }
 
 export default function Navbar({ 
@@ -34,6 +35,7 @@ export default function Navbar({
   showLogoSubtitle = true,
   showLogoArabicBadge = true,
   customLogoHeight,
+  customProjects,
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,12 +51,14 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const showProjects = hasVerifiedProjects(customProjects);
+
   const navLinks = [
     { id: 'home', href: '/', label: data.nav.home },
     { id: 'services', href: '/services', label: data.nav.services },
     { id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' },
     { id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' },
-    { id: 'projects', href: '/projects', label: data.nav.projects },
+    ...(showProjects ? [{ id: 'projects', href: '/projects', label: data.nav.projects }] : []),
     { id: 'estimator', href: '/estimator', label: data.nav.estimator },
     { id: 'contact', href: '/contact', label: data.nav.contact },
   ];

@@ -225,8 +225,8 @@ export const DEFAULT_TENDERS_RADAR: TenderItem[] = [
     sessionDateAr: 'جلسة الاستفسارات: 14 أبريل 2025 | فتح المظاريف: 25 أبريل 2025',
     sessionDateEn: 'Inquiries: 14 April 2025 | Opening: 25 April 2025',
     status: 'open',
-    scopeAr: 'تمديد مسار ألياف ضوئية خارجي بطول 24 كم كابلات Armored Single-Mode 24 Core، وتوريد 620 نقطة بيانات Cat6A UTP للاتصال الصفي والإداري، مع توريد واختبار شهادات الفحص بجهاز Fluke DSX-8000 المعتمد، وتركيب سويتشات توزيع PoE+ 10Gbps Uplink ودواليب شبكة Server Racks 42U.',
-    scopeEn: 'Execution of 24km outdoor armored single-mode 24-core fiber backbone, installation of 620 Cat6A UTP data outlets with full Fluke DSX-8000 test certifications, managed PoE+ enterprise distribution switches with 10Gbps uplinks, and 42U floor-standing server racks.',
+    scopeAr: 'مثال توضيحي لأغراض الدراسة — ليس مشروعاً منفذاً: تمديد مسار ألياف ضوئية خارجي بطول 24 كم كابلات Armored Single-Mode 24 Core، وتوريد 620 نقطة بيانات Cat6A UTP للاتصال الصفي والإداري، مع توريد واختبار شهادات الفحص بجهاز Fluke DSX-8000 المعتمد، وتركيب سويتشات توزيع PoE+ 10Gbps Uplink ودواليب شبكة Server Racks 42U.',
+    scopeEn: 'Illustrative Study Sample — Not An Executed Project: Execution of 24km outdoor armored single-mode 24-core fiber backbone, installation of 620 Cat6A UTP data outlets with full Fluke DSX-8000 test certifications, managed PoE+ enterprise distribution switches with 10Gbps uplinks, and 42U floor-standing server racks.',
     estimatedBudget: 'تقديري: 5.4 مليون ج.م',
     submittalRequired: true,
     sourceAr: 'بوابة التعاقدات العامة المصرية',
@@ -1476,10 +1476,10 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
 
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
                           isDark 
-                            ? 'bg-white/5 text-slate-300 border-white/10' 
-                            : 'bg-slate-100 text-slate-800 border-slate-300 font-bold'
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/40' 
+                            : 'bg-amber-50 text-amber-950 border-amber-300 font-bold'
                         }`}>
-                          {isAr ? 'مناقصة عامة' : 'Public RFP'}
+                          {isAr ? 'مثال توضيحي لأغراض الدراسة — ليس مشروعاً منفذاً' : 'Illustrative Study Sample — Not An Executed Project'}
                         </span>
                       </div>
 
@@ -1884,7 +1884,7 @@ Generated on: ${new Date().toLocaleDateString('en-US')}`;
               <ul className="space-y-2 text-xs text-slate-400 border-t border-white/5 pt-3">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{isAr ? 'مطابقة دقيقة لمواصفات كراسة الشروط الفنية' : 'Strict Tender Specification Compliance'}</span>
+                  <span>{isAr ? 'مراجعة المتطلبات مقابل كراسة الشروط الفنية' : 'Reviewing Requirements Against Tender Technical Specs'}</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

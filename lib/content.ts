@@ -26,6 +26,15 @@ export interface Project {
   verified?: boolean;
 }
 
+/**
+ * Check if there is any verified, active project.
+ * When false, /projects route and projects sections are completely hidden from visitors.
+ */
+export function hasVerifiedProjects(projects?: Project[]): boolean {
+  const list = projects && Array.isArray(projects) && projects.length > 0 ? projects : contentAr.projects.list;
+  return Array.isArray(list) && list.some((p) => p && p.verified === true && p.isDraft !== true);
+}
+
 export interface ServiceItem {
   id: string;
   title: string;
@@ -435,86 +444,6 @@ export const contentAr: SiteLanguageData = {
         isUpcoming: true,
         verified: false,
       },
-      {
-        id: "helio-property",
-        title: "منصة هليو بروبرتي (Helio Property)",
-        client: "منصة رقمية متخصصة",
-        sector: "التطوير العقاري وإدارة المشروعات (PropTech)",
-        challengeNeed: "أتمتة استعراض الوحدات العقارية وجداول الأقساط وحسابات السداد، وتسهيل تواصل العملاء مع مسؤولي المبيعات دون تأخير.",
-        scopeOfWork: [
-          "تطوير الواجهات البرمجية وتجربة المستخدم السريعة المتوافقة مع كافة الشاشات",
-          "هندسة محرك بحث وفلترة متقدم للمشروعات والوحدات حسب المساحة والسعر وجدول السداد",
-          "تكامل المحادثة المباشرة لتسهيل التواصل الفوري",
-          "نشر المنصة على شبكة سحابية سريعة مع تحديثات لحظية لحالات الوحدات",
-        ],
-        tag: "البرمجيات والحلول الرقمية",
-        category: "software",
-        icon: "Building2",
-        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-        highlight: "نموذج تقني لمنصة عقارية ذكية تحت التطوير والتجهيز الهندسي.",
-        summary: "نموذج لمنصة رقمية لإدارة وحجز الوحدات العقارية قيد التطوير التقني.",
-        description: "تعمل تيك بكرة على تطوير واختبار نموذج منصة 'هليو بروبرتي' داخلياً لتقييم كفاءة وتجربة المستخدم في استعراض المشروعات وجداول الأقساط.",
-        stats: [
-          { label: "حالة المنظومة", value: "قيد التطوير والتجهيز" },
-          { label: "المعمارية", value: "Next.js سحابية" },
-          { label: "نوع المشروع", value: "منصة رقمية" },
-        ],
-        technologies: ["Next.js App Router", "TypeScript & Tailwind CSS", "Cloud Edge Network", "Real Estate Query Engine"],
-        challenges: [
-          "عرض المخططات والبيانات دون التأثير على سرعة التحميل على الهواتف",
-          "تنظيم جداول الأقساط المتغيرة وحسابات السداد بوضوح",
-          "تمكين فريق المبيعات من تحديث حالات الوحدات والتواصل اللحظي",
-        ],
-        solutions: [
-          "الاعتماد على شبكة توزيع محتوى سحابية مع تحسين تلقائي للصور والمخططات",
-          "تطوير محرك مرن لحساب وتوزيع جداول الدفع بوضوح وشفافية",
-          "ربط المنصة بنظام محادثات فوري للرد على استفسارات المشترين فوراً",
-        ],
-        statusBadge: "قيد التطوير والتجهيز (In Progress)",
-        liveUrl: "https://helio-property.vercel.app/",
-        isUpcoming: true,
-        verified: false,
-      },
-      {
-        id: "alrehla",
-        title: "منصة الرحلة (Al-Rehla Interactive)",
-        client: "منصة تفاعلية رقمية",
-        sector: "المنصات التفاعلية والوسائط الرقمية",
-        challengeNeed: "تقديم تجربة بصرية تفاعلية وسلسة تدير تدفق الوسائط والمحتوى مع استجابة فائقة السرعة على مختلف الأجهزة والشبكات.",
-        scopeOfWork: [
-          "هندسة الواجهات التفاعلية وتجربة التصفح المخصصة متعددة اللغات",
-          "بناء معمارية سحابية مرنة مع تقنيات التخزين المؤقت المتقدم",
-          "اختبار الأداء واستقرار السيرفرات تحت أحمال الزوار المرتفعة",
-          "تهيئة التطبيق للعمل كـ Progressive Web App مع سرعة تحميل استثنائية",
-        ],
-        tag: "البرمجيات والحلول الرقمية",
-        category: "software",
-        icon: "Sparkles",
-        image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
-        highlight: "منصة رقمية معرفية وتفاعلية تحت التطوير والاختبار الداخلي.",
-        summary: "منصة رقمية قيد التطوير والتجهيز التقني تجمع بين المحتوى والتفاعل البصري.",
-        description: "تعمل تيك بكرة على تطوير ودعم البنية التحتية السحابية لمنصة 'الرحلة' قيد التطوير والاختبار، لتقييم آليات تدفق المحتوى والتفاعل الرقمي واستقرار السيرفرات.",
-        stats: [
-          { label: "حالة المنظومة", value: "قيد التطوير والاختبار" },
-          { label: "المعمارية", value: "Next.js & TypeScript" },
-          { label: "نوع المشروع", value: "منصة تفاعلية" },
-        ],
-        technologies: ["Next.js & TypeScript", "Cloud Architecture", "Interactive Story Engine", "Progressive Web App"],
-        challenges: [
-          "تقديم تجربة بصرية استثنائية وجذابة دون المساومة على سرعة استجابة الموقع",
-          "إدارة تدفق المحتوى والوسائط التفاعلية مع حماية سرية المستخدمين",
-          "العمل بسلاسة تامة عبر جميع الأجهزة والمتصفحات مع دعم كامل للغتين",
-        ],
-        solutions: [
-          "هندسة واجهات برمجية سريعة وخفيفة مع تخزين مؤقت متقدم للمحتوى المتكرر",
-          "بنية تحتية سحابية مرنة قادرة على استيعاب طفرات الزوار بأعلى موثوقية",
-          "تكامل تصميمي عالي الجودة مع خطوط وتدرجات بصرية تمنح المستخدم إحساساً بالأصالة والابتكار",
-        ],
-        statusBadge: "قيد التطوير والاختبار (In Progress)",
-        liveUrl: "https://www.alrehla.org/",
-        isUpcoming: true,
-        verified: false,
-      },
     ],
   },
   process: {
@@ -831,86 +760,6 @@ export const contentEn: SiteLanguageData = {
           "Granular permission policies ensuring staff only access authorized projects",
         ],
         statusBadge: "In Progress (Internal Staging & Testing)",
-        isUpcoming: true,
-        verified: false,
-      },
-      {
-        id: "helio-property",
-        title: "Helio Property Platform",
-        client: "PropTech Platform Prototype",
-        sector: "Real Estate & Property Tech (PropTech)",
-        challengeNeed: "Automating unit discovery, payment breakdown calculation, and connecting prospective buyers directly with dedicated sales representatives.",
-        scopeOfWork: [
-          "Intuitive multi-device user interface engineered for property searches and plan reviews",
-          "Advanced filtering engine calculating installment schedules and down payments",
-          "Direct messaging integration for real-time buyer inquiries",
-          "Cloud-edge deployment delivering rapid asset caching and real-time inventory updates",
-        ],
-        tag: "Software & Digital Solutions",
-        category: "software",
-        icon: "Building2",
-        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-        highlight: "PropTech digital platform prototype currently under internal engineering and iteration.",
-        summary: "Interactive digital platform prototype engineered for property listings and installment tracking.",
-        description: "Tech Bokra is developing and testing the Helio Property platform prototype internally to refine UX, search performance, and payment schedules prior to public release.",
-        stats: [
-          { label: "Current Status", value: "In Active Development" },
-          { label: "Architecture", value: "Cloud Next.js" },
-          { label: "Project Nature", value: "Digital Prototype" },
-        ],
-        technologies: ["Next.js App Router", "TypeScript & Tailwind CSS", "Cloud Edge Network", "Real Estate Query Engine"],
-        challenges: [
-          "Rendering architectural layouts and floor plans without mobile loading lag",
-          "Organizing dynamic installment structures with transparent payment breakdowns",
-          "Equipping sales agents with real-time unit status updates",
-        ],
-        solutions: [
-          "Global content distribution network optimizing image and schematic delivery",
-          "Modular calculation engine handling diverse payment plan timelines",
-          "Direct chat integrations routing inquiries instantaneously to representatives",
-        ],
-        statusBadge: "In Progress (Prototype Development)",
-        liveUrl: "https://helio-property.vercel.app/",
-        isUpcoming: true,
-        verified: false,
-      },
-      {
-        id: "alrehla",
-        title: "Al-Rehla Platform",
-        client: "Interactive Media Platform",
-        sector: "Digital Media & Interactive Platforms",
-        challengeNeed: "Delivering a fluid, visually compelling storytelling experience that handles rich media streams seamlessly across varying network conditions.",
-        scopeOfWork: [
-          "Bespoke interactive interface architecture with multi-language layout support",
-          "Scalable cloud infrastructure utilizing edge caching for rich media assets",
-          "Performance testing and optimization under concurrent visitor workloads",
-          "Progressive Web App (PWA) optimization for instant load times",
-        ],
-        tag: "Software & Digital Solutions",
-        category: "software",
-        icon: "Sparkles",
-        image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
-        highlight: "Knowledge and interactive digital storytelling platform under internal technical testing.",
-        summary: "Interactive media platform prototype uniting narrative content with modern visual design.",
-        description: "Tech Bokra supports the cloud foundation and interface engineering for the Al-Rehla interactive platform under active technical development and refinement.",
-        stats: [
-          { label: "Current Status", value: "Development & Testing" },
-          { label: "Architecture", value: "Next.js & TypeScript" },
-          { label: "Project Nature", value: "Interactive Platform" },
-        ],
-        technologies: ["Next.js & TypeScript", "Cloud Architecture", "Interactive Story Engine", "Progressive Web App"],
-        challenges: [
-          "Delivering immersive visual experiences without sacrificing page response speed",
-          "Streamlining interactive media pipelines while safeguarding user privacy",
-          "Seamless responsiveness across devices with complete RTL and LTR support",
-        ],
-        solutions: [
-          "Lightweight API responses with edge caching for recurring media assets",
-          "Resilient cloud clustering designed to handle visitor spikes smoothly",
-          "Tailored typography and interface gradients creating an authentic experience",
-        ],
-        statusBadge: "In Progress (Platform Testing)",
-        liveUrl: "https://www.alrehla.org/",
         isUpcoming: true,
         verified: false,
       },

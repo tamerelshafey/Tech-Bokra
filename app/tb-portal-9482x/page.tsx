@@ -241,6 +241,16 @@ export default function SecureAdminPortalPage() {
               localStorage.removeItem(BRUTE_FORCE_KEY);
             }
 
+            // Establish server-side signed httpOnly session cookie via real Firebase ID token
+            user.getIdToken().then((idToken) => {
+              return fetch('/api/admin/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken }),
+                credentials: 'include',
+              });
+            }).catch((err) => console.warn('Failed to establish server admin session:', err));
+
             // Load isolated admin media vault from settings/admin_vault
             loadAdminVault().then((vaultData) => {
               if (vaultData && Array.isArray(vaultData.mediaVault)) {
@@ -509,6 +519,7 @@ export default function SecureAdminPortalPage() {
   // Secure Logout Handler
   const handleSecureLogout = async () => {
     try {
+      await fetch('/api/admin/auth', { method: 'DELETE', credentials: 'include' }).catch(() => {});
       await signOut(auth);
     } catch (err) {
       console.warn('Logout warning:', err);
@@ -725,7 +736,15 @@ export default function SecureAdminPortalPage() {
       // 1. Safe Local Cache
       safeSaveConfigToStorage(config);
 
-      // 2. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
+      // 2. Authorize and record write on server via session cookie
+      await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedAt: new Date().toISOString() }),
+        credentials: 'include',
+      }).catch((err) => console.warn('Server config write notice:', err));
+
+      // 3. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
       const saveResult = await saveSiteSettingsToCloud(config, auth?.currentUser || null);
 
       if (saveResult.generalSaved && saveResult.vaultSaved) {
@@ -3214,27 +3233,29 @@ export default function SecureAdminPortalPage() {
 
                   {/* Live Platform Links Shortcuts */}
                   <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/20 space-y-3">
-                    <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الشقيقة التفاعلية:' : 'Live Platforms URLs:'}</span>
+                    <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الخارجية المخصصة:' : 'Custom External Platform URLs:'}</span>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                          {isAr ? 'منصة هليو بروبرتي (Helio Property)' : 'Helio Property URL'}
+                          {isAr ? 'رابط منصة خارجية مخصصة 1' : 'Custom Platform URL 1'}
                         </label>
                         <input
                           type="url"
                           value={config.helioPropertyUrl}
                           onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
+                          placeholder="https://..."
                           className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
                         />
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                          {isAr ? 'منصة الرحلة التفاعلية (Al-Rehla)' : 'Al-Rehla Platform URL'}
+                          {isAr ? 'رابط منصة خارجية مخصصة 2' : 'Custom Platform URL 2'}
                         </label>
                         <input
                           type="url"
                           value={config.alrehlaUrl}
                           onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
+                          placeholder="https://..."
                           className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
                         />
                       </div>

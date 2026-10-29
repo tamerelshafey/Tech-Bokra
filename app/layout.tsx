@@ -94,6 +94,7 @@ export default function RootLayout({
     >
       <body className="antialiased selection:bg-[#00F2FE] selection:text-[#071120]" suppressHydrationWarning>
         <script
+          key="tb-chunk-handler"
           dangerouslySetInnerHTML={{
             __html: `
               window.addEventListener('error', function(e) {
@@ -110,6 +111,7 @@ export default function RootLayout({
           }}
         />
         <script
+          key="tb-jsonld-org"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({

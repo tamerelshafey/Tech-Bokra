@@ -1458,7 +1458,7 @@ export const siteConfig = ${JSON.stringify(
                   type="text"
                   value={formData.announcementLink}
                   onChange={(e) => handleChange('announcementLink', e.target.value)}
-                  placeholder="https://helio-property.vercel.app/"
+                  placeholder="https://example.com/project"
                   className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
                 />
               </div>
@@ -1552,50 +1552,56 @@ export const siteConfig = ${JSON.stringify(
               <p className="text-xs text-slate-400">
                 {isAr
                   ? 'تحكم بالروابط المباشرة للمشروعات والمنصات الشقيقة التي تعملون عليها حالياً:'
-                  : 'Manage live direct URLs for sister platforms currently in development:'}
+                  : 'Manage live direct URLs for custom external platforms:'}
               </p>
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  {isAr ? 'رابط منصة هليو بروبرتي العقارية (Helio Property)' : 'Helio Property Live URL'}
+                  {isAr ? 'رابط منصة خارجية مخصصة 1' : 'Custom External Platform URL 1'}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={formData.helioPropertyUrl}
                     onChange={(e) => handleChange('helioPropertyUrl', e.target.value)}
+                    placeholder="https://..."
                     className="flex-1 bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
                   />
-                  <a
-                    href={formData.helioPropertyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-xl bg-[#152C4D] text-slate-200 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120] flex items-center justify-center transition"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  {formData.helioPropertyUrl && (
+                    <a
+                      href={formData.helioPropertyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-xl bg-[#152C4D] text-slate-200 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120] flex items-center justify-center transition"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  {isAr ? 'رابط منصة الرحلة (Al-Rehla)' : 'Al-Rehla Live URL'}
+                  {isAr ? 'رابط منصة خارجية مخصصة 2' : 'Custom External Platform URL 2'}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={formData.alrehlaUrl}
                     onChange={(e) => handleChange('alrehlaUrl', e.target.value)}
+                    placeholder="https://..."
                     className="flex-1 bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
                   />
-                  <a
-                    href={formData.alrehlaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-xl bg-[#152C4D] text-slate-200 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120] flex items-center justify-center transition"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  {formData.alrehlaUrl && (
+                    <a
+                      href={formData.alrehlaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-xl bg-[#152C4D] text-slate-200 hover:text-white hover:bg-[#00F2FE] hover:text-[#071120] flex items-center justify-center transition"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

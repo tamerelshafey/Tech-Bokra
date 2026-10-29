@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { contentAr, contentEn, Project } from '@/lib/content';
@@ -75,6 +76,10 @@ export default function ProjectsPage() {
   });
 
   const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true);
+
+  if (activeProjects.length === 0) {
+    notFound();
+  }
 
   const filteredProjects = activeProjects.filter((p) => {
     if (filter === 'all') return true;
@@ -178,11 +183,7 @@ export default function ProjectsPage() {
               {filteredProjects.map((project) => {
               const Icon = getProjectIcon(project.icon);
               const isExpanded = expandedProjectId === project.id;
-              const liveUrl = (customConfig.helioPropertyUrl && project.id === 'helio-property') 
-                ? customConfig.helioPropertyUrl 
-                : (customConfig.alrehlaUrl && project.id === 'alrehla') 
-                  ? customConfig.alrehlaUrl 
-                  : project.liveUrl;
+              const liveUrl = project.liveUrl;
 
               return (
                 <div

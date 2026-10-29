@@ -76,8 +76,8 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
     toolLabel = isAr ? 'حساب التكلفة التقديرية' : 'Scope Cost Estimator';
   }
 
-  // Check if admin is currently viewing (can be checked via customConfig presence or tb-portal session)
-  const isAdminSession = typeof window !== 'undefined' && Boolean(localStorage.getItem('tech_bokra_custom_config_v5'));
+  // Standards are filtered authoritatively on the server before being passed to this component
+  const isAdminSession = false;
 
   return (
     <div
