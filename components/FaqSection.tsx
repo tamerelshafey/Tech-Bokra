@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { HelpCircle, ChevronDown, ArrowRight, ArrowLeft } from 'lucide-react';
 import { SiteLanguageData } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -115,6 +116,21 @@ export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
               </div>
             );
           })}
+        </div>
+
+        {/* Link to Dedicated Full FAQ Page */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/faq"
+            className={`inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl border font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              isDark
+                ? 'bg-[#10233D] hover:bg-[#152C4D] border-[#00F2FE]/30 text-[#00F2FE] hover:border-[#00F2FE]'
+                : 'bg-white hover:bg-slate-50 border-slate-300 text-[#0284C7] shadow-sm'
+            }`}
+          >
+            <span>{isAr ? 'عرض كافة الأسئلة الشائعة والمواصفات الفنية' : 'Explore All FAQs & Technical Answers'}</span>
+            {isAr ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+          </Link>
         </div>
 
       </div>

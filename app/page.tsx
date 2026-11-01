@@ -258,6 +258,12 @@ export default function HomePage() {
           data={data}
           onSelectService={handleSelectServiceForQuote}
           customServices={customConfig.servicesList}
+          servicesOverrides={{
+            badge: isAr ? customConfig.servicesBadgeAr : customConfig.servicesBadgeEn,
+            titleLine1: isAr ? customConfig.servicesTitleLine1Ar : customConfig.servicesTitleLine1En,
+            titleLine2: isAr ? customConfig.servicesTitleLine2Ar : customConfig.servicesTitleLine2En,
+            sub: isAr ? customConfig.servicesSubAr : customConfig.servicesSubEn,
+          }}
         />
 
         {/* Practical Engineering Hub (when enabled) */}

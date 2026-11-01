@@ -74,8 +74,8 @@ export default function Navbar({
     { id: 'home', href: '/', label: data.nav.home },
     { id: 'services', href: '/services', label: data.nav.services },
     ...(showProjects ? [{ id: 'projects', href: '/projects', label: data.nav.projects }] : []),
-    ...(showProc ? [{ id: 'process', href: '/#process', label: data.nav.process }] : []),
-    ...(showFaq ? [{ id: 'faq', href: '/#faq', label: data.nav.faq }] : []),
+    ...(showProc ? [{ id: 'process', href: '/process', label: data.nav.process }] : []),
+    ...(showFaq ? [{ id: 'faq', href: '/faq', label: data.nav.faq }] : []),
     ...(showEng ? [{ id: 'architecture', href: '/engineering-hub', label: isAr ? 'أدوات وحاسبة المهندسين' : 'Engineering Hub' }] : []),
     ...(showTnd ? [{ id: 'tenders', href: '/tenders', label: isAr ? 'مرصد المناقصات' : 'Tenders Radar' }] : []),
     ...(showEst ? [{ id: 'estimator', href: '/estimator', label: data.nav.estimator }] : []),
@@ -86,24 +86,11 @@ export default function Navbar({
     if (href === '/') {
       return pathname === '/';
     }
-    if (href.startsWith('/#') || href.startsWith('#')) {
-      return false;
-    }
     return pathname === href || (href !== '/' && pathname.startsWith(href + '/'));
   };
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith('/#') || href.startsWith('#')) {
-      const targetId = href.replace('/#', '').replace('#', '');
-      if (pathname === '/') {
-        e.preventDefault();
-        const targetElement = document.getElementById(targetId);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth' });
-        }
-        setMobileMenuOpen(false);
-      }
-    }
+  const handleNavClick = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -147,7 +134,6 @@ export default function Navbar({
                 <Link
                   key={link.id}
                   href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
                   className={`text-xs sm:text-sm transition-colors relative py-1 group ${
                     isActive
                       ? isDark
@@ -300,10 +286,7 @@ export default function Navbar({
                 <Link
                   key={link.id}
                   href={link.href}
-                  onClick={(e) => {
-                    handleNavClick(e, link.href);
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={`px-3 py-2.5 rounded-lg border text-xs sm:text-sm font-bold transition text-start ${
                     isActive
                       ? isDark

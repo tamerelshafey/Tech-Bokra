@@ -2702,6 +2702,136 @@ export default function SecureAdminPortalPage() {
                   </div>
                 </div>
 
+                {/* Services Section Headlines & Unified Branding */}
+                <div className="space-y-4 border-b border-white/10 pb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[#00F2FE]" />
+                        <span>{isAr ? 'عناوين وشعار قسم ومنظومة الخدمات (Services Header & Branding):' : 'Services Section Headlines & Branding:'}</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {isAr ? 'توحيد وضبط الشعار الموحد في الصفحة الرئيسية وصفحة الخدمات (/services)' : 'Unified headline across Homepage and /services page'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleConfigChange('servicesBadgeAr', defaultEditableConfig.servicesBadgeAr);
+                        handleConfigChange('servicesBadgeEn', defaultEditableConfig.servicesBadgeEn);
+                        handleConfigChange('servicesTitleLine1Ar', defaultEditableConfig.servicesTitleLine1Ar);
+                        handleConfigChange('servicesTitleLine1En', defaultEditableConfig.servicesTitleLine1En);
+                        handleConfigChange('servicesTitleLine2Ar', defaultEditableConfig.servicesTitleLine2Ar);
+                        handleConfigChange('servicesTitleLine2En', defaultEditableConfig.servicesTitleLine2En);
+                        handleConfigChange('servicesSubAr', defaultEditableConfig.servicesSubAr);
+                        handleConfigChange('servicesSubEn', defaultEditableConfig.servicesSubEn);
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-[#00F2FE] hover:border-[#00F2FE]/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                      title={isAr ? 'استعادة الشعار الموحد الافتراضي' : 'Reset to unified branding default'}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'استعادة الشعار الموحد' : 'Reset to Unified'}</span>
+                    </button>
+                  </div>
+
+                  {/* Live Visual Preview Card */}
+                  <div className="p-3.5 rounded-xl bg-[#071120] border border-[#00F2FE]/20 flex flex-col gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{isAr ? 'معاينة فورية للعنوان الموحد:' : 'Live Unified Preview:'}</span>
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                      <span className="px-2 py-0.5 rounded-full bg-[#10233D] text-[#00F2FE] border border-[#00F2FE]/30 text-[10px]">
+                        {isAr ? (config.servicesBadgeAr || 'حلول هندسية وتقنية للأعمال') : (config.servicesBadgeEn || 'Engineering & Technology Solutions for Business')}
+                      </span>
+                      <span>{isAr ? (config.servicesTitleLine1Ar || 'حلول تقنية متكاملة،') : (config.servicesTitleLine1En || 'Integrated Technology Solutions,')}</span>
+                      <span className="text-[#00F2FE]">{isAr ? (config.servicesTitleLine2Ar || 'مصممة وفق احتياجات أعمالك') : (config.servicesTitleLine2En || 'Engineered for Business')}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'السطر الأول من عنوان الخدمات (عربي)' : 'Services Title Line 1 (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.servicesTitleLine1Ar ?? 'حلول تقنية متكاملة،'}
+                        onChange={(e) => handleConfigChange('servicesTitleLine1Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'السطر الثاني الملون بالنيون (عربي)' : 'Services Title Line 2 Glowing (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.servicesTitleLine2Ar ?? 'مصممة وفق احتياجات أعمالك'}
+                        onChange={(e) => handleConfigChange('servicesTitleLine2Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-[#00F2FE] font-bold text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Services Title Line 1 (English)</label>
+                      <input
+                        type="text"
+                        value={config.servicesTitleLine1En ?? 'Integrated Technology Solutions,'}
+                        onChange={(e) => handleConfigChange('servicesTitleLine1En', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Services Title Line 2 Glowing (English)</label>
+                      <input
+                        type="text"
+                        value={config.servicesTitleLine2En ?? 'Engineered for Business'}
+                        onChange={(e) => handleConfigChange('servicesTitleLine2En', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-[#00F2FE] font-bold text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'الوصف التوضيحي لمنظومة الخدمات (عربي)' : 'Services Subtitle (Arabic)'}</label>
+                      <textarea
+                        rows={2}
+                        value={config.servicesSubAr ?? ''}
+                        onChange={(e) => handleConfigChange('servicesSubAr', e.target.value)}
+                        placeholder="نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات..."
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Services Subtitle (English)</label>
+                      <textarea
+                        rows={2}
+                        value={config.servicesSubEn ?? ''}
+                        onChange={(e) => handleConfigChange('servicesSubEn', e.target.value)}
+                        placeholder="We deliver physical security systems, technology infrastructure..."
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{isAr ? 'شارة الخدمات العلوية (عربي)' : 'Services Badge (Arabic)'}</label>
+                      <input
+                        type="text"
+                        value={config.servicesBadgeAr ?? 'حلول هندسية وتقنية للأعمال'}
+                        onChange={(e) => handleConfigChange('servicesBadgeAr', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Services Badge (English)</label>
+                      <input
+                        type="text"
+                        value={config.servicesBadgeEn ?? 'Engineering & Technology Solutions for Business'}
+                        onChange={(e) => handleConfigChange('servicesBadgeEn', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Trust Stats Numbers */}
                 <div className="space-y-4 border-b border-white/10 pb-6">
                   <div className="flex items-center justify-between">
@@ -2954,6 +3084,93 @@ export default function SecureAdminPortalPage() {
                         <RotateCcw className="w-3.5 h-3.5" />
                         <span>{isAr ? 'استعادة الافتراضي' : 'Reset'}</span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Unified Services Branding & Headline Settings Card */}
+                  <div className="p-4 rounded-xl border border-[#00F2FE]/25 bg-[#071120] space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-[#00F2FE]" />
+                          <span>{isAr ? 'عناوين وشعار قسم ومنظومة الخدمات الموحد' : 'Unified Services Header & Branding'}</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {isAr ? 'ضبط وتوحيد الشعار بين الصفحة الرئيسية وصفحة الخدمات (/services)' : 'Controls how services are presented on Homepage and /services page'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
+                          {isAr ? '✓ متزامن وموحد بالصفحتين' : '✓ Unified across both pages'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Live Preview Bar */}
+                    <div className="p-3 rounded-lg bg-[#0B1A2F] border border-white/10 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-200">
+                      <span className="px-2 py-0.5 rounded-full bg-[#10233D] text-[#00F2FE] border border-[#00F2FE]/30 text-[10px]">
+                        {isAr ? (config.servicesBadgeAr || 'حلول هندسية وتقنية للأعمال') : (config.servicesBadgeEn || 'Engineering & Technology Solutions for Business')}
+                      </span>
+                      <span>{isAr ? (config.servicesTitleLine1Ar || 'حلول تقنية متكاملة،') : (config.servicesTitleLine1En || 'Integrated Technology Solutions,')}</span>
+                      <span className="text-[#00F2FE]">{isAr ? (config.servicesTitleLine2Ar || 'مصممة وفق احتياجات أعمالك') : (config.servicesTitleLine2En || 'Engineered for Business')}</span>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'السطر الأول (عربي)' : 'Title Line 1 (Arabic)'}</label>
+                        <input
+                          type="text"
+                          value={config.servicesTitleLine1Ar ?? 'حلول تقنية متكاملة،'}
+                          onChange={(e) => handleConfigChange('servicesTitleLine1Ar', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'السطر الثاني الملون بالنيون (عربي)' : 'Title Line 2 Glowing (Arabic)'}</label>
+                        <input
+                          type="text"
+                          value={config.servicesTitleLine2Ar ?? 'مصممة وفق احتياجات أعمالك'}
+                          onChange={(e) => handleConfigChange('servicesTitleLine2Ar', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-[#00F2FE] font-bold text-xs focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Title Line 1 (English)</label>
+                        <input
+                          type="text"
+                          value={config.servicesTitleLine1En ?? 'Integrated Technology Solutions,'}
+                          onChange={(e) => handleConfigChange('servicesTitleLine1En', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Title Line 2 Glowing (English)</label>
+                        <input
+                          type="text"
+                          value={config.servicesTitleLine2En ?? 'Engineered for Business'}
+                          onChange={(e) => handleConfigChange('servicesTitleLine2En', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-[#00F2FE] font-bold text-xs font-mono focus:border-[#00F2FE] outline-none"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">{isAr ? 'الوصف التوضيحي للخدمات (عربي)' : 'Services Subtitle (Arabic)'}</label>
+                        <textarea
+                          rows={2}
+                          value={config.servicesSubAr ?? ''}
+                          onChange={(e) => handleConfigChange('servicesSubAr', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Services Subtitle (English)</label>
+                        <textarea
+                          rows={2}
+                          value={config.servicesSubEn ?? ''}
+                          onChange={(e) => handleConfigChange('servicesSubEn', e.target.value)}
+                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
+                        />
+                      </div>
                     </div>
                   </div>
 

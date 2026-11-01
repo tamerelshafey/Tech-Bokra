@@ -26,9 +26,15 @@ interface ServicesSectionProps {
   data: SiteLanguageData;
   onSelectService: (serviceTitle: string) => void;
   customServices?: ServiceItem[];
+  servicesOverrides?: {
+    badge?: string;
+    titleLine1?: string;
+    titleLine2?: string;
+    sub?: string;
+  };
 }
 
-export default function ServicesSection({ lang, data, onSelectService, customServices }: ServicesSectionProps) {
+export default function ServicesSection({ lang, data, onSelectService, customServices, servicesOverrides }: ServicesSectionProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'security-infra' | 'digital-software' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
@@ -116,17 +122,17 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
+        {/* Section Header (Unified: Integrated Technology Solutions, Engineered for Business) */}
+        <div className="text-center max-w-4xl mx-auto mb-14 space-y-4">
           <div 
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-4 border ${
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border ${
               isDark 
                 ? 'bg-[#10233D] border-[#00F2FE]/25 text-[#00F2FE]' 
                 : 'bg-sky-50 border-sky-200 text-[#0284C7]'
             }`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>{isAr ? 'حلول هندسية وبرمجية متكاملة' : 'Full-Spectrum Engineering Solutions'}</span>
+            <ShieldCheck className="w-4 h-4" />
+            <span>{servicesOverrides?.badge || (isAr ? 'حلول هندسية وتقنية للأعمال' : 'Engineering & Technology Solutions for Business')}</span>
           </div>
 
           <h2 
@@ -134,18 +140,18 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
               isDark ? 'text-white' : 'text-slate-900'
             }`}
           >
-            <span>{isAr ? 'حلولنا وخدماتنا' : 'Our Integrated'}</span>{' '}
+            <span>{servicesOverrides?.titleLine1 || (isAr ? 'حلول تقنية متكاملة،' : 'Integrated Technology Solutions,')}</span>{' '}
             <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>
-              {isAr ? 'المتكاملة' : 'Solutions'}
+              {servicesOverrides?.titleLine2 || (isAr ? 'مصممة وفق احتياجات أعمالك' : 'Engineered for Business')}
             </span>
           </h2>
 
           <p 
-            className={`text-base sm:text-lg mt-4 leading-relaxed ${
+            className={`text-base sm:text-lg leading-relaxed max-w-3xl mx-auto ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}
           >
-            {data.services.subtitle}
+            {servicesOverrides?.sub || data.services.subtitle}
           </p>
         </div>
 
@@ -313,6 +319,17 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
           })}
         </div>
 
+        {/* Explore Full 25+ Services Catalog Bar */}
+        <div className="mt-14 text-center">
+          <Link
+            href="/services"
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#00F2FE] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#0369A1] text-[#071120] font-black text-sm shadow-[0_0_25px_rgba(0,242,254,0.3)] hover:shadow-[0_0_35px_rgba(0,242,254,0.5)] transition-all transform hover:-translate-y-0.5 cursor-pointer"
+          >
+            <Layers className="w-5 h-5" />
+            <span>{isAr ? 'استعراض دليل الحلول والخدمات الهندسية بالكامل (25+ خدمة متخصصة)' : 'Explore Full Engineering Services Catalog (25+ Solutions)'}</span>
+            <ArrowIcon className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

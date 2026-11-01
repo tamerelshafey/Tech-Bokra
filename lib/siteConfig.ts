@@ -98,6 +98,16 @@ export interface EditableConfig {
   servicesList?: ServiceItem[];
   servicesListEn?: ServiceItem[];
 
+  // Services Section Header & Branding (توحيد وضبط عناوين وشعار قسم الخدمات في الرئيسية وصفحة الخدمات)
+  servicesBadgeAr?: string;
+  servicesBadgeEn?: string;
+  servicesTitleLine1Ar?: string;
+  servicesTitleLine1En?: string;
+  servicesTitleLine2Ar?: string;
+  servicesTitleLine2En?: string;
+  servicesSubAr?: string;
+  servicesSubEn?: string;
+
   // FAQ CMS (Arabic & English)
   faqList?: { q: string; a: string }[];
   faqListEn?: { q: string; a: string }[];
@@ -205,6 +215,16 @@ export const defaultEditableConfig: EditableConfig = {
   // Services CMS
   servicesList: contentAr.services.list,
   servicesListEn: contentEn.services.list,
+
+  // Services Section Header & Branding (Unified to: Integrated Technology Solutions, Engineered for Business)
+  servicesBadgeAr: 'حلول هندسية وتقنية للأعمال',
+  servicesBadgeEn: 'Engineering & Technology Solutions for Business',
+  servicesTitleLine1Ar: 'حلول تقنية متكاملة،',
+  servicesTitleLine1En: 'Integrated Technology Solutions,',
+  servicesTitleLine2Ar: 'مصممة وفق احتياجات أعمالك',
+  servicesTitleLine2En: 'Engineered for Business',
+  servicesSubAr: 'نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءاً من دراسة الاحتياج والتصميم الهندسي، وصولاً إلى التوريد والتنفيذ والدعم المستمر.',
+  servicesSubEn: 'We deliver physical security systems, technology infrastructure, and software solutions tailored to business needs — from requirements and design to implementation and ongoing support.',
 
   // FAQ CMS
   faqList: contentAr.faq.items,

@@ -97,20 +97,20 @@ export default function ServicesPage() {
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>{isAr ? 'حلول هندسية وتقنية للأعمال' : 'Engineering & Technology Solutions for Business'}</span>
+              <span>{(isAr ? customConfig.servicesBadgeAr : customConfig.servicesBadgeEn) || (isAr ? 'حلول هندسية وتقنية للأعمال' : 'Engineering & Technology Solutions for Business')}</span>
             </div>
 
             <h1 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <span>{isAr ? 'حلول تقنية متكاملة،' : 'Integrated Technology Solutions,'}</span>{' '}
+              <span>{(isAr ? customConfig.servicesTitleLine1Ar : customConfig.servicesTitleLine1En) || (isAr ? 'حلول تقنية متكاملة،' : 'Integrated Technology Solutions,')}</span>{' '}
               <span className={isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}>
-                {isAr ? 'مصممة وفق احتياجات أعمالك' : 'Engineered for Business'}
+                {(isAr ? customConfig.servicesTitleLine2Ar : customConfig.servicesTitleLine2En) || (isAr ? 'مصممة وفق احتياجات أعمالك' : 'Engineered for Business')}
               </span>
             </h1>
 
             <p className={`text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              {isAr
+              {(isAr ? customConfig.servicesSubAr : customConfig.servicesSubEn) || (isAr
                 ? 'نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءًا من تحديد الاحتياجات والتصميم، وصولًا إلى التنفيذ والدعم المستمر.'
-                : 'We deliver physical security systems, technology infrastructure, and software solutions tailored to business needs — from requirements and design to implementation and ongoing support.'}
+                : 'We deliver physical security systems, technology infrastructure, and software solutions tailored to business needs — from requirements and design to implementation and ongoing support.')}
             </p>
 
             {/* Category Filter Pills */}

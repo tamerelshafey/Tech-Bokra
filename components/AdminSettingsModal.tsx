@@ -38,7 +38,8 @@ import {
   RefreshCw,
   ExternalLink as ExtLinkIcon,
   LayoutDashboard,
-  Lock
+  Lock,
+  Layers
 } from 'lucide-react';
 import Link from 'next/link';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
@@ -1030,6 +1031,80 @@ export const siteConfig = ${JSON.stringify(
                         emblemStyle={formData.logoEmblemStyle}
                         customImageUrl={formData.customLogoUrl}
                         customHeight={formData.customLogoHeight}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Services Section Headlines & Unified Branding */}
+                <div className="border-t border-white/10 pt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-[#00F2FE]" />
+                        <span>{isAr ? 'عناوين وشعار قسم الخدمات الموحد (Services Branding)' : 'Unified Services Section Branding'}</span>
+                      </h4>
+                      <p className="text-[10px] text-slate-400">
+                        {isAr ? 'موحد بين الصفحة الرئيسية وصفحة الخدمات (/services)' : 'Unified across Homepage and /services page'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        {isAr ? 'السطر الأول من عنوان الخدمات (عربي)' : 'Services Title Line 1 (Arabic)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.servicesTitleLine1Ar ?? 'حلول تقنية متكاملة،'}
+                        onChange={(e) => handleChange('servicesTitleLine1Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        {isAr ? 'السطر الثاني الملون بالنيون (عربي)' : 'Services Title Line 2 Glowing (Arabic)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.servicesTitleLine2Ar ?? 'مصممة وفق احتياجات أعمالك'}
+                        onChange={(e) => handleChange('servicesTitleLine2Ar', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-[#00F2FE] font-bold text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      {isAr ? 'الوصف التوضيحي للخدمات (عربي)' : 'Services Subtitle (Arabic)'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={formData.servicesSubAr ?? ''}
+                      onChange={(e) => handleChange('servicesSubAr', e.target.value)}
+                      className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-[#00F2FE] outline-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">Services Title Line 1 (En)</label>
+                      <input
+                        type="text"
+                        value={formData.servicesTitleLine1En ?? 'Integrated Technology Solutions,'}
+                        onChange={(e) => handleChange('servicesTitleLine1En', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-white text-xs focus:border-[#00F2FE] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">Services Title Line 2 (En)</label>
+                      <input
+                        type="text"
+                        value={formData.servicesTitleLine2En ?? 'Engineered for Business'}
+                        onChange={(e) => handleChange('servicesTitleLine2En', e.target.value)}
+                        className="w-full bg-[#071120] border border-white/10 rounded-xl px-3.5 py-2 text-[#00F2FE] text-xs focus:border-[#00F2FE] outline-none"
                       />
                     </div>
                   </div>

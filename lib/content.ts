@@ -271,8 +271,8 @@ export const contentAr: SiteLanguageData = {
     stat4Desc: "صيانة وقائية واستجابة سريعة للأعطال",
   },
   services: {
-    title: "الحلول والخدمات الهندسية والتقنية",
-    subtitle: "حلول تقنية متكاملة، مصممة وفق احتياجات أعمالك، تشمل أنظمة الأمن المادي والبنية التحتية إلى جانب البرمجيات والحلول الرقمية مع تنفيذ المشروعات والدعم المستمر.",
+    title: "حلول تقنية متكاملة، مصممة وفق احتياجات أعمالك",
+    subtitle: "نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءاً من دراسة الاحتياج والتصميم الهندسي، وصولاً إلى التوريد والتنفيذ والدعم المستمر.",
     allTab: "كافة الحلول",
     secTab: "أنظمة الأمن المادي",
     netTab: "الشبكات والبنية التحتية",
@@ -671,8 +671,8 @@ export const contentEn: SiteLanguageData = {
     stat4Desc: "Structured SLA contracts and rapid fault response",
   },
   services: {
-    title: "Engineering Solutions & Services",
-    subtitle: "Integrated technology solutions engineered for business, spanning physical security systems, IT infrastructure, ELV systems, and custom software—backed by project delivery and ongoing support.",
+    title: "Integrated Technology Solutions, Engineered for Business",
+    subtitle: "We deliver physical security systems, technology infrastructure, and software solutions tailored to business needs — from requirements and design to implementation and ongoing support.",
     allTab: "All Solutions",
     secTab: "Physical Security Systems",
     netTab: "Networking & IT Infrastructure",

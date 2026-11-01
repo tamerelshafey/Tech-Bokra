@@ -190,7 +190,7 @@ export default function Footer({
               {(showProcessSection ?? true) && (
                 <li>
                   <Link
-                    href="/#process"
+                    href="/process"
                     className={`transition text-start block ${
                       isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                     }`}
@@ -202,7 +202,7 @@ export default function Footer({
               {(showFaqSection ?? true) && (
                 <li>
                   <Link
-                    href="/#faq"
+                    href="/faq"
                     className={`transition text-start block ${
                       isDark ? 'hover:text-[#00F2FE]' : 'hover:text-[#0284C7]'
                     }`}

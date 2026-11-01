@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { CheckCircle2, Workflow, ArrowRight, ArrowLeft } from 'lucide-react';
 import { SiteLanguageData } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
@@ -153,17 +154,31 @@ export default function ProcessSection({ lang, data, onBookSurvey }: ProcessSect
             </p>
           </div>
 
-          <button
-            onClick={onBookSurvey}
-            className={`shrink-0 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shadow-md ${
-              isDark
-                ? 'bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] shadow-[0_0_20px_rgba(0,242,254,0.35)]'
-                : 'bg-[#0284C7] hover:bg-[#0369A1] text-white'
-            }`}
-          >
-            <span>{isAr ? 'تواصل مع مستشارينا الآن' : 'Contact Our Consultants Now'}</span>
-            <ArrowIcon className="w-4 h-4" />
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/process"
+              className={`px-5 py-3 rounded-xl font-bold text-xs sm:text-sm border transition-all flex items-center gap-2 cursor-pointer ${
+                isDark
+                  ? 'border-white/20 text-white hover:bg-white/5'
+                  : 'border-slate-300 text-slate-800 hover:bg-slate-100'
+              }`}
+            >
+              <span>{isAr ? 'تفاصيل آلية العمل والضمانات' : 'Full Methodology & Standards'}</span>
+              <ArrowIcon className="w-3.5 h-3.5" />
+            </Link>
+
+            <button
+              onClick={onBookSurvey}
+              className={`shrink-0 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shadow-md ${
+                isDark
+                  ? 'bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] shadow-[0_0_20px_rgba(0,242,254,0.35)]'
+                  : 'bg-[#0284C7] hover:bg-[#0369A1] text-white'
+              }`}
+            >
+              <span>{isAr ? 'طلب معاينة واستفسار' : 'Request Site Survey'}</span>
+              <ArrowIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
       </div>
