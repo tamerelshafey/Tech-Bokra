@@ -90,7 +90,7 @@ export async function saveSiteSettingsToCloud(
   try {
     const generalPayload: Record<string, any> = {
       ...publicConfig,
-      contentVersion: config.contentVersion || CURRENT_CONTENT_VERSION,
+      contentVersion: CURRENT_CONTENT_VERSION,
       updatedAt: new Date().toISOString(),
     };
 
@@ -405,26 +405,45 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
 
 /**
  * Fetch published site settings once directly from Firestore (Server Component or client boot)
+ * Enforces a timeout (default 5000ms) with Promise.race and cleans up the timer in finally.
  */
-export async function fetchPublishedSiteSettings(): Promise<EditableConfig> {
-  try {
-    const snap = await getDoc(doc(db, 'settings', 'general'));
-    if (snap.exists()) {
-      const { mediaVault, updatedBy, ...safePublicData } = snap.data() as Record<string, any>;
-      const cloudData = safePublicData as Partial<EditableConfig>;
-      return {
-        ...defaultEditableConfig,
-        ...cloudData,
-        projectsList: mergeCollectionsById(defaultEditableConfig.projectsList || [], cloudData.projectsList),
-        projectsListEn: mergeCollectionsById(defaultEditableConfig.projectsListEn || [], cloudData.projectsListEn),
-        servicesList: mergeCollectionsById(defaultEditableConfig.servicesList || [], cloudData.servicesList),
-        servicesListEn: mergeCollectionsById(defaultEditableConfig.servicesListEn || [], cloudData.servicesListEn),
-      };
+export async function fetchPublishedSiteSettings(timeoutMs = 5000): Promise<EditableConfig> {
+  let timerId: NodeJS.Timeout | undefined;
+
+  const timeoutPromise = new Promise<EditableConfig>((resolve) => {
+    timerId = setTimeout(() => {
+      resolve(defaultEditableConfig);
+    }, timeoutMs);
+  });
+
+  const fetchPromise = (async (): Promise<EditableConfig> => {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'general'));
+      if (snap.exists()) {
+        const { mediaVault, updatedBy, ...safePublicData } = snap.data() as Record<string, any>;
+        const cloudData = safePublicData as Partial<EditableConfig>;
+        return {
+          ...defaultEditableConfig,
+          ...cloudData,
+          projectsList: mergeCollectionsById(defaultEditableConfig.projectsList || [], cloudData.projectsList),
+          projectsListEn: mergeCollectionsById(defaultEditableConfig.projectsListEn || [], cloudData.projectsListEn),
+          servicesList: mergeCollectionsById(defaultEditableConfig.servicesList || [], cloudData.servicesList),
+          servicesListEn: mergeCollectionsById(defaultEditableConfig.servicesListEn || [], cloudData.servicesListEn),
+        };
+      }
+    } catch (err) {
+      console.warn('fetchPublishedSiteSettings notice:', err);
     }
-  } catch (err) {
-    console.warn('fetchPublishedSiteSettings notice:', err);
+    return defaultEditableConfig;
+  })();
+
+  try {
+    return await Promise.race([fetchPromise, timeoutPromise]);
+  } finally {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
   }
-  return defaultEditableConfig;
 }
 
 /**

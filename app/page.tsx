@@ -5,12 +5,10 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import TrustStats from '@/components/TrustStats';
 import ServicesSection from '@/components/ServicesSection';
-import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
 import { contentAr, contentEn, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import { MessageSquare, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
-import { testConnection } from '@/lib/firebase';
-import { subscribeSiteSettings } from '@/lib/dbService';
+import { useCustomConfig } from '@/lib/useCustomConfig';
 
 import EngineeringHub from '@/components/EngineeringHub';
 import ProjectEstimator from '@/components/ProjectEstimator';
@@ -29,8 +27,8 @@ export default function HomePage() {
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
 
-  // Initialize with deterministic default configuration for 100% hydration match
-  const [customConfig, setCustomConfig] = useState<EditableConfig>(defaultEditableConfig);
+  // Authoritative config initialized from server with live Firestore subscription
+  const [customConfig] = useCustomConfig();
 
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
@@ -58,22 +56,6 @@ export default function HomePage() {
       // Remove hash from browser URL without page reload
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
-  }, []);
-
-  useEffect(() => {
-    // 1. Validate connection on boot as mandated by Firebase integration guidelines
-    testConnection();
-
-    // 2. Real-time authoritative subscription to global cloud settings from Firestore
-    const unsubscribe = subscribeSiteSettings((cloudConfig) => {
-      if (cloudConfig) {
-        setCustomConfig(cloudConfig);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
 

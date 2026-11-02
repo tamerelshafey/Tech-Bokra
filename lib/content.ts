@@ -27,6 +27,7 @@ export interface Project {
   status?: 'delivered' | 'in_development';
   featured?: boolean;
   order?: number;
+  seedRevision?: number;
   title: string;
   client: string;
   tag: string;
@@ -112,6 +113,7 @@ export function hasVerifiedProjects(projects?: Project[]): boolean {
 
 export interface ServiceItem {
   id: string;
+  seedRevision?: number;
   title: string;
   shortDesc: string;
   category: string;

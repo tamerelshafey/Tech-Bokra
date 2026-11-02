@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
+import { EditableConfig } from '@/lib/siteConfig';
 import { subscribeSiteSettings } from '@/lib/dbService';
+import { useInitialSiteConfig } from '@/components/SiteConfigProvider';
 
 /**
  * Universal hook for subscribing to published site configuration directly from Firestore.
- * Firestore is the authoritative Single Source of Truth. No stale localStorage caching.
+ * Initializes with server-rendered initialConfig to eliminate default content flicker,
+ * then maintains a realtime subscription to Firestore cloud settings.
  */
 export function useCustomConfig(): [EditableConfig, React.Dispatch<React.SetStateAction<EditableConfig>>] {
-  const [config, setConfig] = useState<EditableConfig>(defaultEditableConfig);
+  const initialConfig = useInitialSiteConfig();
+  const [config, setConfig] = useState<EditableConfig>(initialConfig);
 
   useEffect(() => {
     // Realtime listener to Firestore cloud settings

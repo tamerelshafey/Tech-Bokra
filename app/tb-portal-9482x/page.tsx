@@ -765,19 +765,21 @@ export default function SecureAdminPortalPage() {
     setNotificationMsg('');
 
     try {
-      // 1. Safe Local Cache
+      // 1. Safe Local Cache for admin drafts
       safeSaveConfigToStorage(config);
 
-      // 2. Authorize and record write on server via session cookie
-      await fetch('/api/admin/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updatedAt: new Date().toISOString() }),
-        credentials: 'include',
-      }).catch((err) => console.warn('Server config write notice:', err));
-
-      // 3. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
+      // 2. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
       const saveResult = await saveSiteSettingsToCloud(config, auth?.currentUser || null);
+
+      // 3. Authorize and purge server cache AFTER successful Firestore commit
+      if (saveResult.generalSaved) {
+        await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updatedAt: new Date().toISOString() }),
+          credentials: 'include',
+        }).catch((err) => console.warn('Server cache revalidation notice:', err));
+      }
 
       if (saveResult.generalSaved && saveResult.vaultSaved) {
         setNotificationMsg(
@@ -1600,8 +1602,8 @@ export default function SecureAdminPortalPage() {
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
               {isAr
-                ? `يوجد تحديث للقيم الافتراضية للنسخة (الإصدار ${CURRENT_CONTENT_VERSION}). يمكنك دمج المنتجات والخدمات الجديدة تلقائياً بالمعرّفات دون المساس بأي تعديلات سابقة قمت بها.`
-                : `A newer default seed version (v${CURRENT_CONTENT_VERSION}) is available. Merge new projects and services by ID without overwriting custom edits.`}
+                ? `يوجد تحديث للقيم الافتراضية للنسخة (الإصدار ${CURRENT_CONTENT_VERSION}). الدمج يضيف العناصر الجديدة ويحدّث فقط العناصر التي صُحّح وصفها في الكود مع الإبقاء على اختيارك للإظهار/المسودة.`
+                : `A newer default seed version (v${CURRENT_CONTENT_VERSION}) is available. Merging appends new items and updates only items whose descriptions were corrected in code while preserving your visibility/draft selections.`}
             </span>
           </div>
           <button

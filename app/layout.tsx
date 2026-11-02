@@ -3,6 +3,8 @@ import { Cairo, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
+import { SiteConfigProvider } from '@/components/SiteConfigProvider';
+import { fetchPublishedSiteSettings } from '@/lib/dbService';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -80,11 +82,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export const revalidate = 60;
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialConfig = JSON.parse(JSON.stringify(await fetchPublishedSiteSettings()));
+
   return (
     <html 
       lang="en" 
@@ -145,11 +151,13 @@ export default function RootLayout({
             }),
           }}
         />
-        <LanguageProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
-        </LanguageProvider>
+        <SiteConfigProvider initialConfig={initialConfig}>
+          <LanguageProvider>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
+          </LanguageProvider>
+        </SiteConfigProvider>
       </body>
     </html>
   );

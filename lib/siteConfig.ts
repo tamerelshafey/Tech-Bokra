@@ -132,29 +132,40 @@ export const CURRENT_CONTENT_VERSION = 3;
 
 /**
  * Merge two collections of items by unique 'id'.
- * Preserves admin custom edits for matching items while smoothly appending new seed items from code.
+ * If seed has a higher seedRevision, updates to the corrected seed version
+ * while preserving custom administrator visibility and draft flags.
  */
-export function mergeCollectionsById<T extends { id: string }>(seedList: T[], cloudList?: T[]): T[] {
-  if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) {
-    return seedList;
-  }
+export function mergeCollectionsById<T extends { id: string; seedRevision?: number }>(seedList: T[], cloudList?: T[]): T[] {
+  if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) return seedList;
+
+  const seedById = new Map<string, T>();
+  for (const s of seedList) if (s && s.id) seedById.set(s.id, s);
+
   const processedIds = new Set<string>();
   const merged: T[] = [];
 
   for (const item of cloudList) {
-    if (item && item.id) {
+    if (!item || !item.id || processedIds.has(item.id)) continue;
+    const seed = seedById.get(item.id);
+    if (seed && (seed.seedRevision ?? 0) > (item.seedRevision ?? 0)) {
+      // الكود أحدث: نستبدل النسخة القديمة مرة واحدة مع الإبقاء على اختيارات المشرف للإظهار والمسودة
+      const keep: Record<string, unknown> = {};
+      const flags = item as unknown as Record<string, unknown>;
+      if (flags.showOnSite !== undefined) keep.showOnSite = flags.showOnSite;
+      if (flags.isDraft !== undefined) keep.isDraft = flags.isDraft;
+      merged.push({ ...seed, ...keep } as T);
+    } else {
       merged.push(item);
-      processedIds.add(item.id);
     }
+    processedIds.add(item.id);
   }
 
-  for (const seedItem of seedList) {
-    if (seedItem && seedItem.id && !processedIds.has(seedItem.id)) {
-      merged.push(seedItem);
-      processedIds.add(seedItem.id);
+  for (const s of seedList) {
+    if (s && s.id && !processedIds.has(s.id)) {
+      merged.push(s);
+      processedIds.add(s.id);
     }
   }
-
   return merged;
 }
 
@@ -244,8 +255,8 @@ export const defaultEditableConfig: EditableConfig = {
   heroCloudImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
 
   // Projects CMS
-  projectsList: contentAr.projects.list,
-  projectsListEn: contentEn.projects.list,
+  projectsList: contentAr.projects.list.map((p) => ({ ...p, seedRevision: CURRENT_CONTENT_VERSION })),
+  projectsListEn: contentEn.projects.list.map((p) => ({ ...p, seedRevision: CURRENT_CONTENT_VERSION })),
 
   // Services CMS
   servicesList: contentAr.services.list,

@@ -6,4 +6,5 @@ coverage/
 .env*
 .env.local
 !.env.example
-
+*.tsbuildinfo
+.aistudio/artifacts/**/.tempmediaStorage/

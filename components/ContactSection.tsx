@@ -439,7 +439,7 @@ export default function ContactSection({
             <form className="space-y-4 text-start">
               {/* Invisible Bot Honeypot Field */}
               <div className="hidden sr-only pointer-events-none" style={{ display: 'none' }} aria-hidden="true">
-                <label htmlFor="website_hp" className="sr-only">Do not fill this field</label>
+                <label htmlFor="website_hp" className="sr-only">Website</label>
                 <input
                   id="website_hp"
                   type="text"
