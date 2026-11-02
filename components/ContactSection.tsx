@@ -41,7 +41,9 @@ interface ContactSectionProps {
   whatsappNumber?: string;
   hotlinePhone?: string;
   email?: string;
+  secondaryEmail?: string;
   address?: string;
+  workingHours?: string;
 }
 
 export default function ContactSection({
@@ -52,7 +54,9 @@ export default function ContactSection({
   whatsappNumber = siteConfig.whatsappNumber,
   hotlinePhone = siteConfig.phone,
   email = siteConfig.email,
+  secondaryEmail = siteConfig.secondaryEmail,
   address,
+  workingHours,
 }: ContactSectionProps) {
   const isAr = lang === 'ar';
   const { isDark } = useTheme();
@@ -294,7 +298,7 @@ export default function ContactSection({
     // Persist lead to Firestore asynchronously
     const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
     const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
-    const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
+    const sName = getServiceLabel(service);
     submitInquiry({
       clientName: name,
       phone,
@@ -319,15 +323,17 @@ export default function ContactSection({
       if (srv === 'cctv') return ['cctv'];
       if (srv === 'network') return ['network'];
       if (srv === 'software') return ['software'];
-      if (srv === 'elv') return ['security'];
+      if (srv === 'elv') return ['elv'];
       if (srv === 'turnkey') return ['all'];
+      const sub = getServiceBySlug(srv);
+      if (sub) return [sub.category, sub.slug];
       return ['cctv'];
     };
 
     // Persist lead to Firestore asynchronously
     const gName = governorateOptions.find((g) => g.id === governorate)?.[isAr ? 'labelAr' : 'labelEn'] || governorate;
     const tName = timelineOptions.find((t) => t.id === timeline)?.[isAr ? 'labelAr' : 'labelEn'] || timeline;
-    const sName = serviceOptions.find((s) => s.id === service)?.[isAr ? 'labelAr' : 'labelEn'] || service;
+    const sName = getServiceLabel(service);
     submitInquiry({
       clientName: name,
       phone,
@@ -793,6 +799,18 @@ export default function ContactSection({
               >
                 {email}
               </a>
+              {secondaryEmail && (
+                <div className="pt-2 border-t border-white/5">
+                  <a
+                    href={`mailto:${secondaryEmail}`}
+                    className={`block text-xs font-mono hover:underline ${
+                      isDark ? 'text-sky-300' : 'text-sky-700'
+                    }`}
+                  >
+                    {secondaryEmail}
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Address & Hours */}
@@ -834,7 +852,7 @@ export default function ContactSection({
                     {isAr ? 'ساعات العمل الرسمية' : 'Operating Hours'}
                   </h4>
                   <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {isAr ? siteConfig.workingHoursAr : siteConfig.workingHoursEn}
+                    {workingHours || (isAr ? siteConfig.workingHoursAr : siteConfig.workingHoursEn)}
                   </p>
                 </div>
               </div>

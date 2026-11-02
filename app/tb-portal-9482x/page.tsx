@@ -63,7 +63,7 @@ import {
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
-import { EditableConfig, defaultEditableConfig, MediaVaultItem } from '@/components/AdminSettingsModal';
+import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById } from '@/lib/siteConfig';
 import ProjectModal from '@/components/ProjectModal';
 import { 
   auth, 
@@ -225,7 +225,12 @@ export default function SecureAdminPortalPage() {
 
   // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate)
   useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setIsVerifyingAuth(false);
+    }, 1500);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(safetyTimer);
       if (user) {
         try {
           const verification = await verifyAdminStatus(user);
@@ -530,6 +535,33 @@ export default function SecureAdminPortalPage() {
     setInquiries([]);
     setAdminPasswordInput('');
     setNotificationMsg(isAr ? 'تم قفل اللوحة وإنهاء الجلسة المشفرة بنجاح.' : 'Session ended and locked successfully.');
+  };
+
+  // Merge Latest Default Seed Items by ID Handler
+  const handleMergeLatestSeed = () => {
+    const mergedProjects = mergeCollectionsById(defaultEditableConfig.projectsList || [], config.projectsList);
+    const mergedProjectsEn = mergeCollectionsById(defaultEditableConfig.projectsListEn || [], config.projectsListEn);
+    const mergedServices = mergeCollectionsById(defaultEditableConfig.servicesList || [], config.servicesList);
+    const mergedServicesEn = mergeCollectionsById(defaultEditableConfig.servicesListEn || [], config.servicesListEn);
+    const resolvedFaq = (config.faqList && config.faqList.length > 0) ? config.faqList : (defaultEditableConfig.faqList || []);
+    const resolvedFaqEn = (config.faqListEn && config.faqListEn.length > 0) ? config.faqListEn : (defaultEditableConfig.faqListEn || []);
+
+    setConfig((prev) => ({
+      ...prev,
+      contentVersion: CURRENT_CONTENT_VERSION,
+      projectsList: mergedProjects,
+      projectsListEn: mergedProjectsEn,
+      servicesList: mergedServices,
+      servicesListEn: mergedServicesEn,
+      faqList: resolvedFaq,
+      faqListEn: resolvedFaqEn,
+    }));
+
+    setNotificationMsg(
+      isAr 
+        ? `تم دمج المحتوى الجديد بنجاح (الإصدار ${CURRENT_CONTENT_VERSION}). يرجى الضغط على "حفظ وتحديث فوري" لاعتماد التحديث في السحابة.`
+        : `Successfully merged latest content (v${CURRENT_CONTENT_VERSION}). Click "Save Live" to publish to cloud.`
+    );
   };
 
   // Multi-Admin Management Handlers
@@ -1482,6 +1514,17 @@ export default function SecureAdminPortalPage() {
             }`}>
               {isAr ? 'لوحة التحكم والمحتوى الشاملة' : 'Full CMS & Admin Console'}
             </span>
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded border font-mono ${
+              isDark ? 'bg-sky-950/60 text-[#00F2FE] border-[#00F2FE]/40' : 'bg-sky-50 text-[#0284C7] border-sky-200'
+            }`} title="Published Content Schema Version">
+              v{config.contentVersion || 1}
+            </span>
+            {config.updatedAt && (
+              <span className="hidden xl:inline text-[10px] text-slate-400 font-mono">
+                {isAr ? 'آخر نشر: ' : 'Published: '}
+                {new Date(config.updatedAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}
+              </span>
+            )}
             <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Session Secure</span>
@@ -1549,6 +1592,27 @@ export default function SecureAdminPortalPage() {
           </button>
         </div>
       </header>
+
+      {/* Seed Update Notification Banner */}
+      {(config.contentVersion || 1) < CURRENT_CONTENT_VERSION && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-200 px-6 py-3 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              {isAr
+                ? `يوجد تحديث للقيم الافتراضية للنسخة (الإصدار ${CURRENT_CONTENT_VERSION}). يمكنك دمج المنتجات والخدمات الجديدة تلقائياً بالمعرّفات دون المساس بأي تعديلات سابقة قمت بها.`
+                : `A newer default seed version (v${CURRENT_CONTENT_VERSION}) is available. Merge new projects and services by ID without overwriting custom edits.`}
+            </span>
+          </div>
+          <button
+            onClick={handleMergeLatestSeed}
+            className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{isAr ? 'دمج المحتوى الجديد بالمعرّفات' : 'Merge New Seed Items'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Global Notification Banner */}
       {notificationMsg && (

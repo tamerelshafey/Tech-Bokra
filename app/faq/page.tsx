@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import FaqView from '@/components/FaqView';
+import { contentAr } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'الأسئلة الشائعة والاستفسارات التقنية | تيك بكرة - Tech Bokra',
@@ -17,5 +18,26 @@ export const metadata: Metadata = {
 };
 
 export default function FaqPage() {
-  return <FaqView />;
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: contentAr.faq.items.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a,
+      },
+    })),
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <FaqView />
+    </>
+  );
 }

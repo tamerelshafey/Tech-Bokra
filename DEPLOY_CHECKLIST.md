@@ -36,13 +36,14 @@
 
 ---
 
-## 3. تنبيه استقرار تخزين الملفات (Ephemeral Filesystem Notice)
+## 3. محرك تخزين الوسائط (Cloud Storage Integration)
 
-* **الوضع الحالي:** تُحفظ الصور محلياً في مسار السيرفر `public/uploads/` وتُقرأ عبر `/api/uploads/[filename]`.
-* **سلوك بيئات الـ Serverless (مثل Vercel, AWS Lambda, Google Cloud Run):**
-  نظام الملفات في هذه الاستضافات يكون **مؤقتاً وغير دائم (Ephemeral / Read-only)**؛ مما يعني أن الملفات المرفوعة بعد النشر ستختفي مع كل إعادة تشغيل للحاوية (Cold Start) أو Deploy جديد.
-* **الحل الدائم للإنتاج:**
-  نقل محرك التخزين إلى **Firebase Storage** أو **AWS S3 / Vercel Blob** وفق الخطة المقترحة في التقرير الفني.
+* **تم الربط الفعلي مع Firebase Storage:**
+  يتم رفع الوسائط والصور المرفوعة من لوحة التحكم مباشرة إلى **Firebase Storage** (`eng-inverter-8jmtp.firebasestorage.app/uploads/`) مع حماية مشددة بموجب `storage.rules` (مقتصرة على المشرفين المصرح لهم للملفات تحت 5MB وقراءة عامة لزوار الموقع).
+* **آلية التوافق المتعدد (Cascading Fallback):**
+  1. الرفع المباشر إلى Firebase Storage مع رابط تحميل دائم وسريع.
+  2. في حال انقطاع الاتصال بالسحابة: اللجوء إلى نقطة `/api/upload` للسيرفر.
+  3. كخيار أخير: ضغط العميل الداخلي عبر المتصفح (Canvas WebP/JPEG) لضمان عدم تعطل واجهة المشرف إطلاقاً.
 
 ---
 

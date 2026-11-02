@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminRequest } from '@/lib/serverAuth';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
 /**
- * Server-side endpoint to authorize and record customConfig modifications.
- * Strictly verifies admin session cookie before permitting any configuration save.
+ * Server-side endpoint to authorize and record customConfig modifications,
+ * and purge/revalidate Next.js cache tags and paths on publish.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -22,12 +23,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid configuration payload' }, { status: 400 });
     }
 
+    // Trigger instant cache revalidation across all public routes
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/projects');
+      revalidatePath('/services');
+      revalidatePath('/process');
+      revalidatePath('/faq');
+      revalidatePath('/contact');
+    } catch (revalidateErr) {
+      console.warn('Cache revalidation notice:', revalidateErr);
+    }
+
     // Server-side audit log
-    console.info(`[ADMIN AUDIT] customConfig update validated for ${auth.user.email} (${auth.user.role}) at ${new Date().toISOString()}`);
+    console.info(`[ADMIN AUDIT] customConfig update validated and revalidated for ${auth.user.email} (${auth.user.role}) at ${new Date().toISOString()}`);
 
     return NextResponse.json({
       success: true,
-      message: 'Configuration write authorized and verified on server',
+      message: 'Configuration write authorized and cache revalidated.',
       updatedBy: auth.user.email,
       timestamp: new Date().toISOString(),
     });

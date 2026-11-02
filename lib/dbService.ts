@@ -13,7 +13,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, User } from '@/lib/firebase';
-import { EditableConfig, defaultEditableConfig, MediaVaultItem } from '@/lib/siteConfig';
+import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById } from '@/lib/siteConfig';
 
 export interface FirestoreInquiry {
   id: string;
@@ -90,6 +90,7 @@ export async function saveSiteSettingsToCloud(
   try {
     const generalPayload: Record<string, any> = {
       ...publicConfig,
+      contentVersion: config.contentVersion || CURRENT_CONTENT_VERSION,
       updatedAt: new Date().toISOString(),
     };
 
@@ -352,6 +353,7 @@ export async function loadAdminVault(): Promise<{ mediaVault: MediaVaultItem[]; 
 
 /**
  * Subscribe to Realtime Site Settings from Firestore
+ * Uses ID-based collection merge so newer code items/seeds are cleanly merged with custom admin configurations.
  */
 export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void): () => void {
   const settingsDocRef = doc(db, 'settings', 'general');
@@ -364,19 +366,33 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
         
         // Explicitly exclude any internal/admin fields from public state
         const { mediaVault, updatedBy, ...safePublicData } = rawData as Record<string, any>;
+        const cloudData = safePublicData as Partial<EditableConfig>;
         
-        // Defensive check: if cloud doc has services list, use it; otherwise fallback to default services
-        const resolvedServicesList = (Array.isArray(safePublicData.servicesList) && safePublicData.servicesList.length > 0)
-          ? safePublicData.servicesList
-          : defaultEditableConfig.servicesList;
-
-        const resolvedHeroSubAr = safePublicData.heroSubAr || defaultEditableConfig.heroSubAr;
+        // Merge collections by ID: preserves admin edits while retaining all registered items
+        const resolvedProjectsList = mergeCollectionsById(
+          defaultEditableConfig.projectsList || [],
+          cloudData.projectsList
+        );
+        const resolvedProjectsListEn = mergeCollectionsById(
+          defaultEditableConfig.projectsListEn || [],
+          cloudData.projectsListEn
+        );
+        const resolvedServicesList = mergeCollectionsById(
+          defaultEditableConfig.servicesList || [],
+          cloudData.servicesList
+        );
+        const resolvedServicesListEn = mergeCollectionsById(
+          defaultEditableConfig.servicesListEn || [],
+          cloudData.servicesListEn
+        );
 
         onUpdate({
           ...defaultEditableConfig,
-          ...safePublicData,
+          ...cloudData,
+          projectsList: resolvedProjectsList,
+          projectsListEn: resolvedProjectsListEn,
           servicesList: resolvedServicesList,
-          heroSubAr: resolvedHeroSubAr,
+          servicesListEn: resolvedServicesListEn,
         });
       }
     },
@@ -385,6 +401,30 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
       console.warn('Settings subscription sync warning:', error.message);
     }
   );
+}
+
+/**
+ * Fetch published site settings once directly from Firestore (Server Component or client boot)
+ */
+export async function fetchPublishedSiteSettings(): Promise<EditableConfig> {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'general'));
+    if (snap.exists()) {
+      const { mediaVault, updatedBy, ...safePublicData } = snap.data() as Record<string, any>;
+      const cloudData = safePublicData as Partial<EditableConfig>;
+      return {
+        ...defaultEditableConfig,
+        ...cloudData,
+        projectsList: mergeCollectionsById(defaultEditableConfig.projectsList || [], cloudData.projectsList),
+        projectsListEn: mergeCollectionsById(defaultEditableConfig.projectsListEn || [], cloudData.projectsListEn),
+        servicesList: mergeCollectionsById(defaultEditableConfig.servicesList || [], cloudData.servicesList),
+        servicesListEn: mergeCollectionsById(defaultEditableConfig.servicesListEn || [], cloudData.servicesListEn),
+      };
+    }
+  } catch (err) {
+    console.warn('fetchPublishedSiteSettings notice:', err);
+  }
+  return defaultEditableConfig;
 }
 
 /**

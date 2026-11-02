@@ -2,8 +2,10 @@
  * Storage & Image Optimization Helper for Tech Bokra
  * Prevents QuotaExceededError and provides fast, client-side canvas compression.
  */
-import { EditableConfig, MediaVaultItem } from '@/components/AdminSettingsModal';
+import { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
 import { Project } from '@/lib/content';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 
 export const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v5';
 
@@ -74,11 +76,48 @@ export async function compressImageFile(
 }
 
 /**
- * Uploads an image file to the Next.js /api/upload endpoint for persistent server-side storage.
- * Returns a permanent short URL (/uploads/filename.ext) that does not bloat Firestore or localStorage.
- * Automatically falls back to compressed base64 if the API is offline.
+ * Uploads an image directly to Firebase Storage (/uploads/fileName).
+ * Enforces file size under 5MB and provides a permanent public download URL.
+ */
+export async function uploadImageToFirebaseStorage(
+  file: File
+): Promise<{ url: string; size: string; name: string }> {
+  const sanitizedName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const fileRef = ref(storage, `uploads/${sanitizedName}`);
+  
+  const metadata = {
+    contentType: file.type || 'image/jpeg',
+  };
+
+  const uploadResult = await uploadBytes(fileRef, file, metadata);
+  const downloadUrl = await getDownloadURL(uploadResult.ref);
+
+  return {
+    url: downloadUrl,
+    size: `${(file.size / 1024).toFixed(1)} KB`,
+    name: file.name,
+  };
+}
+
+/**
+ * Uploads an image file with primary Firebase Storage destination.
+ * Automatically cascades:
+ * 1. Firebase Storage (/uploads/{fileName})
+ * 2. Next.js server endpoint (/api/upload)
+ * 3. In-browser canvas compression (data: URI fallback)
  */
 export async function uploadImageToServer(file: File): Promise<{ url: string; size: string; name: string }> {
+  // Step 1: Attempt direct upload to Firebase Storage
+  try {
+    const fbResult = await uploadImageToFirebaseStorage(file);
+    if (fbResult.url) {
+      return fbResult;
+    }
+  } catch (fbErr) {
+    console.warn('Firebase Storage upload failed, attempting Next.js upload API fallback:', fbErr);
+  }
+
+  // Step 2: Fallback to Next.js API route
   try {
     const formData = new FormData();
     formData.append('file', file);

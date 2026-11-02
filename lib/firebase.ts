@@ -11,6 +11,7 @@ import {
   User 
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import firebaseConfig from '@/firebase-applet-config.json';
 
 // Initialize Firebase App
@@ -21,6 +22,9 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 // Auth initialization
 export const auth = getAuth(app);
+
+// Storage initialization
+export const storage = getStorage(app);
 
 // Error handler conforming to Skill specification
 export enum OperationType {

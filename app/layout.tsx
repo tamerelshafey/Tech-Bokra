@@ -120,7 +120,7 @@ export default function RootLayout({
               name: 'تيك بكرة | Tech Bokra',
               url: 'https://tech-bokra.com',
               logo: 'https://tech-bokra.com/logo.svg',
-              description: 'نبتكر الحلول الأمنية والتقنية لتأمين ونمو أعمالك - كاميرات مراقبة، شبكات، أنظمة تيار خفيف، وتطوير أنظمة ERP.',
+              description: 'حلول تقنية متكاملة، مصممة وفق احتياجات أعمالك. نقدم حلول الأمن المادي والبنية التحتية التقنية والبرمجيات للشركات والمؤسسات، بدءًا من التخطيط والتصميم وحتى التنفيذ والدعم المستمر.',
               address: {
                 '@type': 'PostalAddress',
                 addressLocality: 'مدينة نصر، القاهرة',

@@ -105,6 +105,8 @@ function ContactContent() {
           whatsappNumber={customConfig.whatsappNumber}
           hotlinePhone={customConfig.phone}
           email={customConfig.email}
+          secondaryEmail={customConfig.secondaryEmail}
+          workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
           address={isAr ? customConfig.addressAr : customConfig.addressEn}
         />
       </main>
@@ -115,6 +117,8 @@ function ContactContent() {
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}

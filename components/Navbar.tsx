@@ -10,7 +10,7 @@ import { useTheme } from '@/components/ThemeProvider';
 
 interface NavbarProps {
   lang: 'ar' | 'en';
-  onToggleLang: () => void;
+  onToggleLang?: () => void;
   data: SiteLanguageData;
   onOpenSettings?: () => void;
   whatsappNumber?: string;
@@ -31,7 +31,7 @@ interface NavbarProps {
 
 export default function Navbar({ 
   lang, 
-  onToggleLang, 
+  onToggleLang = () => {}, 
   data, 
   onOpenSettings,
   whatsappNumber = siteConfig.whatsappNumber,

@@ -1,32 +1,21 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { EditableConfig, defaultEditableConfig } from '@/lib/siteConfig';
-import { safeLoadConfigFromStorage } from '@/lib/storageHelper';
 import { subscribeSiteSettings } from '@/lib/dbService';
 
 /**
- * Universal hook for loading, hydrating and subscribing to site configuration.
- * Complies with React 19 / ESLint rules without cascading render warnings.
+ * Universal hook for subscribing to published site configuration directly from Firestore.
+ * Firestore is the authoritative Single Source of Truth. No stale localStorage caching.
  */
 export function useCustomConfig(): [EditableConfig, React.Dispatch<React.SetStateAction<EditableConfig>>] {
   const [config, setConfig] = useState<EditableConfig>(defaultEditableConfig);
 
   useEffect(() => {
-    // 1. Safe delayed hydration from localStorage
-    const timer = setTimeout(() => {
-      const saved = safeLoadConfigFromStorage();
-      if (saved) {
-        setConfig((prev) => ({ ...prev, ...saved }));
-      }
-    }, 0);
-
-    // 2. Realtime listener to Firestore cloud settings
+    // Realtime listener to Firestore cloud settings
     let unsubscribe = () => {};
     try {
       unsubscribe = subscribeSiteSettings((cloudConfig) => {
         if (cloudConfig) {
-          setConfig((prev) => ({ ...prev, ...cloudConfig }));
+          setConfig(cloudConfig);
         }
       });
     } catch (err) {
@@ -34,7 +23,6 @@ export function useCustomConfig(): [EditableConfig, React.Dispatch<React.SetStat
     }
 
     return () => {
-      clearTimeout(timer);
       unsubscribe();
     };
   }, []);

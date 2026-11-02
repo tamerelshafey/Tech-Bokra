@@ -122,9 +122,44 @@ export interface EditableConfig {
 
   // Media Vault (Uploaded Assets Library)
   mediaVault?: MediaVaultItem[];
+
+  // Content Version & Sync Metadata
+  contentVersion?: number;
+  updatedAt?: string;
+}
+
+export const CURRENT_CONTENT_VERSION = 3;
+
+/**
+ * Merge two collections of items by unique 'id'.
+ * Preserves admin custom edits for matching items while smoothly appending new seed items from code.
+ */
+export function mergeCollectionsById<T extends { id: string }>(seedList: T[], cloudList?: T[]): T[] {
+  if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) {
+    return seedList;
+  }
+  const processedIds = new Set<string>();
+  const merged: T[] = [];
+
+  for (const item of cloudList) {
+    if (item && item.id) {
+      merged.push(item);
+      processedIds.add(item.id);
+    }
+  }
+
+  for (const seedItem of seedList) {
+    if (seedItem && seedItem.id && !processedIds.has(seedItem.id)) {
+      merged.push(seedItem);
+      processedIds.add(seedItem.id);
+    }
+  }
+
+  return merged;
 }
 
 export const defaultEditableConfig: EditableConfig = {
+  contentVersion: CURRENT_CONTENT_VERSION,
   // Logo
   logoEmblemStyle: 'modern-tb',
   customLogoUrl: '',

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowUp, Phone, Mail, MapPin, Sun, Moon } from 'lucide-react';
+import { ArrowUp, Phone, Mail, MapPin, Sun, Moon, Clock } from 'lucide-react';
 import { SiteLanguageData, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
@@ -14,7 +14,9 @@ interface FooterProps {
   phone?: string;
   whatsappNumber?: string;
   email?: string;
+  secondaryEmail?: string;
   address?: string;
+  workingHours?: string;
   linkedinUrl?: string;
   facebookUrl?: string;
   logoEmblemStyle?: LogoEmblemStyle;
@@ -39,7 +41,9 @@ export default function Footer({
   phone = siteConfig.phone,
   whatsappNumber = siteConfig.whatsappNumber,
   email = siteConfig.email,
+  secondaryEmail = siteConfig.secondaryEmail,
   address,
+  workingHours,
   linkedinUrl = siteConfig.linkedinUrl,
   facebookUrl = siteConfig.facebookUrl,
   logoEmblemStyle = 'modern-tb',
@@ -261,10 +265,27 @@ export default function Footer({
                   {email}
                 </a>
               </div>
+              {secondaryEmail && (
+                <div className="flex items-center gap-2.5">
+                  <Mail className={`w-4 h-4 shrink-0 ${isDark ? 'text-sky-300' : 'text-sky-600'}`} />
+                  <a 
+                    href={`mailto:${secondaryEmail}`} 
+                    className={`font-mono transition ${isDark ? 'hover:text-white' : 'hover:text-slate-900'}`}
+                  >
+                    {secondaryEmail}
+                  </a>
+                </div>
+              )}
               <div className="flex items-start gap-2.5">
                 <MapPin className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
                 <span>{displayAddress}</span>
               </div>
+              {workingHours && (
+                <div className="flex items-start gap-2.5 pt-1 text-[11px] text-slate-400">
+                  <Clock className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isDark ? 'text-[#00F2FE]' : 'text-[#0284C7]'}`} />
+                  <span>{workingHours}</span>
+                </div>
+              )}
             </div>
 
             <div className="pt-2 flex items-center gap-3">
