@@ -198,9 +198,9 @@ export const defaultEditableConfig: EditableConfig = {
   stat4DescAr: contentAr.stats.stat4Desc,
   stat4DescEn: contentEn.stats.stat4Desc,
 
-  // Live Projects (Cleared)
-  helioPropertyUrl: '',
-  alrehlaUrl: '',
+  // Live Projects
+  helioPropertyUrl: 'https://helio-property.vercel.app/',
+  alrehlaUrl: 'https://www.alrehla.org/',
 
   // Media & Images CMS
   heroCctvImage: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',

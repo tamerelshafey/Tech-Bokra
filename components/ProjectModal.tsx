@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { X, CheckCircle2, AlertTriangle, ShieldCheck, Cpu, Globe, ExternalLink } from 'lucide-react';
+import { X, CheckCircle2, AlertTriangle, ShieldCheck, Cpu, Globe, ExternalLink, Smartphone } from 'lucide-react';
 import { Project, SiteLanguageData } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -240,22 +240,34 @@ export default function ProjectModal({ project, onClose, lang, data, onConsultPr
             {isAr ? 'تريد تنفيذ حلول مماثلة لمنشأتك؟' : 'Interested in a similar deployment?'}
           </p>
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            {project.liveUrl && (
-              <a
-                href={project.liveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border ${
-                  isDark
-                    ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
-                    : 'bg-sky-100 hover:bg-[#0284C7] border-sky-300 text-[#0284C7] hover:text-white'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span>{isAr ? 'زيارة المنصة الحالية' : 'Open Live Platform'}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+            {project.liveUrl && (() => {
+              const isPlayStore = project.liveUrl.includes('play.google.com');
+              return (
+                <a
+                  href={project.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border ${
+                    isPlayStore
+                      ? isDark
+                        ? 'bg-emerald-500/15 hover:bg-emerald-500 border-emerald-400/40 text-emerald-300 hover:text-white'
+                        : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white'
+                      : isDark
+                        ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
+                        : 'bg-sky-100 hover:bg-[#0284C7] border-sky-300 text-[#0284C7] hover:text-white'
+                  }`}
+                  title={isPlayStore ? (isAr ? 'فتح تطبيق Google Play' : 'Open on Google Play Store') : (isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform')}
+                >
+                  {isPlayStore ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                  <span>
+                    {isPlayStore
+                      ? (isAr ? 'تطبيق Google Play' : 'Google Play')
+                      : (project.isUpcoming ? (isAr ? 'معاينة المنصة (Live)' : 'Live Preview') : (isAr ? 'زيارة المنصة الحالية' : 'Open Live Platform'))}
+                  </span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              );
+            })()}
             <button
               onClick={onClose}
               className={`px-4 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${

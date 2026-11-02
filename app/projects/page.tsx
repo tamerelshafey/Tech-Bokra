@@ -355,18 +355,29 @@ export default function ProjectsPage() {
                         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
 
-                      {liveUrl && (
-                        <a
-                          href={liveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-400"
-                          title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                          <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
-                        </a>
-                      )}
+                      {liveUrl && (() => {
+                        const isPlayStore = liveUrl.includes('play.google.com');
+                        return (
+                          <a
+                            href={liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
+                              isPlayStore
+                                ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 text-white'
+                                : 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
+                            }`}
+                            title={isPlayStore ? (isAr ? 'فتح تطبيق Google Play' : 'Open on Google Play Store') : (isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform')}
+                          >
+                            {isPlayStore ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                            <span>
+                              {isPlayStore
+                                ? (isAr ? 'تطبيق Google Play' : 'Google Play')
+                                : (project.isUpcoming ? (isAr ? 'معاينة المنصة (Live)' : 'Live Preview') : (isAr ? 'زيارة المنصة' : 'Visit Live'))}
+                            </span>
+                          </a>
+                        );
+                      })()}
                     </div>
 
                     <Link

@@ -380,22 +380,35 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
                       {expandedProjectId === project.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
 
-                    {((projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl) && (
-                      <a
-                        href={(projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
-                          isDark
-                            ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
-                            : 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white'
-                        }`}
-                        title={isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform'}
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                        <span>{isAr ? 'زيارة المنصة' : 'Visit Live'}</span>
-                      </a>
-                    )}
+                    {(() => {
+                      const targetUrl = (projectUrlOverrides && projectUrlOverrides[project.id]) || project.liveUrl;
+                      if (!targetUrl) return null;
+                      const isPlayStore = targetUrl.includes('play.google.com');
+                      return (
+                        <a
+                          href={targetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm border ${
+                            isPlayStore
+                              ? isDark
+                                ? 'bg-emerald-500/15 hover:bg-emerald-500 border-emerald-400/40 text-emerald-300 hover:text-white'
+                                : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white'
+                              : isDark
+                                ? 'bg-[#00F2FE]/15 hover:bg-[#00F2FE] border-[#00F2FE]/40 text-[#00F2FE] hover:text-[#071120]'
+                                : 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white'
+                          }`}
+                          title={isPlayStore ? (isAr ? 'فتح تطبيق Google Play' : 'Open on Google Play Store') : (isAr ? 'فتح رابط المنصة المباشر' : 'Open Live Platform')}
+                        >
+                          {isPlayStore ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                          <span>
+                            {isPlayStore
+                              ? (isAr ? 'تطبيق Google Play' : 'Google Play')
+                              : (project.isUpcoming ? (isAr ? 'معاينة المنصة (Live)' : 'Live Preview') : (isAr ? 'زيارة المنصة' : 'Visit Live'))}
+                          </span>
+                        </a>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
