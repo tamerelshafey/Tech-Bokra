@@ -198,7 +198,7 @@ export default function FaqView() {
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
 
       <main className="pt-28 pb-20">
@@ -420,7 +420,9 @@ export default function FaqView() {
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
         logoEmblemStyle={customConfig.logoEmblemStyle}
@@ -429,7 +431,7 @@ export default function FaqView() {
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
         showProjectsSection={customConfig.showProjectsSection}
         showProcessSection={customConfig.showProcessSection}
         showFaqSection={customConfig.showFaqSection}

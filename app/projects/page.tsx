@@ -59,8 +59,8 @@ export default function ProjectsPage() {
   };
 
   const baseProjects = isAr
-    ? ((customConfig.projectsList && customConfig.projectsList.length > 0) ? customConfig.projectsList : data.projects.list)
-    : data.projects.list;
+    ? ((customConfig.projectsList && customConfig.projectsList.length > 0) ? customConfig.projectsList : contentAr.projects.list)
+    : ((customConfig.projectsListEn && customConfig.projectsListEn.length > 0) ? customConfig.projectsListEn : contentEn.projects.list);
 
   const rawProjects = baseProjects.map((p) => {
     if (customConfig.projectsList && customConfig.projectsList.length > 0) {
@@ -497,6 +497,8 @@ export default function ProjectsPage() {
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
