@@ -34,6 +34,24 @@ const ADMIN_VAULT_DOC_PATH = 'settings/admin_vault';
 const INQUIRIES_COLLECTION_PATH = 'inquiries';
 
 /**
+ * Guard: Recursively checks if an object contains any heavy data: URL (>50KB)
+ * that would exceed Firestore document limits.
+ */
+function checkForHeavyDataUrl(obj: any): boolean {
+  if (!obj) return false;
+  if (typeof obj === 'string') {
+    return obj.startsWith('data:') && obj.length > 50000;
+  }
+  if (Array.isArray(obj)) {
+    return obj.some((item) => checkForHeavyDataUrl(item));
+  }
+  if (typeof obj === 'object') {
+    return Object.values(obj).some((val) => checkForHeavyDataUrl(val));
+  }
+  return false;
+}
+
+/**
  * Save Site Settings to Firestore (Requires Admin login)
  * Explicitly separates public presentation config (settings/general)
  * from internal administrative vault and audit info (settings/admin_vault).
@@ -48,6 +66,11 @@ export async function saveSiteSettingsToCloud(
   const adminVaultDocRef = doc(db, 'settings', 'admin_vault');
 
   const { mediaVault, ...publicConfig } = config;
+
+  // Document size guard: Stop save if huge data: URLs exist in general settings
+  if (checkForHeavyDataUrl(publicConfig)) {
+    throw new Error('توجد صورة غير مرفوعة بشكل صحيح (data URL). أعد رفعها.');
+  }
 
   let vaultSaved = false;
   let generalSaved = false;

@@ -9,6 +9,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `ADMIN_SESSION_SECRET` | سر التوقيع التشفيري الإجباري لجلسات المشرفين بخوارزمية HMAC-SHA256 لمنع تزوير الكوكيز | **نعم (سر أمني عالي الحساسية)** | Server Only | سلسلة عشوائية 64 حرفاً (`openssl rand -hex 32`) |
 | `ADMIN_ALLOWED_EMAILS` | القائمة البيضاء لعناوين البريد الإلكتروني المصرح لها بإدارة الموقع ولوحة التحكم | **نعم (إعداد إداري)** | Server Only | `tam.elshafey@gmail.com,admin@tech-bokra.com` |
+| `BLOB_READ_WRITE_TOKEN` | التوكن السحابي المعتمد للاتصال بمخزن Vercel Blob لرفع وإدارة الصور | **نعم (سر سحابي)** | Server Only | يتم حقنه تلقائياً عند ربط Vercel Blob بمشروع الموقع |
 | `GEMINI_API_KEY` | مفتاح واجهة الذكاء الاصطناعي لحسابات وأدوات الهندسة عبر السيرفر حصراً | **نعم (سر سحابي)** | Server Only | يتم حقنه تلقائياً في بيئة AI Studio |
 | `APP_URL` | الرابط الأساسي للمنصة المنشورة (يستخدم في الروابط والـ Canonical والـ Metadata) | لا | Server Only | `https://tech-bokra.com` |
 | `NEXT_PUBLIC_COMPANY_PHONE` | رقم الهاتف الرسمي المعتمد للشركة (يظهر للزوار فقط إن لم يكن TO_CONFIRM) | لا | Client & Server | `+20 101 234 5678` |
@@ -17,7 +18,7 @@
 | `NEXT_PUBLIC_COMPANY_CR` | رقم السجل التجاري للشركة | لا | Client & Server | يُترك فارغاً أو يُحدد بعد التأكيد |
 | `NEXT_PUBLIC_COMPANY_TAX_ID` | رقم البطاقة الضريبية المصرية للشركة | لا | Client & Server | يُترك فارغاً أو يُحدد بعد التأكيد |
 
-> **ملاحظة أمنية حاسمة:** لا تقم أبداً بوضع بادئة `NEXT_PUBLIC_` للمتغيرات `ADMIN_SESSION_SECRET` أو `GEMINI_API_KEY`، حيث إن أي متغير يحمل هذه البادئة يتم تضمينه في ملفات الـ JavaScript المفتوحة للزوار في المتصفح.
+> **ملاحظة أمنية حاسمة:** لا تقم أبداً بوضع بادئة `NEXT_PUBLIC_` للمتغيرات `ADMIN_SESSION_SECRET` أو `BLOB_READ_WRITE_TOKEN` أو `GEMINI_API_KEY`، حيث إن أي متغير يحمل هذه البادئة يتم تضمينه في ملفات الـ JavaScript المفتوحة للزوار في المتصفح.
 
 ---
 
@@ -36,14 +37,15 @@
 
 ---
 
-## 3. محرك تخزين الوسائط (Cloud Storage Integration)
+## 3. محرك تخزين الوسائط السحابي (Vercel Blob Integration)
 
-* **تم الربط الفعلي مع Firebase Storage:**
-  يتم رفع الوسائط والصور المرفوعة من لوحة التحكم مباشرة إلى **Firebase Storage** (`eng-inverter-8jmtp.firebasestorage.app/uploads/`) مع حماية مشددة بموجب `storage.rules` (مقتصرة على المشرفين المصرح لهم للملفات تحت 5MB وقراءة عامة لزوار الموقع).
-* **آلية التوافق المتعدد (Cascading Fallback):**
-  1. الرفع المباشر إلى Firebase Storage مع رابط تحميل دائم وسريع.
-  2. في حال انقطاع الاتصال بالسحابة: اللجوء إلى نقطة `/api/upload` للسيرفر.
-  3. كخيار أخير: ضغط العميل الداخلي عبر المتصفح (Canvas WebP/JPEG) لضمان عدم تعطل واجهة المشرف إطلاقاً.
+* **الرفع السحابي عبر Vercel Blob:**
+  يتم رفع الصور والوسائط من لوحة التحكم مباشرة إلى مخزن **Vercel Blob** (`*.public.blob.vercel-storage.com`) عبر نقطة النهاية الموثقة `/api/upload` المحمية بجلسة المشرف.
+* **الضغط الذكي الفوري داخل المتصفح (Client-Side Compression):**
+  1. فحص نوع الملف وقصر الرفع على الصيغ المدعومة (JPG وPNG وWebP).
+  2. إذا كان الملف أقل من 400KB وبصيغة مدعومة، يُرفع مباشرة دون ضغط إضافي.
+  3. في حال كان الملف أكبر حجماً، يتم ضغطه وتحويله إلى صيغة WebP بحد أقصى للأبعاد 1600px وبجودة 0.82 عبر Canvas مع الحفاظ التام على الشفافية للشعارات والأيقونات.
+  4. لا يُستخدم مجلد `public/uploads` المحلي ولا Firebase Storage في رفع الوسائط لضمان التوافق التام مع معمارية Vercel السحابية Serverless.
 
 ---
 
@@ -57,14 +59,15 @@ npm run lint
 # 2. التحقق من سلامة الأنواع الصارمة في TypeScript
 npx tsc --noEmit
 
-# 3. بناء تطبيق Next.js للإنتاج والتأكد من نجاح توليد الـ 43 صفحة بنجاح
+# 3. بناء تطبيق Next.js للإنتاج والتأكد من نجاح توليد المسارات بنجاح
 npm run build
 ```
 
 ### الخطوة 2: تهيئة متغيرات البيئة في لوحة الاستضافة (Hosting Secrets Setup)
-1. في لوحة تحكم المنصة المستضيفة (Vercel Project Settings / Cloud Run Environment Variables):
+1. في لوحة تحكم المنصة المستضيفة (Vercel Project Settings):
 2. أضف `ADMIN_SESSION_SECRET` كمتغير سري مشفر.
 3. أضف `ADMIN_ALLOWED_EMAILS` بقائمة إيميلات الأدمن مفصولة بفواصل.
+4. تأكد من ربط مخزن Vercel Blob (`tech-bokra-media`) بالمشروع، وهو ما يضيف متغير `BLOB_READ_WRITE_TOKEN` تلقائياً لكل البيئات.
 
 ### الخطوة 3: اختبار استجابة السيرفر بعد النشر (Post-Deployment Healthcheck)
 ```bash
@@ -79,7 +82,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST https://tech-bokra.com/api/uplo
 1. الدخول إلى الرابط الإداري المشفر: `https://tech-bokra.com/tb-portal-9482x`.
 2. تسجيل الدخول بحساب البريد المصرح به (`tam.elshafey@gmail.com`).
 3. التأكد من حفظ كوكي `tb_admin_session` المشفر في المتصفح كـ `HttpOnly; Secure`.
-4. تجربة رفع صورة من لوحة التحكم والتأكد من إرجاع الرابط بالبادئة الآمنة من Firebase Storage.
+4. تجربة رفع صورة من لوحة التحكم والتأكد من إرجاع الرابط بالبادئة المعتمدة من Vercel Blob (`*.public.blob.vercel-storage.com`).
 
 ---
 

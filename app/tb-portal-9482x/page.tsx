@@ -99,7 +99,6 @@ import {
 import { 
   safeSaveConfigToStorage, 
   safeLoadConfigFromStorage, 
-  compressImageFile,
   uploadImageToServer 
 } from '@/lib/storageHelper';
 
@@ -892,16 +891,20 @@ export default function SecureAdminPortalPage() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        setNotificationMsg(isAr ? 'جاري رفع وحفظ الصورة في الخادم...' : 'Uploading image to server...');
+        setNotificationMsg(isAr ? 'جاري ضغط ورفع الصورة إلى الخادم...' : 'Compressing and uploading image...');
         const result = await uploadImageToServer(file);
         if (result?.url) {
           handleConfigChange(fieldName, result.url);
-          setNotificationMsg(isAr ? 'تم رفع وحفظ الصورة بنجاح!' : 'Image uploaded and updated successfully!');
-          setTimeout(() => setNotificationMsg(''), 3500);
+          setNotificationMsg(
+            isAr 
+              ? `تم رفع وحفظ الصورة بنجاح (${result.size})!` 
+              : `Image uploaded and updated successfully (${result.size})!`
+          );
+          setTimeout(() => setNotificationMsg(''), 4000);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Image upload error:', err);
-        setNotificationMsg(isAr ? 'تعذر رفع الصورة، تم استخدام النسخة المحلية' : 'Upload error, used fallback');
+        setNotificationMsg(err?.message || (isAr ? 'تعذر رفع الصورة.' : 'Failed to upload image.'));
       }
     }
   };
@@ -913,7 +916,7 @@ export default function SecureAdminPortalPage() {
 
     for (const file of Array.from(files)) {
       try {
-        setNotificationMsg(isAr ? `جاري رفع "${file.name}" إلى الخادم...` : `Uploading "${file.name}" to server...`);
+        setNotificationMsg(isAr ? `جاري ضغط ورفع "${file.name}" إلى الخادم...` : `Compressing and uploading "${file.name}"...`);
         const result = await uploadImageToServer(file);
         if (result?.url) {
           const sizeKB = result.size || `${(file.size / 1024).toFixed(1)} KB`;
@@ -940,11 +943,16 @@ export default function SecureAdminPortalPage() {
             ...prev.slice(0, 5)
           ]);
 
-          setNotificationMsg(isAr ? `تم رفع وحفظ صورة "${fileName}" في الخزينة الدائمة بنجاح!` : `Uploaded "${fileName}" successfully!`);
+          setNotificationMsg(
+            isAr 
+              ? `تم رفع وحفظ صورة "${fileName}" (${sizeKB}) في الخزينة الدائمة بنجاح!` 
+              : `Uploaded "${fileName}" (${sizeKB}) successfully!`
+          );
           setTimeout(() => setNotificationMsg(''), 4000);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error uploading asset:', err);
+        setNotificationMsg(err?.message || (isAr ? 'تعذر رفع الصورة إلى الخزينة.' : 'Failed to upload asset.'));
       }
     }
   };
@@ -955,7 +963,7 @@ export default function SecureAdminPortalPage() {
     if (!file) return;
 
     try {
-      setNotificationMsg(isAr ? 'جاري رفع صورة المشروع إلى الخادم...' : 'Uploading project image...');
+      setNotificationMsg(isAr ? 'جاري ضغط ورفع صورة المشروع إلى الخادم...' : 'Compressing and uploading project image...');
       const result = await uploadImageToServer(file);
       if (result?.url) {
         const activeList = getProjectsForLang(editLang);
@@ -981,11 +989,16 @@ export default function SecureAdminPortalPage() {
           });
         }
 
-        setNotificationMsg(isAr ? 'تم رفع صورة المشروع وحفظها في النسختين بنجاح!' : 'Project image uploaded and synced to both catalogs!');
-        setTimeout(() => setNotificationMsg(''), 3500);
+        setNotificationMsg(
+          isAr 
+            ? `تم رفع صورة المشروع (${result.size}) وحفظها في النسختين بنجاح!` 
+            : `Project image uploaded (${result.size}) and synced to both catalogs!`
+        );
+        setTimeout(() => setNotificationMsg(''), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error uploading project image:', err);
+      setNotificationMsg(err?.message || (isAr ? 'تعذر رفع صورة المشروع.' : 'Failed to upload project image.'));
     }
   };
 
@@ -995,7 +1008,7 @@ export default function SecureAdminPortalPage() {
     if (!file) return;
 
     try {
-      setNotificationMsg(isAr ? 'جاري رفع صورة الخدمة إلى الخادم...' : 'Uploading service image...');
+      setNotificationMsg(isAr ? 'جاري ضغط ورفع صورة الخدمة إلى الخادم...' : 'Compressing and uploading service image...');
       const result = await uploadImageToServer(file);
       if (result?.url) {
         const activeList = getServicesForLang(editLang);
@@ -1020,11 +1033,16 @@ export default function SecureAdminPortalPage() {
           });
         }
 
-        setNotificationMsg(isAr ? 'تم رفع صورة الخدمة وتحديثها في اللغتين بنجاح!' : 'Service image uploaded and synced to both catalogs!');
-        setTimeout(() => setNotificationMsg(''), 3500);
+        setNotificationMsg(
+          isAr 
+            ? `تم رفع صورة الخدمة (${result.size}) وتحديثها في اللغتين بنجاح!` 
+            : `Service image uploaded (${result.size}) and synced to both catalogs!`
+        );
+        setTimeout(() => setNotificationMsg(''), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error uploading service image:', err);
+      setNotificationMsg(err?.message || (isAr ? 'تعذر رفع صورة الخدمة.' : 'Failed to upload service image.'));
     }
   };
 
@@ -5089,15 +5107,20 @@ export default function SecureAdminPortalPage() {
                         const file = e.target.files?.[0];
                         if (file) {
                           try {
-                            setNotificationMsg(isAr ? 'جاري رفع الشعار إلى الخادم...' : 'Uploading logo...');
+                            setNotificationMsg(isAr ? 'جاري ضغط ورفع الشعار إلى الخادم...' : 'Compressing and uploading logo...');
                             const result = await uploadImageToServer(file);
                             if (result?.url) {
                               handleConfigChange('customLogoUrl', result.url);
-                              setNotificationMsg(isAr ? 'تم رفع وحفظ الشعار بنجاح!' : 'Logo uploaded successfully!');
-                              setTimeout(() => setNotificationMsg(''), 3000);
+                              setNotificationMsg(
+                                isAr 
+                                  ? `تم رفع وحفظ الشعار (${result.size}) بنجاح!` 
+                                  : `Logo uploaded successfully (${result.size})!`
+                              );
+                              setTimeout(() => setNotificationMsg(''), 4000);
                             }
-                          } catch (err) {
+                          } catch (err: any) {
                             console.error('Logo upload error:', err);
+                            setNotificationMsg(err?.message || (isAr ? 'تعذر رفع الشعار.' : 'Failed to upload logo.'));
                           }
                         }
                       }}

@@ -1,152 +1,145 @@
 /**
  * Storage & Image Optimization Helper for Tech Bokra
- * Prevents QuotaExceededError and provides fast, client-side canvas compression.
+ * Compresses images client-side before upload to Vercel Blob via /api/upload.
  */
 import { EditableConfig, MediaVaultItem } from '@/lib/siteConfig';
 import { Project } from '@/lib/content';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
 
 export const LOCAL_STORAGE_KEY = 'tech_bokra_custom_config_v5';
 
+const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+
 /**
- * Client-side canvas compression for uploaded images.
- * Resizes images to maximum standard dimensions (default 1280x800)
- * and compresses JPEG to ~0.72 quality.
- * Turns 5MB-15MB camera/phone uploads into 50KB-120KB data strings.
+ * Prepares image file for upload:
+ * - Validates format (rejects SVG, GIF, etc. with Arabic error)
+ * - If already <= 400KB and supported, returns original file
+ * - Otherwise resizes to max dimension 1600px and converts to WebP at 0.82 quality
+ *   (preserving transparency for logos and icons)
  */
-export async function compressImageFile(
-  file: File,
-  maxWidth = 1280,
-  maxHeight = 850,
-  quality = 0.72
-): Promise<string> {
-  return new Promise((resolve) => {
-    // If not an image or SVG, read as standard data URL
-    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve((e.target?.result as string) || '');
-      reader.onerror = () => resolve('');
-      reader.readAsDataURL(file);
-      return;
-    }
+export async function prepareImageForUpload(file: File): Promise<File> {
+  const extMatch = file.name.match(/\.[a-zA-Z0-9]+$/);
+  const ext = extMatch ? extMatch[0].toLowerCase() : '';
+  const mime = (file.type || '').toLowerCase();
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const rawDataUrl = (e.target?.result as string) || '';
-      if (typeof window === 'undefined') {
-        resolve(rawDataUrl);
-        return;
-      }
+  if (!SUPPORTED_MIME_TYPES.has(mime) || !SUPPORTED_EXTENSIONS.has(ext)) {
+    throw new Error('الصيغ المدعومة: JPG وPNG وWebP');
+  }
 
-      const img = new Image();
-      img.onload = () => {
-        try {
-          let { width, height } = img;
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
+  // If already under 400KB and supported, upload as-is
+  if (file.size <= 400 * 1024) {
+    return file;
+  }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', quality);
-            resolve(compressed);
+  if (typeof window === 'undefined') {
+    return file;
+  }
+
+  return new Promise<File>((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      try {
+        let { width, height } = img;
+        const maxDim = 1600;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
           } else {
-            resolve(rawDataUrl);
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
           }
-        } catch (err) {
-          console.warn('Canvas compression fallback to raw data:', err);
-          resolve(rawDataUrl);
         }
-      };
-      img.onerror = () => resolve(rawDataUrl);
-      img.src = rawDataUrl;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const cleanBase = file.name.replace(/\.[a-zA-Z0-9]+$/, '');
+            const compressedFile = new File([blob], `${cleanBase}.webp`, {
+              type: 'image/webp',
+            });
+            resolve(compressedFile);
+          },
+          'image/webp',
+          0.82
+        );
+      } catch (err) {
+        console.warn('Canvas optimization notice:', err);
+        resolve(file);
+      }
     };
-    reader.onerror = () => resolve('');
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('تعذر قراءة ملف الصورة. تأكد من سلامة الملف.'));
+    };
+
+    img.src = objectUrl;
   });
 }
 
 /**
- * Uploads an image directly to Firebase Storage (/uploads/fileName).
- * Enforces file size under 5MB and provides a permanent public download URL.
- */
-export async function uploadImageToFirebaseStorage(
-  file: File
-): Promise<{ url: string; size: string; name: string }> {
-  const sanitizedName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  const fileRef = ref(storage, `uploads/${sanitizedName}`);
-  
-  const metadata = {
-    contentType: file.type || 'image/jpeg',
-  };
-
-  const uploadResult = await uploadBytes(fileRef, file, metadata);
-  const downloadUrl = await getDownloadURL(uploadResult.ref);
-
-  return {
-    url: downloadUrl,
-    size: `${(file.size / 1024).toFixed(1)} KB`,
-    name: file.name,
-  };
-}
-
-/**
- * Uploads an image file with primary Firebase Storage destination.
- * Automatically cascades:
- * 1. Firebase Storage (/uploads/{fileName})
- * 2. Next.js server endpoint (/api/upload)
- * 3. In-browser canvas compression (data: URI fallback)
+ * Uploads an image file to /api/upload (Vercel Blob).
+ * Compresses in-browser first, validates format, and surfaces real server errors.
+ * Never returns data: URLs.
  */
 export async function uploadImageToServer(file: File): Promise<{ url: string; size: string; name: string }> {
-  // Step 1: Attempt direct upload to Firebase Storage
-  try {
-    const fbResult = await uploadImageToFirebaseStorage(file);
-    if (fbResult.url) {
-      return fbResult;
+  // Step 1: Validate and compress in browser
+  const fileToUpload = await prepareImageForUpload(file);
+
+  // Step 2: Upload to Next.js API route (/api/upload -> Vercel Blob)
+  const formData = new FormData();
+  formData.append('file', fileToUpload);
+
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('انتهت جلسة الإدارة، سجّل الدخول مجدداً');
     }
-  } catch (fbErr) {
-    console.warn('Firebase Storage upload failed, attempting Next.js upload API fallback:', fbErr);
+    if (res.status === 503) {
+      throw new Error(data?.error || 'مخزن الصور غير مُفعّل: أنشئ Vercel Blob واربطه بالمشروع ثم أعد النشر.');
+    }
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+    throw new Error(`فشل رفع الصورة إلى الخادم (رمز ${res.status})`);
   }
 
-  // Step 2: Fallback to Next.js API route
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-    });
-    if (!res.ok) {
-      throw new Error(`Upload server responded with ${res.status}`);
-    }
-    const data = await res.json();
-    if (data.url) {
-      return {
-        url: data.url,
-        size: data.size || `${(file.size / 1024).toFixed(1)} KB`,
-        name: data.filename || file.name,
-      };
-    }
-    throw new Error(data.error || 'No URL returned from upload API');
-  } catch (err) {
-    console.warn('Server upload fallback to client compression:', err);
-    const compressed = await compressImageFile(file);
+  if (data?.url) {
     return {
-      url: compressed,
-      size: `${((compressed.length * 0.75) / 1024).toFixed(1)} KB`,
-      name: file.name,
+      url: data.url,
+      size: data.size || `${(fileToUpload.size / 1024).toFixed(1)} KB`,
+      name: data.filename || fileToUpload.name,
     };
   }
+
+  throw new Error('لم يتم استلام رابط الصورة من الخادم.');
 }
 
 /**
