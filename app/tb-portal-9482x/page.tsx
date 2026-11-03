@@ -63,7 +63,7 @@ import {
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
 import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
-import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById } from '@/lib/siteConfig';
+import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById, LEGACY_PROJECT_IDS } from '@/lib/siteConfig';
 import ProjectModal from '@/components/ProjectModal';
 import { 
   auth, 
@@ -222,6 +222,7 @@ export default function SecureAdminPortalPage() {
   const [copiedAssetUrl, setCopiedAssetUrl] = useState<boolean>(false);
   const [targetProjectForUpload, setTargetProjectForUpload] = useState<string>('');
   const [recentUploads, setRecentUploads] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
+  const [editLang, setEditLang] = useState<'ar' | 'en'>('ar');
 
   // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate)
   useEffect(() => {
@@ -539,8 +540,8 @@ export default function SecureAdminPortalPage() {
 
   // Merge Latest Default Seed Items by ID Handler
   const handleMergeLatestSeed = () => {
-    const mergedProjects = mergeCollectionsById(defaultEditableConfig.projectsList || [], config.projectsList);
-    const mergedProjectsEn = mergeCollectionsById(defaultEditableConfig.projectsListEn || [], config.projectsListEn);
+    const mergedProjects = mergeCollectionsById(defaultEditableConfig.projectsList || [], config.projectsList, LEGACY_PROJECT_IDS);
+    const mergedProjectsEn = mergeCollectionsById(defaultEditableConfig.projectsListEn || [], config.projectsListEn, LEGACY_PROJECT_IDS);
     const mergedServices = mergeCollectionsById(defaultEditableConfig.servicesList || [], config.servicesList);
     const mergedServicesEn = mergeCollectionsById(defaultEditableConfig.servicesListEn || [], config.servicesListEn);
     const resolvedFaq = (config.faqList && config.faqList.length > 0) ? config.faqList : (defaultEditableConfig.faqList || []);
@@ -760,6 +761,78 @@ export default function SecureAdminPortalPage() {
     });
   };
 
+  const handleMultipleConfigChanges = (changes: Partial<EditableConfig>) => {
+    setConfig((prev) => {
+      const updated = { ...prev, ...changes };
+      safeSaveConfigToStorage(updated);
+      return updated;
+    });
+  };
+
+  // Non-linguistic project fields to keep strictly synchronized between Arabic and English catalogs by item id
+  const NON_LINGUISTIC_PROJECT_FIELDS = new Set<keyof Project>([
+    'showOnSite',
+    'isDraft',
+    'isUpcoming',
+    'status',
+    'projectStatus',
+    'liveUrl',
+    'image',
+    'verified',
+    'isNDA',
+    'slug',
+    'type',
+  ]);
+
+  const NON_LINGUISTIC_SERVICE_FIELDS = new Set<keyof ServiceItem>([
+    'image',
+    'iconName',
+    'category',
+  ]);
+
+  // Single helper function to determine collection key based on language
+  const getCollectionKey = (
+    type: 'projects' | 'services' | 'faq',
+    targetLang: 'ar' | 'en' = editLang
+  ): 'projectsList' | 'projectsListEn' | 'servicesList' | 'servicesListEn' | 'faqList' | 'faqListEn' => {
+    if (type === 'projects') return targetLang === 'ar' ? 'projectsList' : 'projectsListEn';
+    if (type === 'services') return targetLang === 'ar' ? 'servicesList' : 'servicesListEn';
+    return targetLang === 'ar' ? 'faqList' : 'faqListEn';
+  };
+
+  const getProjectsForLang = (targetLang: 'ar' | 'en' = editLang): Project[] => {
+    if (targetLang === 'ar') {
+      return (config.projectsList && config.projectsList.length > 0)
+        ? config.projectsList
+        : (defaultEditableConfig.projectsList || contentAr.projects.list);
+    }
+    return (config.projectsListEn && config.projectsListEn.length > 0)
+      ? config.projectsListEn
+      : (defaultEditableConfig.projectsListEn || contentEn.projects.list);
+  };
+
+  const getServicesForLang = (targetLang: 'ar' | 'en' = editLang): ServiceItem[] => {
+    if (targetLang === 'ar') {
+      return (config.servicesList && config.servicesList.length > 0)
+        ? config.servicesList
+        : (defaultEditableConfig.servicesList || contentAr.services.list);
+    }
+    return (config.servicesListEn && config.servicesListEn.length > 0)
+      ? config.servicesListEn
+      : (defaultEditableConfig.servicesListEn || contentEn.services.list);
+  };
+
+  const getFaqsForLang = (targetLang: 'ar' | 'en' = editLang): { q: string; a: string }[] => {
+    if (targetLang === 'ar') {
+      return (config.faqList && config.faqList.length > 0)
+        ? config.faqList
+        : (defaultEditableConfig.faqList || contentAr.faq.items);
+    }
+    return (config.faqListEn && config.faqListEn.length > 0)
+      ? config.faqListEn
+      : (defaultEditableConfig.faqListEn || contentEn.faq.items);
+  };
+
   const handleSaveAll = async () => {
     setIsSaving(true);
     setNotificationMsg('');
@@ -876,7 +949,7 @@ export default function SecureAdminPortalPage() {
     }
   };
 
-  // Helper: Direct Project Image Upload with automatic Media Vault registration
+  // Helper: Direct Project Image Upload with automatic Media Vault registration & bilingual sync
   const handleProjectImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, projectIdx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -885,24 +958,30 @@ export default function SecureAdminPortalPage() {
       setNotificationMsg(isAr ? 'جاري رفع صورة المشروع إلى الخادم...' : 'Uploading project image...');
       const result = await uploadImageToServer(file);
       if (result?.url) {
-        const currentList = [...(config.projectsList || contentAr.projects.list)];
-        currentList[projectIdx] = { ...currentList[projectIdx], image: result.url };
-        handleConfigChange('projectsList', currentList);
+        const activeList = getProjectsForLang(editLang);
+        const targetProj = activeList[projectIdx];
+        if (targetProj) {
+          const arList = getProjectsForLang('ar').map((p) => (p.id === targetProj.id ? { ...p, image: result.url } : p));
+          const enList = getProjectsForLang('en').map((p) => (p.id === targetProj.id ? { ...p, image: result.url } : p));
 
-        // Also add to Media Vault so it has a permanent reference
-        const sizeKB = result.size || `${(file.size / 1024).toFixed(1)} KB`;
-        const newVaultItem: MediaVaultItem = {
-          id: `proj-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: result.url,
-          size: sizeKB,
-          date: new Date().toISOString().split('T')[0],
-          tag: currentList[projectIdx]?.tag || 'Project',
-        };
-        const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
-        handleConfigChange('mediaVault', [newVaultItem, ...currentVault]);
+          const sizeKB = result.size || `${(file.size / 1024).toFixed(1)} KB`;
+          const newVaultItem: MediaVaultItem = {
+            id: `proj-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: file.name.replace(/\.[^/.]+$/, ''),
+            url: result.url,
+            size: sizeKB,
+            date: new Date().toISOString().split('T')[0],
+            tag: targetProj.tag || 'Project',
+          };
+          const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+          handleMultipleConfigChanges({
+            projectsList: arList,
+            projectsListEn: enList,
+            mediaVault: [newVaultItem, ...currentVault],
+          });
+        }
 
-        setNotificationMsg(isAr ? 'تم رفع صورة المشروع وحفظها بنجاح!' : 'Project image uploaded and saved successfully!');
+        setNotificationMsg(isAr ? 'تم رفع صورة المشروع وحفظها في النسختين بنجاح!' : 'Project image uploaded and synced to both catalogs!');
         setTimeout(() => setNotificationMsg(''), 3500);
       }
     } catch (err) {
@@ -910,7 +989,7 @@ export default function SecureAdminPortalPage() {
     }
   };
 
-  // Helper: Direct Service Image Upload with automatic Media Vault registration
+  // Helper: Direct Service Image Upload with automatic Media Vault registration & bilingual sync
   const handleServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, serviceIdx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -919,22 +998,29 @@ export default function SecureAdminPortalPage() {
       setNotificationMsg(isAr ? 'جاري رفع صورة الخدمة إلى الخادم...' : 'Uploading service image...');
       const result = await uploadImageToServer(file);
       if (result?.url) {
-        const currentList = [...(config.servicesList || contentAr.services.list)];
-        currentList[serviceIdx] = { ...currentList[serviceIdx], image: result.url };
-        handleConfigChange('servicesList', currentList);
+        const activeList = getServicesForLang(editLang);
+        const targetSrv = activeList[serviceIdx];
+        if (targetSrv) {
+          const arList = getServicesForLang('ar').map((s) => (s.id === targetSrv.id ? { ...s, image: result.url } : s));
+          const enList = getServicesForLang('en').map((s) => (s.id === targetSrv.id ? { ...s, image: result.url } : s));
 
-        const newVaultItem: MediaVaultItem = {
-          id: `srv-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: result.url,
-          size: result.size || `${(file.size / 1024).toFixed(1)} KB`,
-          date: new Date().toISOString().split('T')[0],
-          tag: currentList[serviceIdx]?.title || 'Service',
-        };
-        const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
-        handleConfigChange('mediaVault', [newVaultItem, ...currentVault]);
+          const newVaultItem: MediaVaultItem = {
+            id: `srv-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: file.name.replace(/\.[^/.]+$/, ''),
+            url: result.url,
+            size: result.size || `${(file.size / 1024).toFixed(1)} KB`,
+            date: new Date().toISOString().split('T')[0],
+            tag: targetSrv.title || 'Service',
+          };
+          const currentVault = config.mediaVault || defaultEditableConfig.mediaVault || [];
+          handleMultipleConfigChanges({
+            servicesList: arList,
+            servicesListEn: enList,
+            mediaVault: [newVaultItem, ...currentVault],
+          });
+        }
 
-        setNotificationMsg(isAr ? 'تم رفع صورة الخدمة وحفظها بنجاح!' : 'Service image uploaded successfully!');
+        setNotificationMsg(isAr ? 'تم رفع صورة الخدمة وتحديثها في اللغتين بنجاح!' : 'Service image uploaded and synced to both catalogs!');
         setTimeout(() => setNotificationMsg(''), 3500);
       }
     } catch (err) {
@@ -944,15 +1030,13 @@ export default function SecureAdminPortalPage() {
 
   const handleApplyUploadedAssetToProject = (targetProjId: string, assetUrl: string) => {
     if (!targetProjId || !assetUrl) return;
-    const currentList = config.projectsList || contentAr.projects.list;
-    const updated = currentList.map((p) => {
-      if (p.id === targetProjId) {
-        return { ...p, image: assetUrl };
-      }
-      return p;
+    const arList = getProjectsForLang('ar').map((p) => (p.id === targetProjId ? { ...p, image: assetUrl } : p));
+    const enList = getProjectsForLang('en').map((p) => (p.id === targetProjId ? { ...p, image: assetUrl } : p));
+    handleMultipleConfigChanges({
+      projectsList: arList,
+      projectsListEn: enList,
     });
-    handleConfigChange('projectsList', updated);
-    setNotificationMsg(isAr ? 'تم تعيين وتحديث صورة المشروع بنجاح!' : 'Project image updated successfully!');
+    setNotificationMsg(isAr ? 'تم تعيين وتحديث صورة المشروع في اللغتين بنجاح!' : 'Project image updated in both languages!');
     setTimeout(() => setNotificationMsg(''), 4000);
   };
 
@@ -988,87 +1072,166 @@ export default function SecureAdminPortalPage() {
   };
 
   const handleAddNewProject = () => {
-    const currentList = config.projectsList || contentAr.projects.list;
+    const arList = getProjectsForLang('ar');
+    const enList = getProjectsForLang('en');
     const newId = `project-${Date.now()}`;
-    const newProject: Project = {
+
+    const commonAttributes = {
       id: newId,
-      title: isAr ? 'مشروع هندسي وتقني جديد' : 'New Engineering & Tech Project',
-      client: isAr ? 'اسم العميل / المؤسسة المنفذ لها' : 'Client Organization Name',
-      tag: isAr ? 'أنظمة متكاملة' : 'Integrated Systems',
-      category: 'security',
+      category: 'security' as const,
       icon: 'ShieldCheck',
       image: CURATED_IMAGE_PRESETS.cctv[0].url,
-      summary: isAr ? 'نبذة موجزة عن نطاق المشروع والحلول المنفذة بنجاح للمنشأة.' : 'Brief summary of project scope.',
-      description: isAr ? 'قام فريق تيك بكرة بتصميم وتوريد وتنفيذ المنظومة بأعلى المعايير الهندسية مع تفعيل الضمان وعقد الصيانة.' : 'Full case study of scope, milestones, and delivery.',
-      highlight: isAr ? 'إنجاز تسليم المشروع بنسبة 100% وفق أعلى المعايير الهندسية والاعتمادية.' : '100% compliance with engineering standards.',
-      stats: [
-        { label: isAr ? 'الوحدات المنفذة' : 'Units', value: '+40 نقطة' },
-        { label: isAr ? 'زمن الإنجاز' : 'Timeline', value: '10 أيام' },
-        { label: isAr ? 'الاعتمادية' : 'Reliability', value: '100%' },
-      ],
-      technologies: ['IP 4K Cameras', 'Cat6A Structured Cabling', 'Managed Core Switches'],
-      challenges: [isAr ? 'متطلبات أمنية وهندسية دقيقة لربط المنشأة' : 'Strict engineering requirements'],
-      solutions: [isAr ? 'تنفيذ بنية تحتية معزولة ومحمية بكابلات معتمدة' : 'Isolated, high-availability architecture'],
       isDraft: false,
       isUpcoming: false,
       verified: true,
-      projectStatus: 'completed',
+      projectStatus: 'completed' as const,
       showOnSite: true,
-      statusBadge: isAr ? 'مشروع مكتمل' : 'Completed',
       liveUrl: '',
+      seedRevision: CURRENT_CONTENT_VERSION,
     };
 
-    const updated = [newProject, ...currentList];
-    handleConfigChange('projectsList', updated);
+    const newProjectAr: Project = {
+      ...commonAttributes,
+      title: 'مشروع هندسي وتقني جديد',
+      client: 'اسم العميل / المؤسسة المنفذ لها',
+      tag: 'أنظمة متكاملة',
+      summary: 'نبذة موجزة عن نطاق المشروع والحلول المنفذة بنجاح للمنشأة.',
+      description: 'قام فريق تيك بكرة بتصميم وتوريد وتنفيذ المنظومة بأعلى المعايير الهندسية مع تفعيل الضمان وعقد الصيانة.',
+      highlight: 'إنجاز تسليم المشروع بنسبة 100% وفق أعلى المعايير الهندسية والاعتمادية.',
+      statusBadge: 'مشروع مكتمل',
+      stats: [
+        { label: 'الوحدات المنفذة', value: '+40 نقطة' },
+        { label: 'زمن الإنجاز', value: '10 أيام' },
+        { label: 'الاعتمادية', value: '100%' },
+      ],
+      technologies: ['IP 4K Cameras', 'Cat6A Structured Cabling', 'Managed Core Switches'],
+      challenges: ['متطلبات أمنية وهندسية دقيقة لربط المنشأة'],
+      solutions: ['تنفيذ بنية تحتية معزولة ومحمية بكابلات معتمدة'],
+    };
+
+    const newProjectEn: Project = {
+      ...commonAttributes,
+      title: 'New Engineering & Tech Project',
+      client: 'Client Organization Name',
+      tag: 'Integrated Systems',
+      summary: 'Brief summary of project scope and turnkey solutions delivered for the facility.',
+      description: 'Tech Bokra engineered, supplied, and deployed the mission-critical system with certified SLA.',
+      highlight: '100% compliance with international engineering codes and standards.',
+      statusBadge: 'Completed',
+      stats: [
+        { label: 'Units Delivered', value: '+40 Drops' },
+        { label: 'Timeline', value: '10 Days' },
+        { label: 'Reliability', value: '100%' },
+      ],
+      technologies: ['IP 4K Cameras', 'Cat6A Structured Cabling', 'Managed Core Switches'],
+      challenges: ['High-availability engineering specifications'],
+      solutions: ['Isolated, resilient infrastructure with certified cabling'],
+    };
+
+    handleMultipleConfigChanges({
+      projectsList: [newProjectAr, ...arList],
+      projectsListEn: [newProjectEn, ...enList],
+    });
     setExpandedProjectIdx(0);
-    setNotificationMsg(isAr ? 'تمت إضافة مشروع جديد بنجاح! يمكنك الآن تعديل كافة تفاصيله ونشره.' : 'New project added!');
+    setNotificationMsg(
+      isAr 
+        ? 'تمت إضافة مشروع جديد في النسختين (العربية والإنجليزية) بنجاح! يمكنك الآن تحريره.' 
+        : 'New project created in both Arabic and English catalogs!'
+    );
     setTimeout(() => setNotificationMsg(''), 4000);
   };
 
   const handleToggleProjectDraft = (projId: string) => {
-    const currentList = config.projectsList || contentAr.projects.list;
+    const arList = getProjectsForLang('ar');
+    const enList = getProjectsForLang('en');
     let nextState = false;
-    const updated = currentList.map((p) => {
+
+    const updatedAr = arList.map((p) => {
       if (p.id === projId) {
         nextState = !p.isDraft;
         return { ...p, isDraft: nextState };
       }
       return p;
     });
-    handleConfigChange('projectsList', updated);
+
+    const updatedEn = enList.map((p) => {
+      if (p.id === projId) {
+        return { ...p, isDraft: nextState };
+      }
+      return p;
+    });
+
+    handleMultipleConfigChanges({
+      projectsList: updatedAr,
+      projectsListEn: updatedEn,
+    });
+
     setNotificationMsg(
       nextState
-        ? (isAr ? 'تم تحويل المشروع إلى "مسودة" (مخفي من الموقع للزوار)' : 'Project set to Draft (Hidden from visitors)')
-        : (isAr ? 'تم نشر المشروع بنجاح (ظاهر الآن لجميع زوار الموقع)' : 'Project Published to live site!')
+        ? (isAr ? 'تم تحويل المشروع إلى "مسودة" في اللغتين (مخفي من الموقع للزوار)' : 'Project set to Draft in both languages (Hidden from visitors)')
+        : (isAr ? 'تم نشر المشروع في اللغتين بنجاح (ظاهر الآن لجميع زوار الموقع)' : 'Project Published to live site in both languages!')
     );
     setTimeout(() => setNotificationMsg(''), 3500);
   };
 
   const handleDuplicateProject = (idx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
-    const source = currentList[idx];
+    const activeList = getProjectsForLang(editLang);
+    const source = activeList[idx];
     if (!source) return;
-    const cloned: Project = {
-      ...source,
-      id: `proj-${Date.now()}`,
-      title: `${source.title} (${isAr ? 'نسخة مسودة' : 'Copy Draft'})`,
-      isDraft: true, // cloned as draft for safety
+
+    const newId = `project-${Date.now()}`;
+    const arList = [...getProjectsForLang('ar')];
+    const enList = [...getProjectsForLang('en')];
+
+    const sourceAr = arList.find((p) => p.id === source.id) || source;
+    const sourceEn = enList.find((p) => p.id === source.id) || source;
+
+    const clonedAr: Project = {
+      ...sourceAr,
+      id: newId,
+      title: `${sourceAr.title} (نسخة مسودة)`,
+      isDraft: true,
     };
-    currentList.splice(idx + 1, 0, cloned);
-    handleConfigChange('projectsList', currentList);
-    setExpandedProjectIdx(idx + 1);
-    setNotificationMsg(isAr ? 'تم استنساخ المشروع كمسودة بنجاح! يمكنك تعديله.' : 'Project duplicated as draft.');
+
+    const clonedEn: Project = {
+      ...sourceEn,
+      id: newId,
+      title: `${sourceEn.title} (Draft Copy)`,
+      isDraft: true,
+    };
+
+    handleMultipleConfigChanges({
+      projectsList: [clonedAr, ...arList],
+      projectsListEn: [clonedEn, ...enList],
+    });
+    setExpandedProjectIdx(0);
+    setNotificationMsg(isAr ? 'تم استنساخ المشروع كمسودة في اللغتين بنجاح!' : 'Project duplicated as draft in both languages.');
     setTimeout(() => setNotificationMsg(''), 3500);
   };
 
   const handleMoveProject = (idx: number, direction: 'up' | 'down') => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const otherKey = getCollectionKey('projects', editLang === 'ar' ? 'en' : 'ar');
+    const currentList = [...getProjectsForLang(editLang)];
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= currentList.length) return;
+
     const temp = currentList[idx];
     currentList[idx] = currentList[targetIdx];
     currentList[targetIdx] = temp;
-    handleConfigChange('projectsList', currentList);
+
+    const idOrder = currentList.map((p) => p.id);
+    const otherList = [...getProjectsForLang(editLang === 'ar' ? 'en' : 'ar')].sort((a, b) => {
+      const idxA = idOrder.indexOf(a.id);
+      const idxB = idOrder.indexOf(b.id);
+      if (idxA === -1 || idxB === -1) return 0;
+      return idxA - idxB;
+    });
+
+    handleMultipleConfigChanges({
+      [currentKey]: currentList,
+      [otherKey]: otherList,
+    });
     setExpandedProjectIdx(targetIdx);
   };
 
@@ -1076,155 +1239,279 @@ export default function SecureAdminPortalPage() {
     if (typeof window !== 'undefined' && !window.confirm(isAr ? 'هل أنت متأكد من حذف هذا المشروع من سابقة الأعمال؟' : 'Delete this project?')) {
       return;
     }
-    const currentList = config.projectsList || contentAr.projects.list;
-    const updated = currentList.filter((p) => p.id !== projId);
-    handleConfigChange('projectsList', updated);
+    const arList = getProjectsForLang('ar').filter((p) => p.id !== projId);
+    const enList = getProjectsForLang('en').filter((p) => p.id !== projId);
+    handleMultipleConfigChanges({
+      projectsList: arList,
+      projectsListEn: enList,
+    });
     setExpandedProjectIdx(null);
-    setNotificationMsg(isAr ? 'تم حذف المشروع من القائمة.' : 'Project removed.');
+    setNotificationMsg(isAr ? 'تم حذف المشروع من النسختين (العربية والإنجليزية).' : 'Project removed from both Arabic and English catalogs.');
     setTimeout(() => setNotificationMsg(''), 4000);
   };
 
   const handleUpdateProjectField = (idx: number, field: keyof Project, val: any) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const otherKey = getCollectionKey('projects', editLang === 'ar' ? 'en' : 'ar');
+    const currentList = [...getProjectsForLang(editLang)];
+    const targetProject = currentList[idx];
+    if (!targetProject) return;
+
+    const targetId = targetProject.id;
     currentList[idx] = { ...currentList[idx], [field]: val };
-    handleConfigChange('projectsList', currentList);
+
+    // Synchronize non-linguistic fields to the other catalog by project ID
+    if (NON_LINGUISTIC_PROJECT_FIELDS.has(field)) {
+      const otherList = [...getProjectsForLang(editLang === 'ar' ? 'en' : 'ar')];
+      const otherIdx = otherList.findIndex((p) => p.id === targetId);
+      if (otherIdx !== -1) {
+        otherList[otherIdx] = { ...otherList[otherIdx], [field]: val };
+
+        // Handle projectStatus side effects (isUpcoming) in both languages
+        if (field === 'projectStatus') {
+          const isOngoing = val === 'ongoing';
+          currentList[idx] = {
+            ...currentList[idx],
+            isUpcoming: isOngoing,
+            statusBadge: editLang === 'ar' ? (isOngoing ? 'مشروع جاري العمل عليه' : 'مشروع مكتمل') : (isOngoing ? 'In Progress' : 'Completed'),
+          };
+          otherList[otherIdx] = {
+            ...otherList[otherIdx],
+            isUpcoming: isOngoing,
+            statusBadge: editLang === 'ar' ? (isOngoing ? 'In Progress' : 'Completed') : (isOngoing ? 'مشروع جاري العمل عليه' : 'مشروع مكتمل'),
+          };
+        }
+
+        handleMultipleConfigChanges({
+          [currentKey]: currentList,
+          [otherKey]: otherList,
+        });
+        return;
+      }
+    }
+
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleAddProjectTechnology = (idx: number, tech: string) => {
     if (!tech.trim()) return;
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = currentList[idx].technologies || [];
     currentList[idx] = { ...currentList[idx], technologies: [...existing, tech.trim()] };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
     setNewTechTagInput((prev) => ({ ...prev, [idx]: '' }));
   };
 
   const handleRemoveProjectTechnology = (idx: number, techIdx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].technologies || [])];
     existing.splice(techIdx, 1);
     currentList[idx] = { ...currentList[idx], technologies: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleAddProjectChallenge = (idx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = currentList[idx].challenges || [];
     currentList[idx] = { 
       ...currentList[idx], 
-      challenges: [...existing, isAr ? 'تحدي هندسي جديد...' : 'New engineering challenge...'] 
+      challenges: [...existing, editLang === 'ar' ? 'تحدي هندسي جديد...' : 'New engineering challenge...'] 
     };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleUpdateProjectChallenge = (idx: number, chIdx: number, text: string) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].challenges || [])];
     existing[chIdx] = text;
     currentList[idx] = { ...currentList[idx], challenges: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleRemoveProjectChallenge = (idx: number, chIdx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].challenges || [])];
     existing.splice(chIdx, 1);
     currentList[idx] = { ...currentList[idx], challenges: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleAddProjectSolution = (idx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = currentList[idx].solutions || [];
     currentList[idx] = { 
       ...currentList[idx], 
-      solutions: [...existing, isAr ? 'حل هندسي منفذ بواسطة تيك بكرة...' : 'Solution implemented by Tech Bokra...'] 
+      solutions: [...existing, editLang === 'ar' ? 'حل هندسي منفذ بواسطة تيك بكرة...' : 'Solution implemented by Tech Bokra...'] 
     };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleUpdateProjectSolution = (idx: number, solIdx: number, text: string) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].solutions || [])];
     existing[solIdx] = text;
     currentList[idx] = { ...currentList[idx], solutions: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleRemoveProjectSolution = (idx: number, solIdx: number) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].solutions || [])];
     existing.splice(solIdx, 1);
     currentList[idx] = { ...currentList[idx], solutions: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
   const handleUpdateProjectStat = (idx: number, statIdx: number, field: 'label' | 'value', val: string) => {
-    const currentList = [...(config.projectsList || contentAr.projects.list)];
+    const currentKey = getCollectionKey('projects', editLang);
+    const currentList = [...getProjectsForLang(editLang)];
+    if (!currentList[idx]) return;
     const existing = [...(currentList[idx].stats || [])];
     while (existing.length <= statIdx) {
       existing.push({ label: '', value: '' });
     }
     existing[statIdx] = { ...existing[statIdx], [field]: val };
     currentList[idx] = { ...currentList[idx], stats: existing };
-    handleConfigChange('projectsList', currentList);
+    handleConfigChange(currentKey, currentList);
   };
 
-  // Services CMS Actions
+  // Services CMS Actions (Language-aware with synchronized non-linguistic fields)
   const handleAddNewService = () => {
-    const currentList = config.servicesList || contentAr.services.list;
+    const arList = getServicesForLang('ar');
+    const enList = getServicesForLang('en');
     const newId = `srv-${Date.now()}`;
-    const newService: ServiceItem = {
+
+    const common = {
       id: newId,
-      title: isAr ? 'خدمة تقنية جديدة' : 'New Technical Service',
       category: 'security',
       iconName: 'ShieldCheck',
       image: CURATED_IMAGE_PRESETS.cctv[0].url,
-      shortDesc: isAr ? 'نبذة تفصيلية عن نطاق الخدمة وحلول التوريد والتركيب والتشغيل المعتمدة.' : 'Detailed description of the service and turnkey delivery.',
+      seedRevision: CURRENT_CONTENT_VERSION,
+    };
+
+    const newServiceAr: ServiceItem = {
+      ...common,
+      title: 'خدمة تقنية جديدة',
+      shortDesc: 'نبذة تفصيلية عن نطاق الخدمة وحلول التوريد والتركيب والتشغيل المعتمدة.',
       points: [
-        isAr ? 'توريد وتركيب معتمد بأعلى المواصفات' : 'Certified hardware & deployment',
-        isAr ? 'ضمان رسمي ودعم فني على مدار الساعة' : 'Official SLA & 24/7 technical support'
+        'توريد وتركيب معتمد بأعلى المواصفات',
+        'ضمان رسمي ودعم فني على مدار الساعة',
       ],
       specs: [
-        { title: isAr ? 'زمن التنفيذ' : 'Timeline', desc: isAr ? 'حسب نطاق المشروع' : 'Project-based' },
-        { title: isAr ? 'الضمان' : 'Warranty', desc: isAr ? 'ضمان شامل مع عقد صيانة' : 'Comprehensive warranty' }
+        { title: 'زمن التنفيذ', desc: 'حسب نطاق المشروع' },
+        { title: 'الضمان', desc: 'ضمان شامل مع عقد صيانة' },
       ],
       deliverables: [
-        isAr ? 'مخططات هندسية As-Built معتمدة' : 'Approved As-Built schematics',
-        isAr ? 'شهادة اختبار وتشغيل وتسليم كامل' : 'Full commissioning certificate'
-      ]
+        'مخططات هندسية As-Built معتمدة',
+        'شهادة اختبار وتشغيل وتسليم كامل',
+      ],
     };
-    handleConfigChange('servicesList', [newService, ...currentList]);
+
+    const newServiceEn: ServiceItem = {
+      ...common,
+      title: 'New Technical Service',
+      shortDesc: 'Detailed description of the service and turnkey delivery.',
+      points: [
+        'Certified hardware & deployment',
+        'Official SLA & 24/7 technical support',
+      ],
+      specs: [
+        { title: 'Timeline', desc: 'Project-based' },
+        { title: 'Warranty', desc: 'Comprehensive warranty' },
+      ],
+      deliverables: [
+        'Approved As-Built schematics',
+        'Full commissioning certificate',
+      ],
+    };
+
+    handleMultipleConfigChanges({
+      servicesList: [newServiceAr, ...arList],
+      servicesListEn: [newServiceEn, ...enList],
+    });
     setExpandedServiceIdx(0);
-    setNotificationMsg(isAr ? 'تمت إضافة خدمة جديدة بنجاح! يمكنك الآن تعديل بياناتها وصورتها.' : 'New service added successfully!');
+    setNotificationMsg(isAr ? 'تمت إضافة خدمة جديدة في اللغتين بنجاح!' : 'New service added to both Arabic and English catalogs!');
     setTimeout(() => setNotificationMsg(''), 3500);
   };
 
   const handleDeleteService = (serviceId: string) => {
     if (typeof window !== 'undefined' && !window.confirm(isAr ? 'هل أنت متأكد من حذف هذه الخدمة من قائمة الخدمات؟' : 'Delete this service?')) return;
-    const currentList = config.servicesList || contentAr.services.list;
-    const updated = currentList.filter((s) => s.id !== serviceId);
-    handleConfigChange('servicesList', updated);
+    const arList = getServicesForLang('ar').filter((s) => s.id !== serviceId);
+    const enList = getServicesForLang('en').filter((s) => s.id !== serviceId);
+    handleMultipleConfigChanges({
+      servicesList: arList,
+      servicesListEn: enList,
+    });
     setExpandedServiceIdx(null);
-    setNotificationMsg(isAr ? 'تم حذف الخدمة بنجاح.' : 'Service deleted.');
+    setNotificationMsg(isAr ? 'تم حذف الخدمة من القائمتين بنجاح.' : 'Service deleted from both catalogs.');
     setTimeout(() => setNotificationMsg(''), 3000);
   };
 
   const handleMoveService = (idx: number, direction: 'up' | 'down') => {
-    const currentList = [...(config.servicesList || contentAr.services.list)];
+    const currentKey = getCollectionKey('services', editLang);
+    const otherKey = getCollectionKey('services', editLang === 'ar' ? 'en' : 'ar');
+    const currentList = [...getServicesForLang(editLang)];
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= currentList.length) return;
+
     const temp = currentList[idx];
     currentList[idx] = currentList[targetIdx];
     currentList[targetIdx] = temp;
-    handleConfigChange('servicesList', currentList);
+
+    const idOrder = currentList.map((s) => s.id);
+    const otherList = [...getServicesForLang(editLang === 'ar' ? 'en' : 'ar')].sort((a, b) => {
+      const idxA = idOrder.indexOf(a.id);
+      const idxB = idOrder.indexOf(b.id);
+      if (idxA === -1 || idxB === -1) return 0;
+      return idxA - idxB;
+    });
+
+    handleMultipleConfigChanges({
+      [currentKey]: currentList,
+      [otherKey]: otherList,
+    });
     setExpandedServiceIdx(targetIdx);
   };
 
   const handleUpdateServiceField = (idx: number, field: keyof ServiceItem, val: any) => {
-    const currentList = [...(config.servicesList || contentAr.services.list)];
+    const currentKey = getCollectionKey('services', editLang);
+    const otherKey = getCollectionKey('services', editLang === 'ar' ? 'en' : 'ar');
+    const currentList = [...getServicesForLang(editLang)];
+    const targetService = currentList[idx];
+    if (!targetService) return;
+
     currentList[idx] = { ...currentList[idx], [field]: val };
-    handleConfigChange('servicesList', currentList);
+
+    if (NON_LINGUISTIC_SERVICE_FIELDS.has(field)) {
+      const otherList = [...getServicesForLang(editLang === 'ar' ? 'en' : 'ar')];
+      const otherIdx = otherList.findIndex((s) => s.id === targetService.id);
+      if (otherIdx !== -1) {
+        otherList[otherIdx] = { ...otherList[otherIdx], [field]: val };
+        handleMultipleConfigChanges({
+          [currentKey]: currentList,
+          [otherKey]: otherList,
+        });
+        return;
+      }
+    }
+
+    handleConfigChange(currentKey, currentList);
   };
 
   // Filtered Leads
@@ -3098,7 +3385,7 @@ export default function SecureAdminPortalPage() {
 
             {/* 5. SERVICES CMS (FULL CONTROL) */}
             {activeTab === 'services' && (() => {
-              const allServices = config.servicesList || contentAr.services.list;
+              const allServices = getServicesForLang(editLang);
               const filteredServices = allServices.map((srv, originalIdx) => ({ srv, originalIdx })).filter(({ srv }) => {
                 if (serviceCategoryFilter !== 'all' && srv.category !== serviceCategoryFilter) return false;
                 if (serviceSearch.trim()) {
@@ -3116,6 +3403,53 @@ export default function SecureAdminPortalPage() {
                 <div className={`p-6 rounded-2xl border space-y-6 ${
                   isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
+                  {/* Top Bilingual Editing Language Switcher */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-[#071120] to-cyan-950/40 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <Globe className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-white">
+                            {isAr ? 'لغة التحرير الحالية:' : 'Active Editing Language:'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            {editLang === 'ar' ? 'العربية (Arabic)' : 'English (الإنجليزية)'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {editLang === 'ar'
+                            ? 'أنت الآن تحرر المحتوى العربي للخدمات (servicesList). الصور والتصنيفات تتزامن تلقائياً بالـ ID مع الإنجليزية.'
+                            : 'You are editing the English services catalog (servicesListEn). Images and categories sync automatically by ID with Arabic.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="inline-flex items-center p-1 rounded-xl bg-[#071120] border border-white/10 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setEditLang('ar')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                          editLang === 'ar'
+                            ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        العربية
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditLang('en')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                          editLang === 'en'
+                            ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        English
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Services Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                     <div>
@@ -3141,8 +3475,10 @@ export default function SecureAdminPortalPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm(isAr ? 'هل تريد استعادة قائمة الخدمات الافتراضية؟' : 'Reset to default services?')) {
-                            handleConfigChange('servicesList', defaultEditableConfig.servicesList);
+                          if (confirm(isAr ? 'هل تريد استعادة قائمة الخدمات الافتراضية للغة التحرير الحالية؟' : 'Reset services for current language?')) {
+                            const listKey = getCollectionKey('services', editLang);
+                            const defaultList = editLang === 'ar' ? defaultEditableConfig.servicesList : defaultEditableConfig.servicesListEn;
+                            handleConfigChange(listKey, defaultList);
                           }
                         }}
                         className="px-3 py-2 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
@@ -3530,7 +3866,7 @@ export default function SecureAdminPortalPage() {
 
             {/* 6. PROJECTS PORTFOLIO CMS */}
             {activeTab === 'projects' && (() => {
-              const allProjects = config.projectsList || contentAr.projects.list;
+              const allProjects = getProjectsForLang(editLang);
               const totalCount = allProjects.length;
               const publishedCount = allProjects.filter((p) => p.isDraft !== true).length;
               const draftCount = allProjects.filter((p) => p.isDraft === true).length;
@@ -3557,6 +3893,53 @@ export default function SecureAdminPortalPage() {
                 <div className={`p-6 rounded-2xl border space-y-6 ${
                   isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
+                  {/* Top Bilingual Editing Language Switcher */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-[#071120] to-cyan-950/40 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <Globe className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-white">
+                            {isAr ? 'لغة التحرير الحالية:' : 'Active Editing Language:'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            {editLang === 'ar' ? 'العربية (Arabic)' : 'English (الإنجليزية)'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {editLang === 'ar'
+                            ? 'أنت الآن تحرر المحتوى العربي للمشاريع (projectsList). الحقول الفنية (الرابط، الصورة، الإظهار، المسودة) تتزامن تلقائياً بالـ ID مع الإنجليزية.'
+                            : 'You are editing the English projects catalog (projectsListEn). Technical flags (liveUrl, image, showOnSite, isDraft) sync automatically by ID with Arabic.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="inline-flex items-center p-1 rounded-xl bg-[#071120] border border-white/10 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setEditLang('ar')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                          editLang === 'ar'
+                            ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        العربية
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditLang('en')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                          editLang === 'en'
+                            ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        English
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Top Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                     <div>
@@ -3584,8 +3967,10 @@ export default function SecureAdminPortalPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm(isAr ? 'هل تريد استعادة قائمة المشروعات الافتراضية؟' : 'Reset to default projects?')) {
-                            handleConfigChange('projectsList', defaultEditableConfig.projectsList);
+                          if (confirm(isAr ? 'هل تريد استعادة قائمة المشروعات الافتراضية للغة التحرير الحالية؟' : 'Reset projects for current language?')) {
+                            const listKey = getCollectionKey('projects', editLang);
+                            const defaultList = editLang === 'ar' ? defaultEditableConfig.projectsList : defaultEditableConfig.projectsListEn;
+                            handleConfigChange(listKey, defaultList);
                           }
                         }}
                         className="px-3 py-2 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
@@ -4408,10 +4793,58 @@ export default function SecureAdminPortalPage() {
             })()}
 
             {/* 7. FAQ CMS */}
+            {/* 7. FAQ CMS */}
             {activeTab === 'faq' && (
               <div className={`p-6 rounded-2xl border space-y-6 ${
                 isDark ? 'bg-[#0B1A2F] border-white/10' : 'bg-white border-slate-200 shadow-sm'
               }`}>
+                {/* Top Bilingual Editing Language Switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-[#071120] to-cyan-950/40 shadow-sm">
+                  <div className="flex items-center gap-2.5">
+                    <Globe className="w-5 h-5 text-cyan-400 shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-white">
+                          {isAr ? 'لغة التحرير الحالية:' : 'Active Editing Language:'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          {editLang === 'ar' ? 'العربية (Arabic)' : 'English (الإنجليزية)'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {editLang === 'ar'
+                          ? 'أنت الآن تحرر قائمة الأسئلة الشائعة العربية (faqList).'
+                          : 'You are editing the English FAQ list (faqListEn).'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="inline-flex items-center p-1 rounded-xl bg-[#071120] border border-white/10 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditLang('ar')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                        editLang === 'ar'
+                          ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      العربية
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditLang('en')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                        editLang === 'en'
+                          ? 'bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md font-bold'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      English
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className={`text-xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -4423,23 +4856,45 @@ export default function SecureAdminPortalPage() {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      const updated = [
-                        ...(config.faqList || contentAr.faq.items),
-                        { q: isAr ? 'سؤال جديد هنا...' : 'New Question...', a: isAr ? 'إجابة واضحة ومفصلة هنا...' : 'Clear answer here...' }
-                      ];
-                      handleConfigChange('faqList', updated);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{isAr ? 'إضافة سؤال جديد' : 'Add FAQ'}</span>
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        const targetKey = getCollectionKey('faq', editLang);
+                        const currentFaqs = getFaqsForLang(editLang);
+                        const updated = [
+                          ...currentFaqs,
+                          {
+                            q: editLang === 'ar' ? 'سؤال جديد هنا...' : 'New Question...',
+                            a: editLang === 'ar' ? 'إجابة واضحة ومفصلة هنا...' : 'Clear answer here...',
+                          },
+                        ];
+                        handleConfigChange(targetKey, updated);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#38BDF8] text-[#071120] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{isAr ? 'إضافة سؤال جديد' : 'Add FAQ'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(isAr ? 'هل تريد استعادة قائمة الأسئلة الافتراضية للغة التحرير الحالية؟' : 'Reset FAQ for current language?')) {
+                          const listKey = getCollectionKey('faq', editLang);
+                          const defaultList = editLang === 'ar' ? defaultEditableConfig.faqList : defaultEditableConfig.faqListEn;
+                          handleConfigChange(listKey, defaultList || []);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#071120] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'استعادة الافتراضي' : 'Reset'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
-                  {(config.faqList || contentAr.faq.items).map((item, idx) => (
+                  {getFaqsForLang(editLang).map((item, idx) => (
                     <div key={idx} className="p-4 rounded-xl bg-[#071120] border border-white/10 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white flex items-center gap-2">
@@ -4450,8 +4905,9 @@ export default function SecureAdminPortalPage() {
                         </span>
                         <button
                           onClick={() => {
-                            const updated = (config.faqList || contentAr.faq.items).filter((_, i) => i !== idx);
-                            handleConfigChange('faqList', updated);
+                            const targetKey = getCollectionKey('faq', editLang);
+                            const updated = getFaqsForLang(editLang).filter((_, i) => i !== idx);
+                            handleConfigChange(targetKey, updated);
                           }}
                           className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
                           title="حذف السؤال"
@@ -4464,9 +4920,10 @@ export default function SecureAdminPortalPage() {
                         type="text"
                         value={item.q}
                         onChange={(e) => {
-                          const updated = [...(config.faqList || contentAr.faq.items)];
+                          const targetKey = getCollectionKey('faq', editLang);
+                          const updated = [...getFaqsForLang(editLang)];
                           updated[idx] = { ...updated[idx], q: e.target.value };
-                          handleConfigChange('faqList', updated);
+                          handleConfigChange(targetKey, updated);
                         }}
                         className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-[#00F2FE] outline-none"
                       />
@@ -4475,9 +4932,10 @@ export default function SecureAdminPortalPage() {
                         rows={2}
                         value={item.a}
                         onChange={(e) => {
-                          const updated = [...(config.faqList || contentAr.faq.items)];
+                          const targetKey = getCollectionKey('faq', editLang);
+                          const updated = [...getFaqsForLang(editLang)];
                           updated[idx] = { ...updated[idx], a: e.target.value };
-                          handleConfigChange('faqList', updated);
+                          handleConfigChange(targetKey, updated);
                         }}
                         className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-[#00F2FE] outline-none resize-none leading-relaxed"
                       />

@@ -34,27 +34,31 @@ export default function ProjectDetailView({ slug }: { slug: string }) {
   }
 
   // 1. Locate project from the authoritative portal version (Ar) and localized list (En/Ar)
-  const portalListAr = customConfig.projectsList || [];
-  const portalListEn = customConfig.projectsListEn || [];
+  // Filter first to published projects only (isDraft !== true && verified === true && showOnSite !== false)
+  const rawListAr = customConfig.projectsList || [];
+  const rawListEn = customConfig.projectsListEn || [];
 
-  const portalProjectAr = portalListAr.find(
-    (p) => (p.slug && p.slug.toLowerCase() === slug.toLowerCase()) || (p.id && p.id.toLowerCase() === slug.toLowerCase())
+  const publishedListAr = rawListAr.filter(
+    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
+  const publishedListEn = rawListEn.filter(
+    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+  );
+
+  const cleanSlug = slug.toLowerCase();
+  const portalProjectAr =
+    publishedListAr.find((p) => p.slug && p.slug.toLowerCase() === cleanSlug) ||
+    publishedListAr.find((p) => p.id && p.id.toLowerCase() === cleanSlug);
 
   // If not found in published projects, 404
   if (!portalProjectAr) {
     notFound();
   }
 
-  // Check portal publishing guardrails
-  if (portalProjectAr.isDraft === true || portalProjectAr.verified !== true || portalProjectAr.showOnSite === false) {
-    notFound();
-  }
-
   // 2. Select language-specific content
   const localizedCandidate = isAr 
     ? portalProjectAr 
-    : portalListEn.find((p) => p.id === portalProjectAr.id) || portalProjectAr;
+    : publishedListEn.find((p) => p.id === portalProjectAr.id) || portalProjectAr;
 
   // 3. Merge live cloud overrides from portal version for both languages
   const project: Project = {

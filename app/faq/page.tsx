@@ -2,6 +2,9 @@ import React from 'react';
 import type { Metadata } from 'next';
 import FaqView from '@/components/FaqView';
 import { contentAr } from '@/lib/content';
+import { fetchPublishedSiteSettings } from '@/lib/dbService';
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'الأسئلة الشائعة والاستفسارات التقنية | تيك بكرة - Tech Bokra',
@@ -17,11 +20,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const settings = await fetchPublishedSiteSettings();
+  const faqList = (settings.faqList && settings.faqList.length > 0) ? settings.faqList : contentAr.faq.items;
+
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: contentAr.faq.items.map((item) => ({
+    mainEntity: faqList.map((item) => ({
       '@type': 'Question',
       name: item.q,
       acceptedAnswer: {

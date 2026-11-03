@@ -56,7 +56,27 @@ export default function FaqView() {
     }));
   };
 
+  const cmsCategory: FaqCategoryItem | null = (customConfig.faqList && customConfig.faqList.length > 0) || (customConfig.faqListEn && customConfig.faqListEn.length > 0)
+    ? {
+        id: 'portal-faq',
+        categoryAr: 'الأسئلة الشائعة العامة',
+        categoryEn: 'General & Core FAQs',
+        icon: Sparkles,
+        items: (isAr ? (customConfig.faqList || []) : (customConfig.faqListEn || customConfig.faqList || [])).map((item, idx) => {
+          const arItem = customConfig.faqList?.[idx];
+          const enItem = customConfig.faqListEn?.[idx];
+          return {
+            qAr: arItem?.q || item.q,
+            qEn: enItem?.q || item.q,
+            aAr: arItem?.a || item.a,
+            aEn: enItem?.a || item.a,
+          };
+        }),
+      }
+    : null;
+
   const faqData: FaqCategoryItem[] = [
+    ...(cmsCategory ? [cmsCategory] : []),
     {
       id: 'general',
       categoryAr: 'نطاق الخدمات والتوريد',

@@ -46,16 +46,25 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
   // Determine if there is a customConfig override for this service
-  const customOverride = customConfig.servicesList?.find(
+  const activeServicesList = isAr
+    ? customConfig.servicesList
+    : (customConfig.servicesListEn && customConfig.servicesListEn.length > 0
+        ? customConfig.servicesListEn
+        : customConfig.servicesList);
+
+  const customOverride = activeServicesList?.find(
     (item) => item.id === service.slug || LEGACY_SERVICE_ID_MAP[item.id] === service.slug
   );
 
-  // Apply override conservatively:
-  // - Custom image applies to both languages
-  // - Arabic text only overrides if current language is Arabic
-  const displayImage = customOverride?.image || service.image || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80';
-  const displayTitle = (isAr && customOverride?.title) ? customOverride.title : service.title[lang];
-  const displaySummary = (isAr && customOverride?.shortDesc) ? customOverride.shortDesc : service.summary[lang];
+  // Always read visual/image overrides from the master portal list (servicesList)
+  const masterOverride = customConfig.servicesList?.find(
+    (item) => item.id === service.slug || LEGACY_SERVICE_ID_MAP[item.id] === service.slug
+  );
+
+  // Custom image applies to both languages
+  const displayImage = masterOverride?.image || customOverride?.image || service.image || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=80';
+  const displayTitle = customOverride?.title || service.title[lang];
+  const displaySummary = customOverride?.shortDesc || service.summary[lang];
 
   const relatedServicesList = getRelatedServices(service.slug);
 
@@ -594,7 +603,9 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
         logoEmblemStyle={customConfig.logoEmblemStyle}
@@ -609,7 +620,7 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
     </div>
   );

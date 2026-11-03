@@ -40,12 +40,18 @@ export default function ServicesPage() {
 
   const baseList = isAr
     ? ((customConfig.servicesList && customConfig.servicesList.length > 0) ? customConfig.servicesList : data.services.list)
-    : data.services.list;
+    : ((customConfig.servicesListEn && customConfig.servicesListEn.length > 0) ? customConfig.servicesListEn : data.services.list);
 
   const servicesList = baseList.map((s) => {
     if (customConfig.servicesList && customConfig.servicesList.length > 0) {
       const match = customConfig.servicesList.find((cs) => cs.id === s.id);
-      if (match && match.image) return { ...s, image: match.image };
+      if (match) {
+        return {
+          ...s,
+          image: match.image || s.image,
+          iconName: match.iconName || s.iconName,
+        };
+      }
     }
     return s;
   });
@@ -82,7 +88,7 @@ export default function ServicesPage() {
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
 
       <main className="pt-28 pb-20">
@@ -353,7 +359,9 @@ export default function ServicesPage() {
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
         logoEmblemStyle={customConfig.logoEmblemStyle}
@@ -368,7 +376,7 @@ export default function ServicesPage() {
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
     </div>
   );

@@ -10,9 +10,10 @@ interface FaqSectionProps {
   lang: 'ar' | 'en';
   data: SiteLanguageData;
   customFaq?: { q: string; a: string }[];
+  customFaqEn?: { q: string; a: string }[];
 }
 
-export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
+export default function FaqSection({ lang, data, customFaq, customFaqEn }: FaqSectionProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const { isDark } = useTheme();
   const isAr = lang === 'ar';
@@ -20,6 +21,12 @@ export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
   const toggleAccordion = (idx: number) => {
     setOpenIdx(openIdx === idx ? null : idx);
   };
+
+  const resolvedFaq = isAr
+    ? (customFaq && customFaq.length > 0 ? customFaq : data.faq.items)
+    : (customFaqEn && customFaqEn.length > 0
+        ? customFaqEn
+        : (customFaq && customFaq.length > 0 ? customFaq : data.faq.items));
 
   return (
     <section 
@@ -62,7 +69,7 @@ export default function FaqSection({ lang, data, customFaq }: FaqSectionProps) {
 
         {/* Accordion List */}
         <div className="space-y-3.5">
-          {((isAr && customFaq && customFaq.length > 0) ? customFaq : data.faq.items).map((item, idx) => {
+          {resolvedFaq.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div

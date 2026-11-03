@@ -230,6 +230,8 @@ export default function HomePage() {
           data={data}
           onSelectService={handleSelectServiceForQuote}
           customServices={customConfig.servicesList}
+          customServicesEn={customConfig.servicesListEn}
+          portalServicesList={customConfig.servicesList}
           servicesOverrides={{
             badge: isAr ? customConfig.servicesBadgeAr : customConfig.servicesBadgeEn,
             titleLine1: isAr ? customConfig.servicesTitleLine1Ar : customConfig.servicesTitleLine1En,
@@ -275,6 +277,8 @@ export default function HomePage() {
               alrehlaUrl: customConfig.alrehlaUrl,
             }}
             customProjects={customConfig.projectsList}
+            customProjectsEn={customConfig.projectsListEn}
+            portalProjectsList={customConfig.projectsList}
           />
         )}
 
@@ -298,6 +302,7 @@ export default function HomePage() {
             lang={lang}
             data={data}
             customFaq={customConfig.faqList}
+            customFaqEn={customConfig.faqListEn}
           />
         )}
 

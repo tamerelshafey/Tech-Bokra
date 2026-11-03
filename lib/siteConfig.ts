@@ -130,18 +130,32 @@ export interface EditableConfig {
 
 export const CURRENT_CONTENT_VERSION = 3;
 
+export const LEGACY_PROJECT_IDS: readonly string[] = ['alrehla', 'contracting-ops-platform'];
+
 /**
  * Merge two collections of items by unique 'id'.
  * If seed has a higher seedRevision, updates to the corrected seed version
  * while preserving custom administrator visibility and draft flags.
+ * Ignores any legacy IDs passed via ignoredIds to purge stale cloud entries safely.
  */
-export function mergeCollectionsById<T extends { id: string; seedRevision?: number }>(seedList: T[], cloudList?: T[]): T[] {
-  if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) return seedList;
+export function mergeCollectionsById<T extends { id: string; seedRevision?: number }>(
+  seedList: T[], 
+  cloudList?: T[],
+  ignoredIds?: readonly string[] | string[]
+): T[] {
+  const ignoredSet = new Set<string>(ignoredIds || []);
+
+  if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) {
+    if (ignoredSet.size > 0) {
+      return seedList.filter((s) => s && s.id && !ignoredSet.has(s.id));
+    }
+    return seedList;
+  }
 
   const seedById = new Map<string, T>();
-  for (const s of seedList) if (s && s.id) seedById.set(s.id, s);
+  for (const s of seedList) if (s && s.id && !ignoredSet.has(s.id)) seedById.set(s.id, s);
 
-  const processedIds = new Set<string>();
+  const processedIds = new Set<string>(ignoredSet);
   const merged: T[] = [];
 
   for (const item of cloudList) {

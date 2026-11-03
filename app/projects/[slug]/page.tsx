@@ -14,12 +14,22 @@ interface ProjectPageProps {
 }
 
 export async function generateStaticParams() {
-  const allProjects = defaultEditableConfig.projectsList || [];
+  const rawProjects = defaultEditableConfig.projectsList || [];
+  const publishedProjects = rawProjects.filter(
+    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+  );
   const params: { slug: string }[] = [];
+  const seen = new Set<string>();
 
-  for (const p of allProjects) {
-    if (p.slug) params.push({ slug: p.slug });
-    if (p.id && p.id !== p.slug) params.push({ slug: p.id });
+  for (const p of publishedProjects) {
+    if (p.slug && !seen.has(p.slug.toLowerCase())) {
+      params.push({ slug: p.slug });
+      seen.add(p.slug.toLowerCase());
+    }
+    if (p.id && p.id !== p.slug && !seen.has(p.id.toLowerCase())) {
+      params.push({ slug: p.id });
+      seen.add(p.id.toLowerCase());
+    }
   }
 
   return params;
@@ -33,12 +43,17 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
     notFound();
   }
 
-  const projects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
-  const project = projects.find(
-    (p) => (p.slug && p.slug.toLowerCase() === slug.toLowerCase()) || (p.id && p.id.toLowerCase() === slug.toLowerCase())
+  const rawProjects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
+  const publishedProjects = rawProjects.filter(
+    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
 
-  if (!project || project.isDraft === true || project.verified !== true || project.showOnSite === false) {
+  const cleanSlug = slug.toLowerCase();
+  const project =
+    publishedProjects.find((p) => p.slug && p.slug.toLowerCase() === cleanSlug) ||
+    publishedProjects.find((p) => p.id && p.id.toLowerCase() === cleanSlug);
+
+  if (!project) {
     notFound();
   }
 
@@ -83,12 +98,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound();
   }
 
-  const projects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
-  const project = projects.find(
-    (p) => (p.slug && p.slug.toLowerCase() === slug.toLowerCase()) || (p.id && p.id.toLowerCase() === slug.toLowerCase())
+  const rawProjects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
+  const publishedProjects = rawProjects.filter(
+    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
 
-  if (!project || project.isDraft === true || project.verified !== true || project.showOnSite === false) {
+  const cleanSlug = slug.toLowerCase();
+  const project =
+    publishedProjects.find((p) => p.slug && p.slug.toLowerCase() === cleanSlug) ||
+    publishedProjects.find((p) => p.id && p.id.toLowerCase() === cleanSlug);
+
+  if (!project) {
     notFound();
   }
 

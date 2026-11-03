@@ -26,6 +26,8 @@ interface ServicesSectionProps {
   data: SiteLanguageData;
   onSelectService: (serviceTitle: string) => void;
   customServices?: ServiceItem[];
+  customServicesEn?: ServiceItem[];
+  portalServicesList?: ServiceItem[];
   servicesOverrides?: {
     badge?: string;
     titleLine1?: string;
@@ -34,7 +36,15 @@ interface ServicesSectionProps {
   };
 }
 
-export default function ServicesSection({ lang, data, onSelectService, customServices, servicesOverrides }: ServicesSectionProps) {
+export default function ServicesSection({
+  lang,
+  data,
+  onSelectService,
+  customServices,
+  customServicesEn,
+  portalServicesList,
+  servicesOverrides,
+}: ServicesSectionProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'security-infra' | 'digital-software' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { isDark } = useTheme();
@@ -63,16 +73,24 @@ export default function ServicesSection({ lang, data, onSelectService, customSer
     }
   };
 
-  // Language-aware services resolution: preserve English text in English mode while syncing CMS images
+  // Language-aware services resolution: in English mode, use customServicesEn from settings (fallback to code)
   const baseServices = isAr
     ? (customServices && customServices.length > 0 ? customServices : data.services.list)
-    : data.services.list;
+    : (customServicesEn && customServicesEn.length > 0
+        ? customServicesEn
+        : (customServices && customServices.length > 0 ? customServices : data.services.list));
+
+  const portalList = portalServicesList || customServices;
 
   const activeList = baseServices.map((s) => {
-    if (customServices && customServices.length > 0) {
-      const match = customServices.find((cs) => cs.id === s.id);
-      if (match && match.image) {
-        return { ...s, image: match.image };
+    if (portalList && portalList.length > 0) {
+      const match = portalList.find((cs) => cs.id === s.id);
+      if (match) {
+        return {
+          ...s,
+          image: match.image || s.image,
+          iconName: match.iconName || s.iconName,
+        };
       }
     }
     return s;

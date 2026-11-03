@@ -332,7 +332,7 @@ export default function ProjectsPage() {
         showEstimator={customConfig.showEstimator ?? false}
         showTenders={customConfig.showTenders ?? false}
         showEngineeringHub={customConfig.showEngineeringHub ?? false}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
 
       <main className="pt-28 pb-20">
@@ -508,7 +508,7 @@ export default function ProjectsPage() {
         commercialRegister={customConfig.commercialRegister}
         taxId={customConfig.taxId}
         footerRights={isAr ? customConfig.footerRightsAr : customConfig.footerRightsEn}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
         showProjectsSection={customConfig.showProjectsSection ?? true}
         showProcessSection={customConfig.showProcessSection ?? true}
         showFaqSection={customConfig.showFaqSection ?? true}

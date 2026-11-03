@@ -33,12 +33,22 @@ interface ProjectsSectionProps {
   onConsultProject: (projectTitle: string) => void;
   projectUrlOverrides?: Record<string, string>;
   customProjects?: Project[];
+  customProjectsEn?: Project[];
+  portalProjectsList?: Project[];
 }
 
 type FilterType = 'all' | 'web' | 'mobile' | 'ai' | 'infrastructure';
 type StatusView = 'all' | 'delivered' | 'in_development';
 
-export default function ProjectsSection({ lang, data, onConsultProject, projectUrlOverrides, customProjects }: ProjectsSectionProps) {
+export default function ProjectsSection({
+  lang,
+  data,
+  onConsultProject,
+  projectUrlOverrides,
+  customProjects,
+  customProjectsEn,
+  portalProjectsList,
+}: ProjectsSectionProps) {
   const [typeFilter, setTypeFilter] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusView>('all');
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
@@ -61,14 +71,18 @@ export default function ProjectsSection({ lang, data, onConsultProject, projectU
     }
   };
 
-  // Language-aware project list resolution
+  // Language-aware project list resolution: in English, use customProjectsEn from settings (fallback to code)
   const baseProjects = isAr
     ? (customProjects && customProjects.length > 0 ? customProjects : data.projects.list)
-    : data.projects.list;
+    : (customProjectsEn && customProjectsEn.length > 0
+        ? customProjectsEn
+        : (customProjects && customProjects.length > 0 ? customProjects : data.projects.list));
+
+  const portalList = portalProjectsList || customProjects;
 
   const rawProjects = baseProjects.map((p) => {
-    if (customProjects && customProjects.length > 0) {
-      const customMatch = customProjects.find((cp) => cp.id === p.id);
+    if (portalList && portalList.length > 0) {
+      const customMatch = portalList.find((cp) => cp.id === p.id);
       if (customMatch) {
         return {
           ...p,

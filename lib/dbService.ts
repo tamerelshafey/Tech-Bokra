@@ -13,7 +13,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, User } from '@/lib/firebase';
-import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById } from '@/lib/siteConfig';
+import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById, LEGACY_PROJECT_IDS } from '@/lib/siteConfig';
 
 export interface FirestoreInquiry {
   id: string;
@@ -368,14 +368,16 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
         const { mediaVault, updatedBy, ...safePublicData } = rawData as Record<string, any>;
         const cloudData = safePublicData as Partial<EditableConfig>;
         
-        // Merge collections by ID: preserves admin edits while retaining all registered items
+        // Merge collections by ID: preserves admin edits while retaining all registered items and filtering legacy IDs
         const resolvedProjectsList = mergeCollectionsById(
           defaultEditableConfig.projectsList || [],
-          cloudData.projectsList
+          cloudData.projectsList,
+          LEGACY_PROJECT_IDS
         );
         const resolvedProjectsListEn = mergeCollectionsById(
           defaultEditableConfig.projectsListEn || [],
-          cloudData.projectsListEn
+          cloudData.projectsListEn,
+          LEGACY_PROJECT_IDS
         );
         const resolvedServicesList = mergeCollectionsById(
           defaultEditableConfig.servicesList || [],
@@ -425,8 +427,8 @@ export async function fetchPublishedSiteSettings(timeoutMs = 5000): Promise<Edit
         return {
           ...defaultEditableConfig,
           ...cloudData,
-          projectsList: mergeCollectionsById(defaultEditableConfig.projectsList || [], cloudData.projectsList),
-          projectsListEn: mergeCollectionsById(defaultEditableConfig.projectsListEn || [], cloudData.projectsListEn),
+          projectsList: mergeCollectionsById(defaultEditableConfig.projectsList || [], cloudData.projectsList, LEGACY_PROJECT_IDS),
+          projectsListEn: mergeCollectionsById(defaultEditableConfig.projectsListEn || [], cloudData.projectsListEn, LEGACY_PROJECT_IDS),
           servicesList: mergeCollectionsById(defaultEditableConfig.servicesList || [], cloudData.servicesList),
           servicesListEn: mergeCollectionsById(defaultEditableConfig.servicesListEn || [], cloudData.servicesListEn),
         };

@@ -67,7 +67,7 @@ export default function CategoryView({ category, subServices }: CategoryViewProp
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
 
       <main className="pt-28 pb-20">
@@ -165,12 +165,18 @@ export default function CategoryView({ category, subServices }: CategoryViewProp
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {liveServices.map((service) => {
-                const customOverride = customConfig.servicesList?.find(
+                const activeServices = isAr
+                  ? customConfig.servicesList
+                  : (customConfig.servicesListEn || customConfig.servicesList);
+                const customOverride = activeServices?.find(
                   (item) => item.id === service.slug || LEGACY_SERVICE_ID_MAP[item.id] === service.slug
                 );
-                const displayImage = customOverride?.image || service.image || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80';
-                const displayTitle = (isAr && customOverride?.title) ? customOverride.title : service.title[lang];
-                const displaySummary = (isAr && customOverride?.shortDesc) ? customOverride.shortDesc : service.summary[lang];
+                const portalOverride = customConfig.servicesList?.find(
+                  (item) => item.id === service.slug || LEGACY_SERVICE_ID_MAP[item.id] === service.slug
+                );
+                const displayImage = portalOverride?.image || customOverride?.image || service.image || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80';
+                const displayTitle = customOverride?.title || service.title[lang];
+                const displaySummary = customOverride?.shortDesc || service.summary[lang];
 
                 return (
                   <div
@@ -353,7 +359,9 @@ export default function CategoryView({ category, subServices }: CategoryViewProp
         phone={customConfig.phone}
         whatsappNumber={customConfig.whatsappNumber}
         email={customConfig.email}
+        secondaryEmail={customConfig.secondaryEmail}
         address={isAr ? customConfig.addressAr : customConfig.addressEn}
+        workingHours={isAr ? customConfig.workingHoursAr : customConfig.workingHoursEn}
         linkedinUrl={customConfig.linkedinUrl}
         facebookUrl={customConfig.facebookUrl}
         logoEmblemStyle={customConfig.logoEmblemStyle}
@@ -368,7 +376,7 @@ export default function CategoryView({ category, subServices }: CategoryViewProp
         showEstimator={customConfig.showEstimator}
         showTenders={customConfig.showTenders}
         showEngineeringHub={customConfig.showEngineeringHub}
-        customProjects={customConfig.projectsList}
+        customProjects={isAr ? customConfig.projectsList : (customConfig.projectsListEn || customConfig.projectsList)}
       />
     </div>
   );
