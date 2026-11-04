@@ -224,7 +224,7 @@ export default function HomePage() {
           }}
         />
 
-        {/* Comprehensive Engineering Solutions with CMS override */}
+        {/* Comprehensive Engineering Solutions with CMS override (Preview Mode) */}
         <ServicesSection
           lang={lang}
           data={data}
@@ -232,6 +232,7 @@ export default function HomePage() {
           customServices={customConfig.servicesList}
           customServicesEn={customConfig.servicesListEn}
           portalServicesList={customConfig.servicesList}
+          previewMode={true}
           servicesOverrides={{
             badge: isAr ? customConfig.servicesBadgeAr : customConfig.servicesBadgeEn,
             titleLine1: isAr ? customConfig.servicesTitleLine1Ar : customConfig.servicesTitleLine1En,
@@ -266,7 +267,7 @@ export default function HomePage() {
           />
         )}
 
-        {/* Featured Real Projects & Case Studies with live dynamic links and CMS */}
+        {/* Featured Real Projects & Case Studies with live dynamic links and CMS (Preview Mode) */}
         {(customConfig.showProjectsSection ?? true) && hasVerifiedProjects(customConfig.projectsList) && (
           <ProjectsSection
             lang={lang}
@@ -279,6 +280,7 @@ export default function HomePage() {
             customProjects={customConfig.projectsList}
             customProjectsEn={customConfig.projectsListEn}
             portalProjectsList={customConfig.projectsList}
+            previewMode={true}
           />
         )}
 
@@ -296,13 +298,14 @@ export default function HomePage() {
           <TechPartners lang={lang} data={data} />
         )}
 
-        {/* Frequently Asked Questions with CMS */}
+        {/* Frequently Asked Questions with CMS (Preview Mode: top 4) */}
         {(customConfig.showFaqSection ?? true) && (
           <FaqSection
             lang={lang}
             data={data}
             customFaq={customConfig.faqList}
             customFaqEn={customConfig.faqListEn}
+            previewLimit={4}
           />
         )}
 

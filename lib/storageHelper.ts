@@ -97,21 +97,39 @@ export async function prepareImageForUpload(file: File): Promise<File> {
   });
 }
 
+import { auth } from '@/lib/firebase';
+
 /**
- * Uploads an image file to /api/upload (Vercel Blob).
- * Compresses in-browser first, validates format, and surfaces real server errors.
+ * Uploads an image file to /api/upload (Vercel Blob / Local Storage).
+ * Compresses in-browser first, validates format, attaches Firebase auth token, and surfaces real server errors.
  * Never returns data: URLs.
  */
 export async function uploadImageToServer(file: File): Promise<{ url: string; size: string; name: string }> {
   // Step 1: Validate and compress in browser
   const fileToUpload = await prepareImageForUpload(file);
 
-  // Step 2: Upload to Next.js API route (/api/upload -> Vercel Blob)
+  // Step 2: Retrieve Firebase Auth ID Token for direct dual authentication
+  let idToken: string | null = null;
+  try {
+    if (auth.currentUser) {
+      idToken = await auth.currentUser.getIdToken();
+    }
+  } catch (tokenErr) {
+    console.warn('Could not retrieve Firebase ID token for upload:', tokenErr);
+  }
+
+  // Step 3: Upload to Next.js API route (/api/upload -> Vercel Blob)
   const formData = new FormData();
   formData.append('file', fileToUpload);
 
+  const headers: Record<string, string> = {};
+  if (idToken) {
+    headers['Authorization'] = `Bearer ${idToken}`;
+  }
+
   const res = await fetch('/api/upload', {
     method: 'POST',
+    headers,
     body: formData,
     credentials: 'include',
   });

@@ -845,9 +845,13 @@ export default function SecureAdminPortalPage() {
 
       // 3. Authorize and purge server cache AFTER successful Firestore commit
       if (saveResult.generalSaved) {
+        const idToken = await auth?.currentUser?.getIdToken().catch(() => null);
         await fetch('/api/admin/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+          },
           body: JSON.stringify({ updatedAt: new Date().toISOString() }),
           credentials: 'include',
         }).catch((err) => console.warn('Server cache revalidation notice:', err));

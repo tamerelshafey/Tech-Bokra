@@ -28,6 +28,7 @@ interface ServicesSectionProps {
   customServices?: ServiceItem[];
   customServicesEn?: ServiceItem[];
   portalServicesList?: ServiceItem[];
+  previewMode?: boolean;
   servicesOverrides?: {
     badge?: string;
     titleLine1?: string;
@@ -43,6 +44,7 @@ export default function ServicesSection({
   customServices,
   customServicesEn,
   portalServicesList,
+  previewMode = false,
   servicesOverrides,
 }: ServicesSectionProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'security-infra' | 'digital-software' | 'security' | 'network' | 'software' | 'erp' | 'consulting'>('all');
@@ -126,10 +128,14 @@ export default function ServicesSection({
     return s.category === activeFilter;
   });
 
+  const displayedServices = (previewMode && activeFilter === 'all') 
+    ? filteredServices.slice(0, 4) 
+    : filteredServices;
+
   return (
     <section 
       id="services" 
-      className={`py-24 relative transition-colors duration-300 ${
+      className={`py-20 sm:py-24 relative transition-colors duration-300 ${
         isDark ? 'bg-[#071120]' : 'bg-white'
       }`}
     >
@@ -140,8 +146,8 @@ export default function ServicesSection({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Section Header (Unified: Integrated Technology Solutions, Engineered for Business) */}
-        <div className="text-center max-w-4xl mx-auto mb-14 space-y-4">
+        {/* Section Header */}
+        <div className="text-center max-w-4xl mx-auto mb-12 sm:mb-14 space-y-4">
           <div 
             className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border ${
               isDark 
@@ -174,7 +180,7 @@ export default function ServicesSection({
         </div>
 
         {/* Filter Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
           {[
             { id: 'all', label: data.services.allTab },
             { id: 'security-infra', label: isAr ? 'أنظمة الأمن المادي والبنية التحتية' : 'Physical Security & Infrastructure' },
@@ -202,8 +208,8 @@ export default function ServicesSection({
         </div>
 
         {/* Service Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredServices.map((service) => {
+        <div className={`grid md:grid-cols-2 ${previewMode ? 'lg:grid-cols-2 xl:grid-cols-4' : 'lg:grid-cols-3'} gap-6 sm:gap-8`}>
+          {displayedServices.map((service) => {
             const Icon = getServiceIcon(service.iconName);
             const targetUrl = getServiceTargetUrl(service);
 

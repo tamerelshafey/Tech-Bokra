@@ -52,19 +52,11 @@ function validateImageMagicBytes(buffer: Buffer): { valid: boolean; detectedExt?
 export async function POST(req: NextRequest) {
   try {
     // 1. Server-Side Authentication Guard (Session Cookie or Bearer Token)
-    const auth = verifyAdminRequest(req);
+    const auth = await verifyAdminRequest(req);
     if (!auth.valid || !auth.user) {
       return NextResponse.json(
         { error: 'انتهت جلسة الإدارة، سجّل الدخول مجدداً' },
         { status: 401 }
-      );
-    }
-
-    // 2. Verify Vercel Blob Token Configuration
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json(
-        { error: 'مخزن الصور غير مُفعّل: أنشئ Vercel Blob واربطه بالمشروع ثم أعد النشر.' },
-        { status: 503 }
       );
     }
 
@@ -75,7 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'لم يتم إرسال أي ملف في الطلب.' }, { status: 400 });
     }
 
-    // 3. Strict File Size Limit (4MB)
+    // 2. Strict File Size Limit (4MB)
     if (file.size > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json(
         { error: `حجم الملف يتجاوز الحد الأقصى 4MB (${(file.size / (1024 * 1024)).toFixed(1)}MB).` },
@@ -83,7 +75,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Strict MIME Type Validation
+    // 3. Strict MIME Type Validation
     const clientMime = (file.type || '').toLowerCase();
     if (!ALLOWED_MIME_TYPES.has(clientMime)) {
       return NextResponse.json(
@@ -92,7 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. File Extension Validation
+    // 4. File Extension Validation
     const extMatch = file.name.match(/\.[a-zA-Z0-9]+$/);
     const rawExt = extMatch ? extMatch[0].toLowerCase() : '';
     if (!ALLOWED_EXTENSIONS.has(rawExt)) {
@@ -105,7 +97,7 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // 6. Binary Magic Bytes Validation (Prevents disguised polyglots / SVG XSS)
+    // 5. Binary Magic Bytes Validation (Prevents disguised polyglots / SVG XSS)
     const magicCheck = validateImageMagicBytes(buffer);
     if (!magicCheck.valid) {
       return NextResponse.json(
@@ -114,25 +106,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. Safe Randomized UUID Filename
+    // 6. Safe Randomized UUID Filename
     const safeExt = rawExt === '.jpeg' ? '.jpg' : rawExt;
     const randomUuid = crypto.randomUUID();
     const uniqueFileName = `${randomUuid}${safeExt}`;
 
-    // 8. Upload to Vercel Blob
-    const blob = await put(`uploads/${uniqueFileName}`, buffer, {
-      access: 'public',
-      contentType: clientMime,
-      addRandomSuffix: false,
-    });
+    let imageUrl = '';
+
+    // 7. Upload to Vercel Blob if token is set; otherwise save to public/uploads
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`uploads/${uniqueFileName}`, buffer, {
+        access: 'public',
+        contentType: clientMime,
+        addRandomSuffix: false,
+      });
+      imageUrl = blob.url;
+    } else {
+      // Graceful fallback for preview / development environments without Vercel Blob
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        await fs.mkdir(uploadsDir, { recursive: true });
+        await fs.writeFile(path.join(uploadsDir, uniqueFileName), buffer);
+        imageUrl = `/uploads/${uniqueFileName}`;
+      } catch (fsErr: any) {
+        console.error('Local filesystem upload fallback error:', fsErr);
+        return NextResponse.json(
+          { error: 'مخزن الصور غير مُفعّل: أنشئ Vercel Blob واربطه بالمشروع ثم أعد النشر.' },
+          { status: 503 }
+        );
+      }
+    }
 
     const sizeKB = `${(file.size / 1024).toFixed(1)} KB`;
 
-    console.info(`[ADMIN UPLOAD] Image ${uniqueFileName} uploaded to Vercel Blob by ${auth.user.email}: ${blob.url}`);
+    console.info(`[ADMIN UPLOAD] Image ${uniqueFileName} stored by ${auth.user.email}: ${imageUrl}`);
 
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: imageUrl,
       filename: uniqueFileName,
       size: sizeKB,
       uploadedBy: auth.user.email,

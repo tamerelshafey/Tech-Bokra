@@ -11,9 +11,10 @@ interface FaqSectionProps {
   data: SiteLanguageData;
   customFaq?: { q: string; a: string }[];
   customFaqEn?: { q: string; a: string }[];
+  previewLimit?: number;
 }
 
-export default function FaqSection({ lang, data, customFaq, customFaqEn }: FaqSectionProps) {
+export default function FaqSection({ lang, data, customFaq, customFaqEn, previewLimit }: FaqSectionProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const { isDark } = useTheme();
   const isAr = lang === 'ar';
@@ -27,6 +28,8 @@ export default function FaqSection({ lang, data, customFaq, customFaqEn }: FaqSe
     : (customFaqEn && customFaqEn.length > 0
         ? customFaqEn
         : (customFaq && customFaq.length > 0 ? customFaq : data.faq.items));
+
+  const itemsToRender = previewLimit ? resolvedFaq.slice(0, previewLimit) : resolvedFaq;
 
   return (
     <section 
@@ -69,7 +72,7 @@ export default function FaqSection({ lang, data, customFaq, customFaqEn }: FaqSe
 
         {/* Accordion List */}
         <div className="space-y-3.5">
-          {resolvedFaq.map((item, idx) => {
+          {itemsToRender.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div

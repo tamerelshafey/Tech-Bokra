@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = verifyAdminRequest(req);
+    const auth = await verifyAdminRequest(req);
     if (!auth.valid || !auth.user) {
       return NextResponse.json(
         { error: 'Unauthorized: Valid administrator session cookie is required to modify customConfig.' },

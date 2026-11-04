@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = verifyAdminRequest(req);
+  const auth = await verifyAdminRequest(req);
   if (!auth.valid || !auth.user) {
     return NextResponse.json({ authenticated: false, error: auth.error }, { status: 401 });
   }

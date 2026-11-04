@@ -35,6 +35,7 @@ interface ProjectsSectionProps {
   customProjects?: Project[];
   customProjectsEn?: Project[];
   portalProjectsList?: Project[];
+  previewMode?: boolean;
 }
 
 type FilterType = 'all' | 'web' | 'mobile' | 'ai' | 'infrastructure';
@@ -48,6 +49,7 @@ export default function ProjectsSection({
   customProjects,
   customProjectsEn,
   portalProjectsList,
+  previewMode = false,
 }: ProjectsSectionProps) {
   const [typeFilter, setTypeFilter] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusView>('all');
@@ -368,126 +370,137 @@ export default function ProjectsSection({
           )}
         </div>
 
-        {/* Status Mode Switcher: All vs Delivered vs In Development */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border ${
-              statusFilter === 'all'
-                ? isDark ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE]' : 'bg-[#0284C7] text-white border-[#0284C7]'
-                : isDark ? 'bg-[#10233D] text-slate-300 border-white/5' : 'bg-white text-slate-700 border-slate-200'
-            }`}
-          >
-            {isAr ? 'جميع المنتجات والمشاريع' : 'All Products & Works'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('delivered')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border flex items-center gap-1.5 ${
-              statusFilter === 'delivered'
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                : isDark ? 'bg-[#10233D] text-emerald-300 border-emerald-500/30' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isAr ? 'منتجات أطلقناها وسابقة أعمال' : 'Delivered Products & Works'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('in_development')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border flex items-center gap-1.5 ${
-              statusFilter === 'in_development'
-                ? 'bg-amber-600 text-white border-amber-500 shadow-md'
-                : isDark ? 'bg-[#10233D] text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-800 border-amber-200'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span>{isAr ? 'منتجات نعمل عليها حالياً (قيد التطوير)' : 'In Development (Live Staging)'}</span>
-          </button>
-        </div>
-
-        {/* Technology/Domain Filter Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {typeFilterTabs.map((tab) => {
-            const isActive = typeFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setTypeFilter(tab.id as FilterType)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                  isActive
-                    ? isDark ? 'bg-sky-500/20 text-[#00F2FE] border-[#00F2FE]/50 font-bold' : 'bg-sky-100 text-[#0284C7] border-sky-300 font-bold'
-                    : isDark ? 'bg-[#0B1A2F] text-slate-400 hover:text-white border-white/5' : 'bg-white text-slate-600 hover:text-slate-900 border-slate-200'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Delivered vs In Development Distinct Sections (when filter is 'all') */}
-        {statusFilter === 'all' && typeFilter === 'all' ? (
-          <div className="space-y-16">
-            
-            {/* 1. Delivered Products & Works */}
-            <div>
-              <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'منتجات أطلقناها وسابقة الأعمال المنفذة' : 'Delivered Products & Handed-Over Works'}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    {isAr ? 'منتجات وتطبيقات منشورة رسمياً على المتاجر والويب، ومشروعات بنية تحتية منفذة وفق الكود الهندسي.' : 'Official apps and platforms launched on app stores and web, plus infrastructure works.'}
-                  </p>
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {deliveredProjects.map(renderProjectCard)}
-              </div>
-            </div>
-
-            {/* 2. Active In-Development Products */}
-            <div>
-              <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-                  <Clock className="w-5 h-5 animate-spin" />
-                </div>
-                <div>
-                  <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {isAr ? 'منتجات نعمل عليها حالياً (بيئات تجريبية حية)' : 'Active Products Under Development'}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    {isAr ? 'منصات سحابية في مرحلة التطوير والاختبار المباشر (Live Staging) مع شركائنا وعملائنا.' : 'Cloud platforms under active development and real-time collaborative staging.'}
-                  </p>
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {inDevProjects.map(renderProjectCard)}
-              </div>
-            </div>
-
-          </div>
-        ) : filteredProjects.length === 0 ? (
-          <div className={`text-center py-16 px-6 rounded-2xl border max-w-2xl mx-auto ${
-            isDark ? 'bg-[#0B1A2F]/60 border-white/10 text-slate-300' : 'bg-white border-slate-200 text-slate-600 shadow-sm'
-          }`}>
-            <p className="font-bold text-base mb-2">
-              {isAr ? 'لا توجد مشروعات مطابقة للفلتر المحدد حالياً' : 'No projects match the selected filter'}
-            </p>
-            <p className="text-xs text-slate-400">
-              {isAr ? 'اختر تصنيفاً آخر أو اضغط على "جميع المنتجات والمشاريع" لعرض كافة الأعمال.' : 'Select another category or view all products.'}
-            </p>
+        {/* If in previewMode (e.g. on HomePage): Render streamlined 4-card showcase without bulky filter bars */}
+        {previewMode ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {resolvedProjects.slice(0, 4).map(renderProjectCard)}
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map(renderProjectCard)}
-          </div>
+          <>
+            {/* Status Mode Switcher: All vs Delivered vs In Development */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border ${
+                  statusFilter === 'all'
+                    ? isDark ? 'bg-[#00F2FE] text-[#071120] border-[#00F2FE]' : 'bg-[#0284C7] text-white border-[#0284C7]'
+                    : isDark ? 'bg-[#10233D] text-slate-300 border-white/5' : 'bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                {isAr ? 'جميع المنتجات والمشاريع' : 'All Products & Works'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('delivered')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border flex items-center gap-1.5 ${
+                  statusFilter === 'delivered'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                    : isDark ? 'bg-[#10233D] text-emerald-300 border-emerald-500/30' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isAr ? 'منتجات أطلقناها وسابقة أعمال' : 'Delivered Products & Works'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('in_development')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border flex items-center gap-1.5 ${
+                  statusFilter === 'in_development'
+                    ? 'bg-amber-600 text-white border-amber-500 shadow-md'
+                    : isDark ? 'bg-[#10233D] text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>{isAr ? 'منتجات نعمل عليها حالياً (قيد التطوير)' : 'In Development (Live Staging)'}</span>
+              </button>
+            </div>
+
+            {/* Technology/Domain Filter Tabs */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+              {typeFilterTabs.map((tab) => {
+                const isActive = typeFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setTypeFilter(tab.id as FilterType)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                      isActive
+                        ? isDark ? 'bg-sky-500/20 text-[#00F2FE] border-[#00F2FE]/50 font-bold' : 'bg-sky-100 text-[#0284C7] border-sky-300 font-bold'
+                        : isDark ? 'bg-[#0B1A2F] text-slate-400 hover:text-white border-white/5' : 'bg-white text-slate-600 hover:text-slate-900 border-slate-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Full delivered & in-development sections for dedicated /projects page */}
+        {!previewMode && (
+          statusFilter === 'all' && typeFilter === 'all' ? (
+            <div className="space-y-16">
+              
+              {/* 1. Delivered Products & Works */}
+              <div>
+                <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'منتجات أطلقناها وسابقة الأعمال المنفذة' : 'Delivered Products & Handed-Over Works'}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {isAr ? 'منتجات وتطبيقات منشورة رسمياً على المتاجر والويب، ومشروعات بنية تحتية منفذة وفق الكود الهندسي.' : 'Official apps and platforms launched on app stores and web, plus infrastructure works.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {deliveredProjects.map(renderProjectCard)}
+                </div>
+              </div>
+
+              {/* 2. Active In-Development Products */}
+              <div>
+                <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                    <Clock className="w-5 h-5 animate-spin" />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {isAr ? 'منتجات نعمل عليها حالياً (بيئات تجريبية حية)' : 'Active Products Under Development'}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {isAr ? 'منصات سحابية في مرحلة التطوير والاختبار المباشر (Live Staging) مع شركائنا وعملائنا.' : 'Cloud platforms under active development and real-time collaborative staging.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {inDevProjects.map(renderProjectCard)}
+                </div>
+              </div>
+
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className={`text-center py-16 px-6 rounded-2xl border max-w-2xl mx-auto ${
+              isDark ? 'bg-[#0B1A2F]/60 border-white/10 text-slate-300' : 'bg-white border-slate-200 text-slate-600 shadow-sm'
+            }`}>
+              <p className="font-bold text-base mb-2">
+                {isAr ? 'لا توجد مشروعات مطابقة للفلتر المحدد حالياً' : 'No projects match the selected filter'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {isAr ? 'اختر تصنيفاً آخر أو اضغط على "جميع المنتجات والمشاريع" لعرض كافة الأعمال.' : 'Select another category or view all products.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProjects.map(renderProjectCard)}
+            </div>
+          )
         )}
 
         {/* Link to Dedicated Full Projects Page */}
