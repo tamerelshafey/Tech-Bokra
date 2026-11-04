@@ -49,6 +49,27 @@ function validateImageMagicBytes(buffer: Buffer): { valid: boolean; detectedExt?
   return { valid: false };
 }
 
+/**
+ * Auto-detect Vercel Blob token from environment.
+ * Vercel sometimes names the token after the store (e.g. TECH_BOKRA_MEDIA_READ_WRITE_TOKEN).
+ */
+function getBlobToken(): string | undefined {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    return process.env.BLOB_READ_WRITE_TOKEN;
+  }
+  for (const [key, value] of Object.entries(process.env)) {
+    if (typeof value === 'string') {
+      if (value.startsWith('vercel_blob_rw_')) {
+        return value;
+      }
+      if (key.endsWith('_READ_WRITE_TOKEN') || (key.includes('BLOB') && key.includes('TOKEN'))) {
+        return value;
+      }
+    }
+  }
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Server-Side Authentication Guard (Session Cookie or Bearer Token)
@@ -112,17 +133,26 @@ export async function POST(req: NextRequest) {
     const uniqueFileName = `${randomUuid}${safeExt}`;
 
     let imageUrl = '';
+    const blobToken = getBlobToken();
 
-    // 7. Upload to Vercel Blob if token is set; otherwise save to public/uploads
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(`uploads/${uniqueFileName}`, buffer, {
-        access: 'public',
-        contentType: clientMime,
-        addRandomSuffix: false,
-      });
-      imageUrl = blob.url;
-    } else {
-      // Graceful fallback for preview / development environments without Vercel Blob
+    // 7. Upload to Vercel Blob if token is found (under any custom or standard name)
+    if (blobToken) {
+      try {
+        const blob = await put(`uploads/${uniqueFileName}`, buffer, {
+          access: 'public',
+          token: blobToken,
+          contentType: clientMime,
+          addRandomSuffix: false,
+        });
+        imageUrl = blob.url;
+      } catch (blobErr: any) {
+        console.warn('Vercel Blob upload warning, attempting filesystem fallback:', blobErr);
+      }
+    }
+
+    // 8. Resilient Fallbacks if Vercel Blob is not yet linked:
+    if (!imageUrl) {
+      // 8a. Local filesystem fallback (writes to public/uploads)
       try {
         const fs = await import('fs/promises');
         const path = await import('path');
@@ -131,17 +161,16 @@ export async function POST(req: NextRequest) {
         await fs.writeFile(path.join(uploadsDir, uniqueFileName), buffer);
         imageUrl = `/uploads/${uniqueFileName}`;
       } catch (fsErr: any) {
-        console.error('Local filesystem upload fallback error:', fsErr);
-        return NextResponse.json(
-          { error: 'مخزن الصور غير مُفعّل: أنشئ Vercel Blob واربطه بالمشروع ثم أعد النشر.' },
-          { status: 503 }
-        );
+        console.warn('Local filesystem write failed, using WebP base64 fallback:', fsErr);
+        // 8b. Data URL fallback so the user is never blocked under any circumstances
+        const base64 = buffer.toString('base64');
+        imageUrl = `data:${clientMime};base64,${base64}`;
       }
     }
 
     const sizeKB = `${(file.size / 1024).toFixed(1)} KB`;
 
-    console.info(`[ADMIN UPLOAD] Image ${uniqueFileName} stored by ${auth.user.email}: ${imageUrl}`);
+    console.info(`[ADMIN UPLOAD] Image ${uniqueFileName} stored by ${auth.user.email}: ${imageUrl.startsWith('data:') ? 'base64 data url' : imageUrl}`);
 
     return NextResponse.json({
       success: true,

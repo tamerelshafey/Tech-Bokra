@@ -108,31 +108,54 @@ export async function uploadImageToServer(file: File): Promise<{ url: string; si
   // Step 1: Validate and compress in browser
   const fileToUpload = await prepareImageForUpload(file);
 
-  // Step 2: Retrieve Firebase Auth ID Token for direct dual authentication
+  // Step 2: Retrieve fresh Firebase Auth ID Token for direct dual authentication
   let idToken: string | null = null;
   try {
     if (auth.currentUser) {
-      idToken = await auth.currentUser.getIdToken();
+      // Force token refresh to ensure it has not expired
+      idToken = await auth.currentUser.getIdToken(true);
     }
   } catch (tokenErr) {
     console.warn('Could not retrieve Firebase ID token for upload:', tokenErr);
   }
 
-  // Step 3: Upload to Next.js API route (/api/upload -> Vercel Blob)
-  const formData = new FormData();
-  formData.append('file', fileToUpload);
+  // Helper to execute upload request
+  const executeUpload = async (token?: string | null) => {
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
 
-  const headers: Record<string, string> = {};
-  if (idToken) {
-    headers['Authorization'] = `Bearer ${idToken}`;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return fetch('/api/upload', {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include',
+    });
+  };
+
+  // Step 3: First upload attempt
+  let res = await executeUpload(idToken);
+
+  // Step 4: If 401, attempt automatic silent session re-establishment if user is authenticated in Firebase
+  if (res.status === 401 && auth.currentUser) {
+    try {
+      const refreshedToken = await auth.currentUser.getIdToken(true);
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: refreshedToken }),
+        credentials: 'include',
+      });
+      // Retry upload with the fresh token
+      res = await executeUpload(refreshedToken);
+    } catch (refreshErr) {
+      console.warn('Automatic session refresh warning:', refreshErr);
+    }
   }
-
-  const res = await fetch('/api/upload', {
-    method: 'POST',
-    headers,
-    body: formData,
-    credentials: 'include',
-  });
 
   const data = await res.json().catch(() => null);
 
