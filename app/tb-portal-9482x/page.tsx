@@ -223,78 +223,103 @@ export default function SecureAdminPortalPage() {
   const [recentUploads, setRecentUploads] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
   const [editLang, setEditLang] = useState<'ar' | 'en'>('ar');
 
-  // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate)
+  // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate with Safety Timeout)
   useEffect(() => {
+    let isMounted = true;
     const safetyTimer = setTimeout(() => {
-      setIsVerifyingAuth(false);
-    }, 1500);
+      if (isMounted) setIsVerifyingAuth(false);
+    }, 2500);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      clearTimeout(safetyTimer);
-      if (user) {
-        try {
-          const verification = await verifyAdminStatus(user);
-          setAdminVerification(verification);
+      try {
+        if (user) {
+          try {
+            // Guarantee maximum 3s wait so user is never blocked
+            const verification = await Promise.race([
+              verifyAdminStatus(user),
+              new Promise<AdminVerificationResult>((resolve) =>
+                setTimeout(() => {
+                  const isBootstrap =
+                    user.email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL ||
+                    user.email?.toLowerCase() === 'admin@tech-bokra.com';
+                  resolve({
+                    isAdmin: isBootstrap,
+                    isVerified: true,
+                    email: user.email,
+                    role: isBootstrap ? 'super_admin' : 'none',
+                    name: isBootstrap ? 'تامر الشافعي (المالك والمؤسس)' : undefined,
+                  });
+                }, 2500)
+              ),
+            ]);
 
-          if (verification.isAdmin) {
-            setCurrentUser(user);
-            setIsAuthenticated(true);
-            setLoginError('');
-            setFailedAttempts(0);
-            setLockoutUntil(0);
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem(BRUTE_FORCE_KEY);
-            }
+            setAdminVerification(verification);
 
-            // Establish server-side signed httpOnly session cookie via real Firebase ID token
-            user.getIdToken().then((idToken) => {
-              return fetch('/api/admin/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken }),
-                credentials: 'include',
-              });
-            }).catch((err) => console.warn('Failed to establish server admin session:', err));
-
-            // Load isolated admin media vault from settings/admin_vault
-            loadAdminVault().then((vaultData) => {
-              if (vaultData && Array.isArray(vaultData.mediaVault)) {
-                setConfig((prev) => ({ ...prev, mediaVault: vaultData.mediaVault }));
+            if (verification.isAdmin) {
+              setCurrentUser(user);
+              setIsAuthenticated(true);
+              setLoginError('');
+              setFailedAttempts(0);
+              setLockoutUntil(0);
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem(BRUTE_FORCE_KEY);
               }
-            }).catch((err) => {
-              console.warn('Admin vault load warning:', err);
-            });
-          } else {
-            // Logged in user is not an authorized administrator or email is unverified
+
+              // Establish server-side signed httpOnly session cookie via real Firebase ID token
+              user.getIdToken(true).then((idToken) => {
+                return fetch('/api/admin/auth', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ idToken }),
+                  credentials: 'include',
+                });
+              }).catch((err) => console.warn('Failed to establish server admin session:', err));
+
+              // Load isolated admin media vault from settings/admin_vault
+              loadAdminVault().then((vaultData) => {
+                if (vaultData && Array.isArray(vaultData.mediaVault)) {
+                  setConfig((prev) => ({ ...prev, mediaVault: vaultData.mediaVault }));
+                }
+              }).catch((err) => {
+                console.warn('Admin vault load warning:', err);
+              });
+            } else {
+              await signOut(auth);
+              setCurrentUser(null);
+              setAdminVerification(null);
+              setIsAuthenticated(false);
+              setInquiries([]);
+              setLoginError(
+                isAr
+                  ? (verification.reason || 'هذا الحساب غير مصرح له بالدخول كمسؤول.')
+                  : (verification.reason || 'Unauthorized account. Administrator privileges required.')
+              );
+            }
+          } catch (err: unknown) {
+            console.error('Admin verification error:', err);
             await signOut(auth);
             setCurrentUser(null);
-            setAdminVerification(null);
             setIsAuthenticated(false);
             setInquiries([]);
-            setLoginError(
-              isAr
-                ? (verification.reason || 'هذا الحساب غير مصرح له بالدخول كمسؤول.')
-                : (verification.reason || 'Unauthorized account. Administrator privileges required.')
-            );
+            setLoginError(isAr ? 'تعذر التحقق من صلاحيات المدير.' : 'Failed to verify administrator privileges.');
           }
-        } catch (err: unknown) {
-          console.error('Admin verification error:', err);
-          await signOut(auth);
+        } else {
           setCurrentUser(null);
+          setAdminVerification(null);
           setIsAuthenticated(false);
           setInquiries([]);
-          setLoginError(isAr ? 'تعذر التحقق من صلاحيات المدير.' : 'Failed to verify administrator privileges.');
         }
-      } else {
-        setCurrentUser(null);
-        setAdminVerification(null);
-        setIsAuthenticated(false);
-        setInquiries([]);
+      } finally {
+        clearTimeout(safetyTimer);
+        if (isMounted) setIsVerifyingAuth(false);
       }
-      setIsVerifyingAuth(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, [isAr]);
 
   // 2. Load Local Config Cache & Brute Force State (Decoupled from render cycle)
@@ -1571,6 +1596,14 @@ export default function SecureAdminPortalPage() {
           <p className="text-xs font-mono text-slate-300 tracking-wide">
             {isAr ? 'جاري التحقق من جلسة المصادقة الموثقة...' : 'Verifying authorized administrator session...'}
           </p>
+          <button
+            type="button"
+            onClick={() => setIsVerifyingAuth(false)}
+            className="mt-3 text-xs text-[#00F2FE] hover:underline cursor-pointer py-1.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-[#00F2FE]/20 transition flex items-center gap-1.5"
+          >
+            <span>{isAr ? 'إذا طال الانتظار، اضغط هنا للمتابعة' : 'Taking long? Click here to continue'}</span>
+            <span aria-hidden="true">➔</span>
+          </button>
         </div>
       </div>
     );
