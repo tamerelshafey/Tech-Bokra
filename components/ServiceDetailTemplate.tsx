@@ -25,7 +25,7 @@ import {
   Sparkles,
   Check
 } from 'lucide-react';
-import { SubService, ServiceCategory, getRelatedServices, LEGACY_SERVICE_ID_MAP } from '@/lib/services';
+import { SubService, ServiceCategory, CompactRelatedService, LEGACY_SERVICE_ID_MAP } from '@/lib/services';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
@@ -35,9 +35,10 @@ import Footer from '@/components/Footer';
 interface ServiceDetailTemplateProps {
   service: SubService;
   category: ServiceCategory;
+  relatedServices?: CompactRelatedService[];
 }
 
-export default function ServiceDetailTemplate({ service, category }: ServiceDetailTemplateProps) {
+export default function ServiceDetailTemplate({ service, category, relatedServices = [] }: ServiceDetailTemplateProps) {
   const { lang, isAr, toggleLanguage, data } = useLanguage();
   const { isDark } = useTheme();
   const [customConfig] = useCustomConfig();
@@ -66,7 +67,7 @@ export default function ServiceDetailTemplate({ service, category }: ServiceDeta
   const displayTitle = customOverride?.title || service.title[lang];
   const displaySummary = customOverride?.shortDesc || service.summary[lang];
 
-  const relatedServicesList = getRelatedServices(service.slug);
+  const relatedServicesList = relatedServices;
 
   // Construct Tool Link
   let toolUrl = '/contact';

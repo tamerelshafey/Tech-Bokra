@@ -1,7 +1,9 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 import { SUB_SERVICES, SERVICE_CATEGORIES } from '@/lib/services';
 import { hasVerifiedProjects } from '@/lib/content';
 import { fetchPublishedSiteSettings } from '@/lib/dbService';
+
+export const revalidate = false;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://tech-bokra.com';

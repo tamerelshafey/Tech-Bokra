@@ -169,7 +169,13 @@ export function mergeCollectionsById<T extends { id: string; seedRevision?: numb
       if (flags.isDraft !== undefined) keep.isDraft = flags.isDraft;
       merged.push({ ...seed, ...keep } as T);
     } else {
-      merged.push(item);
+      const itemRecord = item as unknown as Record<string, unknown>;
+      if (typeof itemRecord.image === 'string' && itemRecord.image.startsWith('data:image')) {
+        const seedRecord = seed as unknown as Record<string, unknown> | undefined;
+        merged.push({ ...item, image: (seedRecord?.image as string) || '' });
+      } else {
+        merged.push(item);
+      }
     }
     processedIds.add(item.id);
   }

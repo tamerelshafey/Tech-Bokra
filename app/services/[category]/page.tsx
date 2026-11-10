@@ -10,6 +10,9 @@ interface CategoryPageProps {
   }>;
 }
 
+export const revalidate = false;
+export const dynamic = 'force-static';
+
 export async function generateStaticParams() {
   return [
     { category: 'security' },
@@ -56,7 +59,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   const subServices = getServicesByCategory(categoryKey).map((s) => ({
     ...s,
-    standards: s.standards.filter((std) => std.confirmed),
+    standards: [],
+    faq: [],
+    deliverables: { ar: [], en: [] },
+    components: { ar: [], en: [] },
+    designInputs: { ar: [], en: [] },
+    integrations: { ar: [], en: [] },
+    relatedServices: [],
+    architecture: { overview: { ar: '', en: '' }, layers: [] },
   }));
 
   return <CategoryView category={catObj} subServices={subServices} />;

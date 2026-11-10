@@ -7,11 +7,12 @@ import TrustStats from '@/components/TrustStats';
 import ServicesSection from '@/components/ServicesSection';
 import { contentAr, contentEn, siteConfig, hasVerifiedProjects } from '@/lib/content';
 import { MessageSquare, Sparkles, ArrowRight, ArrowLeft, X, Sun, Moon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
 
-import EngineeringHub from '@/components/EngineeringHub';
-import ProjectEstimator from '@/components/ProjectEstimator';
+const EngineeringHub = dynamic(() => import('@/components/EngineeringHub'), { ssr: false });
+const ProjectEstimator = dynamic(() => import('@/components/ProjectEstimator'), { ssr: false });
 import ProjectsSection from '@/components/ProjectsSection';
 import ProcessSection from '@/components/ProcessSection';
 import TechPartners from '@/components/TechPartners';

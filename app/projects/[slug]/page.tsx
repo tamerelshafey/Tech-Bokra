@@ -6,8 +6,9 @@ import { defaultEditableConfig } from '@/lib/siteConfig';
 import { fetchPublishedSiteSettings } from '@/lib/dbService';
 import { getProjectStatus, getProjectType, getVerifiedMetrics } from '@/lib/content';
 
-export const revalidate = 60;
-export const dynamicParams = true;
+export const revalidate = false;
+export const dynamic = 'force-static';
+export const dynamicParams = false;
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;

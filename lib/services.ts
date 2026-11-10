@@ -1091,6 +1091,42 @@ export function getServicesByCategory(category: ServiceCategoryKey): SubService[
   return SUB_SERVICES.filter((s) => s.category === category);
 }
 
+export interface CompactRelatedService {
+  slug: string;
+  category: ServiceCategoryKey;
+  status: 'live' | 'coming-soon';
+  title: { ar: string; en: string };
+  summary: { ar: string; en: string };
+}
+
+export function getCompactRelatedServices(slug: string): CompactRelatedService[] {
+  const service = getServiceBySlug(slug);
+  if (!service || !service.relatedServices || service.relatedServices.length === 0) {
+    return [];
+  }
+  return service.relatedServices
+    .map((rSlug) => getServiceBySlug(rSlug))
+    .filter((s): s is SubService => s !== undefined)
+    .map((s) => ({
+      slug: s.slug,
+      category: s.category,
+      status: s.status,
+      title: s.title,
+      summary: s.summary,
+    }));
+}
+
+export function getCategoryExplorerChips(cat: ServiceCategoryKey) {
+  return SUB_SERVICES
+    .filter((s) => s.category === cat)
+    .map((s) => ({
+      slug: s.slug,
+      category: s.category,
+      status: s.status,
+      title: s.title,
+    }));
+}
+
 /**
  * Returns the related sub-services objects for a given service.
  */

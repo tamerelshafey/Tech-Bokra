@@ -26,7 +26,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { 
   SERVICE_CATEGORIES, 
   ServiceCategoryKey, 
-  getServicesByCategory,
+  getCategoryExplorerChips,
   LEGACY_SERVICE_ID_MAP 
 } from '@/lib/services';
 
@@ -147,7 +147,7 @@ export default function ServicesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {filteredServices.map((service, idx) => {
             const catKey = service.category as ServiceCategoryKey;
-            const subServicesForCat = getServicesByCategory(catKey);
+            const subServicesForCat = getCategoryExplorerChips(catKey);
 
             return (
               <article

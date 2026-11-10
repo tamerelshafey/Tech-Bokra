@@ -2,6 +2,8 @@ import React from 'react';
 import type { Metadata } from 'next';
 import ProcessView from '@/components/ProcessView';
 
+export const revalidate = false;
+
 export const metadata: Metadata = {
   title: 'آلية ومراحل العمل الهندسية | تيك بكرة - Tech Bokra',
   description: 'منهجية تنفيذ المشروعات الهندسية والتقنية لدى تيك بكرة، بدءاً من المعاينة الميدانية والتصميم، وحتى التوريد والتركيب والتشغيل والدعم الفني المستمر وفق الأكواد القياسية.',

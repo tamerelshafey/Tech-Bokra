@@ -4,7 +4,8 @@ import FaqView from '@/components/FaqView';
 import { contentAr } from '@/lib/content';
 import { fetchPublishedSiteSettings } from '@/lib/dbService';
 
-export const revalidate = 60;
+export const revalidate = false;
+export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'الأسئلة الشائعة والاستفسارات التقنية | تيك بكرة - Tech Bokra',

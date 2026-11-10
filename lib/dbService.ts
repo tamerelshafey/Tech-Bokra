@@ -378,6 +378,27 @@ export async function loadAdminVault(): Promise<{ mediaVault: MediaVaultItem[]; 
  * Subscribe to Realtime Site Settings from Firestore
  * Uses ID-based collection merge so newer code items/seeds are cleanly merged with custom admin configurations.
  */
+function sanitizePublicCloudData(cloudData: Partial<EditableConfig>): Partial<EditableConfig> {
+  const sanitized = { ...cloudData };
+  if (typeof sanitized.customLogoUrl === 'string' && sanitized.customLogoUrl.startsWith('data:image')) {
+    sanitized.customLogoUrl = '';
+  }
+  if (typeof sanitized.heroCctvImage === 'string' && sanitized.heroCctvImage.startsWith('data:image')) {
+    delete sanitized.heroCctvImage;
+  }
+  if (typeof sanitized.heroAccessImage === 'string' && sanitized.heroAccessImage.startsWith('data:image')) {
+    delete sanitized.heroAccessImage;
+  }
+  if (typeof sanitized.heroNetworkImage === 'string' && sanitized.heroNetworkImage.startsWith('data:image')) {
+    delete sanitized.heroNetworkImage;
+  }
+  if (typeof sanitized.heroCloudImage === 'string' && sanitized.heroCloudImage.startsWith('data:image')) {
+    delete sanitized.heroCloudImage;
+  }
+  delete sanitized.mediaVault;
+  return sanitized;
+}
+
 export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void): () => void {
   const settingsDocRef = doc(db, 'settings', 'general');
   
@@ -389,7 +410,7 @@ export function subscribeSiteSettings(onUpdate: (config: EditableConfig) => void
         
         // Explicitly exclude any internal/admin fields from public state
         const { mediaVault, updatedBy, ...safePublicData } = rawData as Record<string, any>;
-        const cloudData = safePublicData as Partial<EditableConfig>;
+        const cloudData = sanitizePublicCloudData(safePublicData as Partial<EditableConfig>);
         
         // Merge collections by ID: preserves admin edits while retaining all registered items and filtering legacy IDs
         const resolvedProjectsList = mergeCollectionsById(
@@ -446,7 +467,7 @@ export async function fetchPublishedSiteSettings(timeoutMs = 5000): Promise<Edit
       const snap = await getDoc(doc(db, 'settings', 'general'));
       if (snap.exists()) {
         const { mediaVault, updatedBy, ...safePublicData } = snap.data() as Record<string, any>;
-        const cloudData = safePublicData as Partial<EditableConfig>;
+        const cloudData = sanitizePublicCloudData(safePublicData as Partial<EditableConfig>);
         return {
           ...defaultEditableConfig,
           ...cloudData,

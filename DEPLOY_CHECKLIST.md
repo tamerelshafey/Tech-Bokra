@@ -97,3 +97,34 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST https://tech-bokra.com/api/uplo
    - الضغط على زر **"دمج المحتوى الجديد بالمعرّفات"**.
    - الضغط على **"حفظ وتحديث فوري"** لاعتماد الإصدار الجديد في مستند Firestore وإعادة تنشيط كاش السيرفر (`revalidateTag`/`revalidatePath`).
 
+---
+
+## 6. قواعد وضوابط خفض استهلاك عمليات إعادة التوليد التزايدي (Minimizing Vercel ISR Writes)
+
+لحماية باقة Vercel (Hobby Tier 200K writes/month) من التجاوز وضمان بقاء الموقع مجانياً وفائق السرعة:
+
+1. **الاعتماد الصارم على التوليد الثابت (Static Generation):**
+   * كافة صفحات الموقع العامة (`/`, `/services`, `/services/*`, `/projects`, `/projects/*`, `/faq`, `/process`, `/contact`, `/engineering-hub`, `/estimator`, `/tenders`, `/sitemap.xml`) تم ضبطها بـ `export const revalidate = false;` و`export const dynamic = 'force-static';`.
+   * يمنع منعاً باتاً إضافة `export const revalidate = N;` (بالثواني) في أي صفحة عامة أو في `app/layout.tsx`، حيث كانت تسبب إعادة توليد مستمرة في الخلفية مع كل زيارة أو زحف من محركات البحث.
+
+2. **التحديث عند الطلب فقط (On-Demand Revalidation):**
+   * يتم تحديث صفحات الموقع فقط عند قيام المشرف بالضغط على "حفظ وتحديث فوري" في لوحة التحكم `/tb-portal-9482x`، حيث تستدعي الإندبوينت `/api/admin/config` دالة `revalidatePath` لتحديث الكاش مرة واحدة فقط عند الحاجة الحقيقية بدلاً من التحديث الزمني العشوائي.
+
+3. **الفحص والبناء المحلي قبل النشر (Pre-deploy Build Audit):**
+   * قبل رفع أي كود إلى GitHub/Vercel، نفّذ محلياً:
+     ```bash
+     npm run build && npx tsc --noEmit
+     ```
+   * تأكد من أن كل الصفحات تظهر بعلامة `○ (Static)` في مخرجات البناء، وخلوها من الأخطاء حتى لا تستهلك محاولات البناء رصيد الـ Writes.
+
+4. **تجنب النشر البرمجي لتعديلات المحتوى (Content via Admin CMS):**
+   * لتغيير أي نص أو رقم هاتف أو مشروع أو خدمة أو صورة، استخدم لوحة التحكم السحابية المباشرة `/tb-portal-9482x` بدلاً من تعديل الكود وعمل Git Commit/Deploy الذي يعيد بناء وتوليد كل الصفحات من الصفر.
+
+5. **إيقاف الـ Preview Deployments غير الضرورية في Vercel:**
+   * من إعدادات Vercel Project > Settings > Git:
+   * اجعل النشر التلقائي محصوراً على فرع الإنتاج الأساسي (`main`), أو قم بإيقاف الـ Automatic Preview Deployments للفروع التجريبية لتفادي مضاعفة عمليات التوليد على بيئات الاختبار.
+
+6. **المراقبة الدورية للـ ISR من لوحة Vercel:**
+   * افتح دورياً: **Vercel Dashboard > Project > Observability / Monitoring > Data Cache / ISR**.
+   * راقب مؤشر **ISR Writes** وتأكد من أن نسبة **HIT Rate** تتجاوز 98% وأن عدد الـ Revalidations يظل منخفضاً وقريباً من الصفر في الأيام العادية.
+

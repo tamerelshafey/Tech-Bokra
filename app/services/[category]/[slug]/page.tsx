@@ -5,9 +5,14 @@ import {
   SUB_SERVICES, 
   SERVICE_CATEGORIES, 
   getServiceBySlug, 
+  getCompactRelatedServices,
   ServiceCategoryKey 
 } from '@/lib/services';
 import ServiceDetailTemplate from '@/components/ServiceDetailTemplate';
+
+export const revalidate = false;
+export const dynamic = 'force-static';
+export const dynamicParams = false;
 
 interface ServiceDetailPageProps {
   params: Promise<{
@@ -140,6 +145,8 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
     standards: service.standards.filter((s) => s.confirmed),
   };
 
+  const relatedServices = getCompactRelatedServices(service.slug);
+
   return (
     <>
       {jsonLd && (
@@ -148,7 +155,11 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ServiceDetailTemplate service={clientSafeService} category={categoryObj} />
+      <ServiceDetailTemplate 
+        service={clientSafeService} 
+        category={categoryObj} 
+        relatedServices={relatedServices}
+      />
     </>
   );
 }
