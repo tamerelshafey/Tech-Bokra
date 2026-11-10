@@ -107,14 +107,8 @@ export default function ProjectsSection({
   // Apply URL overrides if specified
   const resolvedProjects = activeProjects.map((p) => {
     let finalUrl = p.liveUrl;
-    if (projectUrlOverrides) {
-      if (p.id === 'helio-property' && projectUrlOverrides.helioPropertyUrl) {
-        finalUrl = projectUrlOverrides.helioPropertyUrl;
-      } else if (p.id === 'alrehla-platform' && projectUrlOverrides.alrehlaUrl) {
-        finalUrl = projectUrlOverrides.alrehlaUrl;
-      } else if (projectUrlOverrides[p.id]) {
-        finalUrl = projectUrlOverrides[p.id];
-      }
+    if (projectUrlOverrides && projectUrlOverrides[p.id]) {
+      finalUrl = projectUrlOverrides[p.id];
     }
     return { ...p, liveUrl: finalUrl };
   });

@@ -80,10 +80,6 @@ export interface EditableConfig {
   stat4DescAr?: string;
   stat4DescEn?: string;
 
-  // Live Project URLs
-  helioPropertyUrl: string;
-  alrehlaUrl: string;
-
   // Media & Images CMS
   heroCctvImage?: string;
   heroNetworkImage?: string;
@@ -128,13 +124,19 @@ export interface EditableConfig {
   updatedAt?: string;
 }
 
-export const CURRENT_CONTENT_VERSION = 3;
+export const CURRENT_CONTENT_VERSION = 4;
 
-export const LEGACY_PROJECT_IDS: readonly string[] = ['alrehla', 'contracting-ops-platform'];
+export const LEGACY_PROJECT_IDS: readonly string[] = [
+  'alrehla',
+  'alrehla-platform',
+  'contracting-ops-platform',
+  'helio-property',
+  'widad-tech',
+];
 
 /**
  * Merge two collections of items by unique 'id'.
- * If seed has a higher seedRevision, updates to the corrected seed version
+ * If seed has an equal or higher seedRevision, updates to the corrected seed version
  * while preserving custom administrator visibility and draft flags.
  * Ignores any legacy IDs passed via ignoredIds to purge stale cloud entries safely.
  */
@@ -161,8 +163,8 @@ export function mergeCollectionsById<T extends { id: string; seedRevision?: numb
   for (const item of cloudList) {
     if (!item || !item.id || processedIds.has(item.id)) continue;
     const seed = seedById.get(item.id);
-    if (seed && (seed.seedRevision ?? 0) > (item.seedRevision ?? 0)) {
-      // الكود أحدث: نستبدل النسخة القديمة مرة واحدة مع الإبقاء على اختيارات المشرف للإظهار والمسودة
+    if (seed && (seed.seedRevision ?? 0) >= (item.seedRevision ?? 0)) {
+      // الكود أحدث أو مكافئ: نستبدل النسخة القديمة مع الإبقاء على اختيارات المشرف للإظهار والمسودة
       const keep: Record<string, unknown> = {};
       const flags = item as unknown as Record<string, unknown>;
       if (flags.showOnSite !== undefined) keep.showOnSite = flags.showOnSite;
@@ -263,10 +265,6 @@ export const defaultEditableConfig: EditableConfig = {
   stat4LabelEn: contentEn.stats.stat4Label,
   stat4DescAr: contentAr.stats.stat4Desc,
   stat4DescEn: contentEn.stats.stat4Desc,
-
-  // Live Projects
-  helioPropertyUrl: 'https://helio-property.vercel.app/',
-  alrehlaUrl: 'https://www.alrehla.org/',
 
   // Media & Images CMS
   heroCctvImage: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',

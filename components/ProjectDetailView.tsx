@@ -72,13 +72,7 @@ export default function ProjectDetailView({ slug }: { slug: string }) {
     showOnSite: portalProjectAr.showOnSite,
   };
 
-  // 4. Apply URL overrides
-  if (project.id === 'helio-property' && customConfig.helioPropertyUrl) {
-    project.liveUrl = customConfig.helioPropertyUrl;
-  }
-  if (project.id === 'alrehla-platform' && customConfig.alrehlaUrl) {
-    project.liveUrl = customConfig.alrehlaUrl;
-  }
+
 
   const status = getProjectStatus(project);
   const isPlayStore = project.liveUrl?.includes('play.google.com');

@@ -274,10 +274,7 @@ export default function HomePage() {
             lang={lang}
             data={data}
             onConsultProject={handleSelectServiceForQuote}
-            projectUrlOverrides={{
-              helioPropertyUrl: customConfig.helioPropertyUrl,
-              alrehlaUrl: customConfig.alrehlaUrl,
-            }}
+            projectUrlOverrides={{}}
             customProjects={customConfig.projectsList}
             customProjectsEn={customConfig.projectsListEn}
             portalProjectsList={customConfig.projectsList}

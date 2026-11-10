@@ -4124,36 +4124,7 @@ export default function SecureAdminPortalPage() {
                     </div>
                   </div>
 
-                  {/* Live Platform Links Shortcuts */}
-                  <div className="p-4 rounded-xl bg-[#071120] border border-[#00F2FE]/20 space-y-3">
-                    <span className="text-xs font-bold text-white block">{isAr ? 'روابط المنصات الخارجية المخصصة:' : 'Custom External Platform URLs:'}</span>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                          {isAr ? 'رابط منصة خارجية مخصصة 1' : 'Custom Platform URL 1'}
-                        </label>
-                        <input
-                          type="url"
-                          value={config.helioPropertyUrl}
-                          onChange={(e) => handleConfigChange('helioPropertyUrl', e.target.value)}
-                          placeholder="https://..."
-                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                          {isAr ? 'رابط منصة خارجية مخصصة 2' : 'Custom Platform URL 2'}
-                        </label>
-                        <input
-                          type="url"
-                          value={config.alrehlaUrl}
-                          onChange={(e) => handleConfigChange('alrehlaUrl', e.target.value)}
-                          placeholder="https://..."
-                          className="w-full bg-[#0B1A2F] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-[#00F2FE] outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
+
 
                   {/* Projects Cards List */}
                   <div className="space-y-4">

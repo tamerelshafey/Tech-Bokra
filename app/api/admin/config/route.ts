@@ -23,14 +23,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid configuration payload' }, { status: 400 });
     }
 
-    // Trigger instant cache revalidation across all public routes
+    // Targeted cache revalidation based on modified fields (NEVER invalidate entire layout)
     try {
-      revalidatePath('/', 'layout');
-      revalidatePath('/projects');
-      revalidatePath('/services');
-      revalidatePath('/process');
-      revalidatePath('/faq');
-      revalidatePath('/contact');
+      const keys = Object.keys(body);
+      const pathsToRevalidate = new Set<string>();
+
+      // Field -> Route mapping
+      const contactKeys = ['whatsappNumber', 'phone', 'email', 'secondaryEmail', 'addressAr', 'addressEn', 'workingHoursAr', 'workingHoursEn', 'linkedinUrl', 'facebookUrl'];
+      const brandingKeys = ['customLogoUrl', 'logoEmblemStyle', 'logoScale', 'customLogoHeight', 'brandBioAr', 'brandBioEn', 'footerRightsAr', 'taxId', 'commercialRegister'];
+      const heroKeys = ['heroBadgeAr', 'heroBadgeEn', 'heroTitleLine1Ar', 'heroTitleLine1En', 'heroTitleLine2Ar', 'heroTitleLine2En', 'heroSubAr', 'heroSubEn', 'showAnnouncement', 'announcementBadgeAr', 'announcementBadgeEn', 'announcementTextAr', 'announcementTextEn', 'announcementLink', 'heroCctvImage', 'heroNetworkImage', 'heroAccessImage', 'heroCloudImage'];
+      const serviceKeys = ['servicesList', 'servicesListEn', 'servicesBadgeAr', 'servicesBadgeEn', 'servicesTitleLine1Ar', 'servicesTitleLine1En', 'servicesTitleLine2Ar', 'servicesTitleLine2En', 'servicesSubAr', 'servicesSubEn'];
+      const faqKeys = ['faqList', 'faqListEn', 'showFaqSection'];
+      const processKeys = ['showProcessSection'];
+      const projectKeys = ['projectsList', 'projectsListEn', 'showProjectsSection'];
+
+      const touches = (fieldList: string[]) => keys.some((k) => fieldList.includes(k));
+
+      if (touches(contactKeys) || touches(brandingKeys)) {
+        pathsToRevalidate.add('/');
+        pathsToRevalidate.add('/contact');
+      }
+      if (touches(heroKeys)) {
+        pathsToRevalidate.add('/');
+      }
+      if (touches(serviceKeys)) {
+        pathsToRevalidate.add('/');
+        pathsToRevalidate.add('/services');
+      }
+      if (touches(faqKeys)) {
+        pathsToRevalidate.add('/');
+        pathsToRevalidate.add('/faq');
+      }
+      if (touches(processKeys)) {
+        pathsToRevalidate.add('/');
+        pathsToRevalidate.add('/process');
+      }
+      if (touches(projectKeys)) {
+        pathsToRevalidate.add('/');
+        pathsToRevalidate.add('/projects');
+      }
+
+      // If payload is empty or unrecognized, default to homepage only without layout revalidation
+      if (pathsToRevalidate.size === 0) {
+        pathsToRevalidate.add('/');
+      }
+
+      for (const p of pathsToRevalidate) {
+        revalidatePath(p);
+      }
     } catch (revalidateErr) {
       console.warn('Cache revalidation notice:', revalidateErr);
     }
