@@ -130,6 +130,8 @@ export default function Footer({
               const hasValidTaxId = Boolean(taxId && !taxId.includes('TO_CONFIRM') && !taxId.includes('[') && taxId.trim() !== '');
               const hasValidCR = Boolean(commercialRegister && !commercialRegister.includes('TO_CONFIRM') && !commercialRegister.includes('[') && commercialRegister.trim() !== '');
 
+              if (!hasValidTaxId && !hasValidCR) return null;
+
               return (
                 <div className={`pt-2 text-xs font-mono space-y-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                   {hasValidTaxId && (
@@ -137,9 +139,6 @@ export default function Footer({
                   )}
                   {hasValidCR && (
                     <div>{isAr ? 'السجل التجاري: ' : 'Commercial Reg: '}{commercialRegister}</div>
-                  )}
-                  {!hasValidTaxId && !hasValidCR && (
-                    <div className="text-[11px] opacity-75">{isAr ? 'البيانات الضريبية والسجل التجاري: قيد الاعتماد الرسمي' : 'Tax ID & CR: Under Official Certification'}</div>
                   )}
                 </div>
               );

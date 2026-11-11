@@ -41,26 +41,86 @@ function isPlaceholder(val: unknown): boolean {
   );
 }
 
-function cleanValue(val: any, fieldPath = ''): { cleaned: any; changed: boolean; reasons: string[] } {
+// Default image map for services
+const DEFAULT_SERVICE_IMAGES: Record<string, string> = {
+  'physical-security-systems': 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80',
+  'networking-infrastructure': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
+  'elv-systems': 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80',
+  'software-digital-solutions': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+};
+
+const DEFAULT_HERO_FALLBACK = 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80';
+
+export interface ChangeRecord {
+  fieldPath: string;
+  action: string;
+  beforePreview: string;
+  afterPreview: string;
+  bytesSaved: number;
+}
+
+function cleanValue(
+  val: any, 
+  fieldPath = '', 
+  context?: { serviceId?: string; isServiceList?: boolean; isProjectList?: boolean }
+): { cleaned: any; changed: boolean; reasons: string[]; changesTable: ChangeRecord[] } {
   let changed = false;
   const reasons: string[] = [];
+  const changesTable: ChangeRecord[] = [];
 
   if (typeof val === 'string') {
+    const originalBytes = Buffer.byteLength(val, 'utf8');
+
     // 1. Check for Base64 Data URLs
     if (val.startsWith('data:image/')) {
-      reasons.push(`Purged Base64 image string at ${fieldPath} (${val.length} chars)`);
-      return { cleaned: '', changed: true, reasons };
+      let replacement = '';
+      let actionLabel = 'Removed Base64 Image';
+
+      if (context?.isServiceList && context.serviceId && DEFAULT_SERVICE_IMAGES[context.serviceId]) {
+        replacement = DEFAULT_SERVICE_IMAGES[context.serviceId];
+        actionLabel = `Replaced Base64 with Default Service Image (${context.serviceId})`;
+      } else if (fieldPath.includes('servicesList')) {
+        replacement = DEFAULT_SERVICE_IMAGES['physical-security-systems'];
+        actionLabel = 'Replaced Base64 with Default Service Image';
+      } else if (fieldPath.includes('heroCctv') || fieldPath.includes('heroAccess')) {
+        replacement = DEFAULT_HERO_FALLBACK;
+        actionLabel = 'Replaced Base64 Hero Image with Unsplash CDN URL';
+      }
+
+      const newBytes = Buffer.byteLength(replacement, 'utf8');
+      const bytesSaved = Math.max(0, originalBytes - newBytes);
+
+      reasons.push(`${actionLabel} at ${fieldPath} (saved ${(bytesSaved / 1024).toFixed(1)} KB)`);
+      changesTable.push({
+        fieldPath,
+        action: actionLabel,
+        beforePreview: `data:image/... (${(originalBytes / 1024).toFixed(1)} KB)`,
+        afterPreview: replacement ? (replacement.length > 50 ? replacement.substring(0, 47) + '...' : replacement) : '"" (empty string)',
+        bytesSaved,
+      });
+
+      return { cleaned: replacement, changed: true, reasons, changesTable };
     }
+
     // 2. Check for placeholder strings
     if (isPlaceholder(val)) {
       reasons.push(`Cleared placeholder "${val}" at ${fieldPath}`);
-      return { cleaned: '', changed: true, reasons };
+      changesTable.push({
+        fieldPath,
+        action: 'Cleared Placeholder',
+        beforePreview: val,
+        afterPreview: '""',
+        bytesSaved: originalBytes,
+      });
+      return { cleaned: '', changed: true, reasons, changesTable };
     }
-    return { cleaned: val, changed: false, reasons };
+
+    return { cleaned: val, changed: false, reasons, changesTable };
   }
 
   if (Array.isArray(val)) {
     const isProjectList = fieldPath.toLowerCase().includes('project');
+    const isServiceList = fieldPath.toLowerCase().includes('service');
     const newArr: any[] = [];
 
     for (let i = 0; i < val.length; i++) {
@@ -72,32 +132,46 @@ function cleanValue(val: any, fieldPath = ''): { cleaned: any; changed: boolean;
         // If it's a project list, drop legacy/blocked projects
         if (isProjectList && (BLOCKED_IDENTIFIERS.has(itemId) || BLOCKED_IDENTIFIERS.has(itemSlug))) {
           changed = true;
+          const itemBytes = Buffer.byteLength(JSON.stringify(item), 'utf8');
           reasons.push(`Removed blocked project id="${item.id}" slug="${item.slug}" from ${fieldPath}`);
+          changesTable.push({
+            fieldPath: `${fieldPath}[${i}]`,
+            action: 'Dropped Blocked Project',
+            beforePreview: `Project: ${item.id || item.slug}`,
+            afterPreview: '[REMOVED]',
+            bytesSaved: itemBytes,
+          });
           continue;
         }
 
-        // Recursively clean item properties (e.g. nested image Base64)
+        // Recursively clean item properties (e.g. nested image Base64 in services or projects)
         const cleanedObj: Record<string, any> = {};
         for (const [k, v] of Object.entries(item)) {
-          const res = cleanValue(v, `${fieldPath}[${i}].${k}`);
+          const res = cleanValue(v, `${fieldPath}[${i}].${k}`, {
+            serviceId: isServiceList ? itemId : undefined,
+            isServiceList,
+            isProjectList,
+          });
           cleanedObj[k] = res.cleaned;
           if (res.changed) {
             changed = true;
             reasons.push(...res.reasons);
+            changesTable.push(...res.changesTable);
           }
         }
         newArr.push(cleanedObj);
       } else {
-        const res = cleanValue(item, `${fieldPath}[${i}]`);
+        const res = cleanValue(item, `${fieldPath}[${i}]`, { isServiceList, isProjectList });
         newArr.push(res.cleaned);
         if (res.changed) {
           changed = true;
           reasons.push(...res.reasons);
+          changesTable.push(...res.changesTable);
         }
       }
     }
 
-    return { cleaned: newArr, changed, reasons };
+    return { cleaned: newArr, changed, reasons, changesTable };
   }
 
   if (val !== null && typeof val === 'object') {
@@ -108,12 +182,13 @@ function cleanValue(val: any, fieldPath = ''): { cleaned: any; changed: boolean;
       if (res.changed) {
         changed = true;
         reasons.push(...res.reasons);
+        changesTable.push(...res.changesTable);
       }
     }
-    return { cleaned: cleanedObj, changed, reasons };
+    return { cleaned: cleanedObj, changed, reasons, changesTable };
   }
 
-  return { cleaned: val, changed: false, reasons };
+  return { cleaned: val, changed: false, reasons, changesTable };
 }
 
 async function processDocument(
@@ -139,12 +214,15 @@ async function processDocument(
   const cleanedDoc: Record<string, any> = {};
   let docChanged = false;
 
+  const allChangesTable: ChangeRecord[] = [];
+
   for (const [k, v] of Object.entries(rawData)) {
     const res = cleanValue(v, k);
     cleanedDoc[k] = res.cleaned;
     if (res.changed) {
       docChanged = true;
       allReasons.push(...res.reasons);
+      allChangesTable.push(...res.changesTable);
     }
   }
 
@@ -160,15 +238,25 @@ async function processDocument(
     return;
   }
 
-  console.log(`[CHANGES IDENTIFIED] (${allReasons.length} modifications):`);
-  allReasons.forEach((r, idx) => console.log(`  ${idx + 1}. ${r}`));
+  console.log(`\n[DRY-RUN CHANGES TABLE] (${allChangesTable.length} proposed field updates):`);
+  console.log('Field Path'.padEnd(30) + 'Action'.padEnd(42) + 'Before'.padEnd(30) + 'After (Fallback/Clean)'.padEnd(45) + 'Savings');
+  console.log('-'.repeat(160));
+  for (const c of allChangesTable) {
+    console.log(
+      c.fieldPath.padEnd(30) +
+      c.action.padEnd(42) +
+      c.beforePreview.padEnd(30) +
+      c.afterPreview.padEnd(45) +
+      `${(c.bytesSaved / 1024).toFixed(1)} KB`
+    );
+  }
 
   if (isApply) {
-    console.log(`[APPLYING] Writing cleaned document to Firestore...`);
+    console.log(`\n[APPLYING] Writing cleaned document to Firestore...`);
     await setDoc(docRef, cleanedDoc);
     console.log(`[SUCCESS] Document ${collectionName}/${docId} updated in Firestore.`);
   } else {
-    console.log(`[DRY-RUN] No changes written. Use --apply to execute.`);
+    console.log(`\n[DRY-RUN] No changes written to Firestore. Use --apply to execute after reviewing.`);
   }
 }
 

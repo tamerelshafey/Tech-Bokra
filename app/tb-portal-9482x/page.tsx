@@ -874,7 +874,6 @@ export default function SecureAdminPortalPage() {
 
       // 3. Authorize and purge server cache AFTER successful Firestore commit with changed fields
       if (saveResult.generalSaved) {
-        const idToken = await auth?.currentUser?.getIdToken().catch(() => null);
         const changedFields = modifiedFields;
         const payloadFields: Record<string, any> = {
           updatedAt: new Date().toISOString(),
@@ -885,17 +884,34 @@ export default function SecureAdminPortalPage() {
           payloadFields[f] = true;
         });
 
-        await fetch('/api/admin/config', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
-          },
-          body: JSON.stringify(payloadFields),
-          credentials: 'include',
-        }).catch((err) => console.warn('Server cache revalidation notice:', err));
+        let revalidateSuccess = true;
+        try {
+          const res = await fetch('/api/admin/config', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payloadFields),
+            credentials: 'include',
+          });
+          if (!res.ok) {
+            revalidateSuccess = false;
+          }
+        } catch (err) {
+          console.warn('Server cache revalidation notice:', err);
+          revalidateSuccess = false;
+        }
 
         setModifiedFields([]);
+
+        if (!revalidateSuccess) {
+          setNotificationMsg(
+            isAr 
+              ? 'تم الحفظ لكن لم يتم تحديث الموقع العام، أعد تسجيل الدخول' 
+              : 'Saved, but public site cache was not updated. Please log in again.'
+          );
+          return;
+        }
       }
 
       if (saveResult.generalSaved && saveResult.vaultSaved) {

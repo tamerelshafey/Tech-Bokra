@@ -24,7 +24,7 @@ export function getRequiredHmacSecret(): string {
   if (!secret || secret.trim().length === 0) {
     return DEFAULT_HMAC_SECRET;
   }
-  return secret;
+  return secret.trim();
 }
 
 /**
@@ -173,16 +173,19 @@ export function isEmailAuthorizedAdmin(email: string): boolean {
   const cleanEmail = email.trim().toLowerCase();
 
   const allowedEnv = process.env.ADMIN_ALLOWED_EMAILS || DEFAULT_ALLOWED_EMAILS;
-  const allowedList = allowedEnv
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const allowedSet = new Set(
+    allowedEnv
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  );
 
-  if (allowedList.length === 0) {
-    return cleanEmail === 'tam.elshafey@gmail.com' || cleanEmail === 'admin@tech-bokra.com';
-  }
+  // Guarantee bootstrap admin founder accounts are always valid
+  allowedSet.add('tam.elshafey@gmail.com');
+  allowedSet.add('techbokra@gmail.com');
+  allowedSet.add('admin@tech-bokra.com');
 
-  return allowedList.includes(cleanEmail);
+  return allowedSet.has(cleanEmail);
 }
 
 /**
