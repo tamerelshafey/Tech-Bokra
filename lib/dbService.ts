@@ -378,6 +378,22 @@ export async function loadAdminVault(): Promise<{ mediaVault: MediaVaultItem[]; 
  * Subscribe to Realtime Site Settings from Firestore
  * Uses ID-based collection merge so newer code items/seeds are cleanly merged with custom admin configurations.
  */
+function cleanPlaceholderField(val?: string | null): string {
+  if (!val || typeof val !== 'string') return '';
+  const trimmed = val.trim();
+  if (
+    trimmed === '' ||
+    trimmed.includes('TO_CONFIRM') ||
+    trimmed.includes('[') ||
+    trimmed.includes(']') ||
+    trimmed.toLowerCase() === 'null' ||
+    trimmed.toLowerCase() === 'undefined'
+  ) {
+    return '';
+  }
+  return trimmed;
+}
+
 function sanitizePublicCloudData(cloudData: Partial<EditableConfig>): Partial<EditableConfig> {
   const sanitized = { ...cloudData };
   if (typeof sanitized.customLogoUrl === 'string' && sanitized.customLogoUrl.startsWith('data:image')) {
@@ -395,6 +411,27 @@ function sanitizePublicCloudData(cloudData: Partial<EditableConfig>): Partial<Ed
   if (typeof sanitized.heroCloudImage === 'string' && sanitized.heroCloudImage.startsWith('data:image')) {
     delete sanitized.heroCloudImage;
   }
+
+  // Sanitize contact, legal, and tax identifiers from placeholders
+  if (sanitized.phone !== undefined) {
+    sanitized.phone = cleanPlaceholderField(sanitized.phone);
+  }
+  if (sanitized.whatsappNumber !== undefined) {
+    sanitized.whatsappNumber = cleanPlaceholderField(sanitized.whatsappNumber);
+  }
+  if (sanitized.email !== undefined) {
+    sanitized.email = cleanPlaceholderField(sanitized.email);
+  }
+  if (sanitized.secondaryEmail !== undefined) {
+    sanitized.secondaryEmail = cleanPlaceholderField(sanitized.secondaryEmail);
+  }
+  if (sanitized.commercialRegister !== undefined) {
+    sanitized.commercialRegister = cleanPlaceholderField(sanitized.commercialRegister);
+  }
+  if (sanitized.taxId !== undefined) {
+    sanitized.taxId = cleanPlaceholderField(sanitized.taxId);
+  }
+
   delete sanitized.mediaVault;
   return sanitized;
 }

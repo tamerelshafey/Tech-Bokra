@@ -21,6 +21,9 @@
 }
 
 :root {
+  --font-cairo: 'Cairo', system-ui, -apple-system, sans-serif;
+  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   color-scheme: dark;
   --bg-main: #071120;
   --text-main: #F8FAFC;

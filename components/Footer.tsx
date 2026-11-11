@@ -126,17 +126,24 @@ export default function Footer({
               {brandBio || data.footer.brandBio}
             </p>
 
-            <div className={`pt-2 text-xs font-mono space-y-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-              {taxId && !taxId.includes('[TO_CONFIRM') && (
-                <div>{isAr ? 'البطاقة الضريبية: ' : 'Tax ID: '}{taxId}</div>
-              )}
-              {commercialRegister && !commercialRegister.includes('[TO_CONFIRM') && (
-                <div>{isAr ? 'السجل التجاري: ' : 'Commercial Reg: '}{commercialRegister}</div>
-              )}
-              {(!taxId || taxId.includes('[TO_CONFIRM')) && (!commercialRegister || commercialRegister.includes('[TO_CONFIRM')) && (
-                <div className="text-[11px] opacity-75">{isAr ? 'البيانات الضريبية والسجل التجاري: قيد الاعتماد الرسمي' : 'Tax ID & CR: Under Official Certification'}</div>
-              )}
-            </div>
+            {(() => {
+              const hasValidTaxId = Boolean(taxId && !taxId.includes('TO_CONFIRM') && !taxId.includes('[') && taxId.trim() !== '');
+              const hasValidCR = Boolean(commercialRegister && !commercialRegister.includes('TO_CONFIRM') && !commercialRegister.includes('[') && commercialRegister.trim() !== '');
+
+              return (
+                <div className={`pt-2 text-xs font-mono space-y-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {hasValidTaxId && (
+                    <div>{isAr ? 'البطاقة الضريبية: ' : 'Tax ID: '}{taxId}</div>
+                  )}
+                  {hasValidCR && (
+                    <div>{isAr ? 'السجل التجاري: ' : 'Commercial Reg: '}{commercialRegister}</div>
+                  )}
+                  {!hasValidTaxId && !hasValidCR && (
+                    <div className="text-[11px] opacity-75">{isAr ? 'البيانات الضريبية والسجل التجاري: قيد الاعتماد الرسمي' : 'Tax ID & CR: Under Official Certification'}</div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Quick Links (3 Cols) */}

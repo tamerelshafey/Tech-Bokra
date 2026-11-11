@@ -128,3 +128,47 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST https://tech-bokra.com/api/uplo
    * افتح دورياً: **Vercel Dashboard > Project > Observability / Monitoring > Data Cache / ISR**.
    * راقب مؤشر **ISR Writes** وتأكد من أن نسبة **HIT Rate** تتجاوز 98% وأن عدد الـ Revalidations يظل منخفضاً وقريباً من الصفر في الأيام العادية.
 
+---
+
+## 7. فحص الجودة والأمان الصارم بعد النشر (Post-Deployment Quality & Security Audit)
+
+فور إتمام نشر أي تحديث جديد على Vercel أو النطاق الإنتاجي (`https://tech-bokra.com`)، يجب تنفيذ الخطوات الرقابية التالية بالترتيب:
+
+### 1. اختبار كود الحالة 404 للمسارات المحظورة وغير الموثقة:
+تأكد من أن السيرفر يعيد رمز الحالة `404 Not Found` لصفحة المشاريع ولأي مشروع محذوف أو غير موثق:
+```bash
+# يجب أن تعيد جميعها HTTP 404 حصراً
+curl -s -o /dev/null -w "%{http_code}\n" https://tech-bokra.com/projects
+curl -s -o /dev/null -w "%{http_code}\n" https://tech-bokra.com/projects/alrehla
+curl -s -o /dev/null -w "%{http_code}\n" https://tech-bokra.com/projects/widad-tech
+curl -s -o /dev/null -w "%{http_code}\n" https://tech-bokra.com/projects/helio-property
+
+# فحص خريطة الموقع sitemap.xml والتأكد من خلوها تماماً من أي رابط مشاريع
+curl -s https://tech-bokra.com/sitemap.xml | grep -i "projects"
+```
+
+### 2. فحص الفوتر وصفحة التواصل والتأكد من فلترة القيم غير المؤكدة:
+- فتح الفوتر في الصفحة الرئيسية وصفحة `/contact`.
+- التأكد من عدم ظهور أي أرقام هواتف أو واتساب وهمية أو نصوص تحتوي على `TO_CONFIRM` أو أقواس `[...]`.
+- التأكد من ظهور عبارة *"البيانات الضريبية والسجل التجاري: قيد الاعتماد الرسمي"* في الفوتر في حال عدم تعيين رقم السجل التجاري والبطاقة الضريبية المعتمدين رسمياً.
+
+### 3. فحص تسرب المعايير في مصدر الصفحة (Page Source Inspection):
+افحص سورس صفحة الهبوط وإحدى صفحات الخدمات عبر تصفح كود الصفحة المصدري (View Page Source / `curl`):
+```bash
+# التحقق من عدم تسرب وسوم TO_CONFIRM في كود HTML أو نصوص JavaScript
+curl -s https://tech-bokra.com/ | grep -i "TO_CONFIRM"
+
+# التحقق من عدم وجود سلاسل Base64 ثقيلة مدمجة في صفحة الخدمات
+curl -s https://tech-bokra.com/services/security/cctv-ai-analytics | grep -i "data:image"
+
+# التحقق من عدم وجود معرفات المشاريع المحذوفة
+curl -s https://tech-bokra.com/ | grep -E "alrehla|helio-property|widad-tech"
+```
+
+### 4. مراجعة مؤشرات Vercel Observability بعد 24 ساعة:
+- الدخول إلى **Vercel Dashboard > Tech Bokra Project > Observability / Analytics**.
+- التحقق من تبويب **Data Cache / ISR**:
+  1. التأكد من أن معدل **ISR Writes** اليومي مستقر عند أقل من 100 كتابة (ناتجة فقط عن تحديثات المشرف الصريحة).
+  2. التأكد من بقاء معدل الكاش **Cache Hit Rate** أعلى من 95%.
+  3. التأكد من عدم وجود مسارات تسجل أخطاء 500 أو استدعاءات إبطال دورية.
+

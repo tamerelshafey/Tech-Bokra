@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   LayoutDashboard, 
@@ -202,6 +202,7 @@ export default function SecureAdminPortalPage() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [notificationMsg, setNotificationMsg] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [modifiedFields, setModifiedFields] = useState<string[]>([]);
 
   // Projects CMS & Image Uploader Hub State
   const [projectFilter, setProjectFilter] = useState<'all' | 'published' | 'draft' | 'upcoming'>('all');
@@ -778,6 +779,7 @@ export default function SecureAdminPortalPage() {
   };
 
   const handleConfigChange = <K extends keyof EditableConfig>(field: K, value: EditableConfig[K]) => {
+    setModifiedFields((prev) => (prev.includes(String(field)) ? prev : [...prev, String(field)]));
     setConfig((prev) => {
       const updated = { ...prev, [field]: value };
       safeSaveConfigToStorage(updated);
@@ -786,6 +788,8 @@ export default function SecureAdminPortalPage() {
   };
 
   const handleMultipleConfigChanges = (changes: Partial<EditableConfig>) => {
+    const newKeys = Object.keys(changes);
+    setModifiedFields((prev) => Array.from(new Set([...prev, ...newKeys])));
     setConfig((prev) => {
       const updated = { ...prev, ...changes };
       safeSaveConfigToStorage(updated);
@@ -868,18 +872,30 @@ export default function SecureAdminPortalPage() {
       // 2. Cloud Firestore Real-time Persistence (2-phase: vault secured first, then general)
       const saveResult = await saveSiteSettingsToCloud(config, auth?.currentUser || null);
 
-      // 3. Authorize and purge server cache AFTER successful Firestore commit
+      // 3. Authorize and purge server cache AFTER successful Firestore commit with changed fields
       if (saveResult.generalSaved) {
         const idToken = await auth?.currentUser?.getIdToken().catch(() => null);
+        const changedFields = modifiedFields;
+        const payloadFields: Record<string, any> = {
+          updatedAt: new Date().toISOString(),
+          modifiedFields: changedFields.length > 0 ? changedFields : Object.keys(config),
+        };
+        const keysToSend = changedFields.length > 0 ? changedFields : Object.keys(config);
+        keysToSend.forEach((f) => {
+          payloadFields[f] = true;
+        });
+
         await fetch('/api/admin/config', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
           },
-          body: JSON.stringify({ updatedAt: new Date().toISOString() }),
+          body: JSON.stringify(payloadFields),
           credentials: 'include',
         }).catch((err) => console.warn('Server cache revalidation notice:', err));
+
+        setModifiedFields([]);
       }
 
       if (saveResult.generalSaved && saveResult.vaultSaved) {

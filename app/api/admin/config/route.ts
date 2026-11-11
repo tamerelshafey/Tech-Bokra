@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
     // Targeted cache revalidation based on modified fields (NEVER invalidate entire layout)
     try {
       const keys = Object.keys(body);
+      const modifiedFields = Array.isArray(body.modifiedFields) ? body.modifiedFields : [];
+      const allKeys = Array.from(new Set([...keys, ...modifiedFields]));
       const pathsToRevalidate = new Set<string>();
 
       // Field -> Route mapping
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
       const processKeys = ['showProcessSection'];
       const projectKeys = ['projectsList', 'projectsListEn', 'showProjectsSection'];
 
-      const touches = (fieldList: string[]) => keys.some((k) => fieldList.includes(k));
+      const touches = (fieldList: string[]) => allKeys.some((k) => fieldList.includes(k));
 
       if (touches(contactKeys) || touches(brandingKeys)) {
         pathsToRevalidate.add('/');
