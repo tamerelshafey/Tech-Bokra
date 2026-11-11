@@ -52,11 +52,19 @@ export async function POST(req: NextRequest) {
     const verifiedEmail = tokenResult.email;
 
     // 3. Strict Admin Whitelist Verification
+    if (!process.env.ADMIN_ALLOWED_EMAILS || process.env.ADMIN_ALLOWED_EMAILS.trim().length === 0) {
+      console.warn('[SECURITY] ADMIN_ALLOWED_EMAILS is not configured in server environment.');
+      return NextResponse.json(
+        { error: 'متغير ADMIN_ALLOWED_EMAILS غير مضبوط على الخادم. يرجى إضافته في إعدادات البيئة للسماح بالدخول.' },
+        { status: 503 }
+      );
+    }
+
     if (!isEmailAuthorizedAdmin(verifiedEmail)) {
       recordFailedLogin(ip);
       console.warn(`[SECURITY] Unauthorized login attempt for non-whitelisted email: ${verifiedEmail} from IP: ${ip}`);
       return NextResponse.json(
-        { error: 'Access denied: This account is not authorized as an administrator.' },
+        { error: `البريد (${verifiedEmail}) غير مصرح له كمسؤول. يجب إضافته إلى ADMIN_ALLOWED_EMAILS على الخادم.` },
         { status: 403 }
       );
     }

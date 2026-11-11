@@ -2,7 +2,7 @@ import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export const BOOTSTRAP_ADMIN_EMAIL = 'tam.elshafey@gmail.com';
+export const BOOTSTRAP_ADMIN_EMAIL = '';
 const ADMIN_ROSTER_STORAGE_KEY = 'tech_bokra_admin_team_v1';
 
 export type AdminRole = 'super_admin' | 'admin' | 'editor';
@@ -28,17 +28,7 @@ export interface AdminVerificationResult {
   reason?: string;
 }
 
-export const DEFAULT_ADMIN_ROSTER: AdminAccount[] = [
-  {
-    id: 'primary-super-admin',
-    email: BOOTSTRAP_ADMIN_EMAIL,
-    name: 'تامر الشافعي (المالك والمؤسس)',
-    role: 'super_admin',
-    status: 'active',
-    department: 'الإدارة التنفيذية والهندسية العليا',
-    createdAt: '2026-01-01T00:00:00Z',
-  },
-];
+export const DEFAULT_ADMIN_ROSTER: AdminAccount[] = [];
 
 /**
  * Loads the authorized admin team from Firestore settings/admin_roster
@@ -157,15 +147,37 @@ export async function verifyAdminStatus(user: User | null): Promise<AdminVerific
   const userEmail = user.email.trim().toLowerCase();
   const isVerified = Boolean(user.emailVerified);
 
-  // Check 1: Primary Bootstrapped Super Admin
-  if (userEmail === BOOTSTRAP_ADMIN_EMAIL || userEmail === 'admin@tech-bokra.com') {
+  // Check 1: Authoritative check against server ADMIN_ALLOWED_EMAILS
+  try {
+    const idToken = await user.getIdToken();
+    const res = await fetch('/api/admin/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+      credentials: 'include',
+    });
+
+    if (res.ok) {
+      const authData = await res.json().catch(() => ({}));
+      return {
+        isAdmin: true,
+        isVerified: true,
+        email: userEmail,
+        role: authData?.user?.role || 'admin',
+        name: user.displayName || userEmail.split('@')[0],
+      };
+    }
+
+    const errData = await res.json().catch(() => ({}));
     return {
-      isAdmin: true,
-      isVerified: true,
+      isAdmin: false,
+      isVerified,
       email: userEmail,
-      role: 'super_admin',
-      name: userEmail === BOOTSTRAP_ADMIN_EMAIL ? 'تامر الشافعي (المالك والمؤسس)' : 'المشرف العام',
+      role: 'none',
+      reason: errData?.error || 'هذا الحساب غير مصرح له كمسؤول في إعدادات الخادم (ADMIN_ALLOWED_EMAILS).',
     };
+  } catch (netErr) {
+    console.warn('Server auth verification check warning:', netErr);
   }
 
   // Check 2: Check Firestore /settings/admin_roster

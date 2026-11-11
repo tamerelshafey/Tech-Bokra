@@ -164,7 +164,7 @@ export async function uploadImageToServer(file: File): Promise<{ url: string; si
       throw new Error('انتهت جلسة الإدارة، سجّل الدخول مجدداً');
     }
     if (res.status === 503) {
-      throw new Error(data?.error || 'مخزن الصور غير مُفعّل: أنشئ Vercel Blob واربطه بالمشروع ثم أعد النشر.');
+      throw new Error(data?.error || 'التخزين الدائم غير مفعّل على الخادم');
     }
     if (data?.error) {
       throw new Error(data.error);

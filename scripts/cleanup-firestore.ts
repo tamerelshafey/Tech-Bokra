@@ -9,6 +9,9 @@
  * - Purges unconfirmed placeholder strings ('TO_CONFIRM', '[...').
  *
  * Usage:
+ *   Extract embedded Base64 images to local folder (Read-only, preserves images before cleanup):
+ *     npx tsx scripts/cleanup-firestore.ts --extract-images=./extracted-images
+ *
  *   Dry-run (safe test):
  *     npx tsx scripts/cleanup-firestore.ts
  *
@@ -260,18 +263,135 @@ async function processDocument(
   }
 }
 
+interface ExtractedImage {
+  fieldPath: string;
+  filename: string;
+  fullPath: string;
+  sizeBytes: number;
+  mimeType: string;
+}
+
+function findAndExtractBase64Images(
+  val: any,
+  fieldPath: string,
+  targetDir: string,
+  extracted: ExtractedImage[]
+) {
+  if (typeof val === 'string' && val.startsWith('data:image/')) {
+    const match = val.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+    if (!match) return;
+
+    const mimeType = match[1];
+    const base64Content = match[2];
+
+    let ext = '.png';
+    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = '.jpg';
+    else if (mimeType.includes('webp')) ext = '.webp';
+    else if (mimeType.includes('svg')) ext = '.svg';
+
+    const sanitizedName = fieldPath.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '');
+    const filename = `${sanitizedName}${ext}`;
+    const fullPath = path.resolve(targetDir, filename);
+
+    const buffer = Buffer.from(base64Content, 'base64');
+    fs.writeFileSync(fullPath, buffer);
+
+    extracted.push({
+      fieldPath,
+      filename,
+      fullPath,
+      sizeBytes: buffer.length,
+      mimeType,
+    });
+    return;
+  }
+
+  if (Array.isArray(val)) {
+    val.forEach((item, idx) => {
+      findAndExtractBase64Images(item, `${fieldPath}[${idx}]`, targetDir, extracted);
+    });
+    return;
+  }
+
+  if (val !== null && typeof val === 'object') {
+    for (const [k, v] of Object.entries(val)) {
+      findAndExtractBase64Images(v, `${fieldPath}.${k}`, targetDir, extracted);
+    }
+  }
+}
+
 async function run() {
   const args = process.argv.slice(2);
   const isApply = args.includes('--apply');
 
+  const extractArg = args.find((a) => a.startsWith('--extract-images=') || a === '--extract-images');
+  let extractDir: string | null = null;
+  if (extractArg) {
+    if (extractArg.startsWith('--extract-images=')) {
+      extractDir = extractArg.split('=')[1]?.trim() || 'extracted-images';
+    } else {
+      const idx = args.indexOf('--extract-images');
+      extractDir = args[idx + 1] || 'extracted-images';
+    }
+  }
+
   console.log('====================================================');
   console.log(` Tech Bokra - Firestore Sanitization Script`);
-  console.log(` Mode: ${isApply ? 'LIVE APPLY (WILL WRITE)' : 'DRY-RUN (SIMULATION ONLY)'}`);
+  if (extractDir) {
+    console.log(` Mode: EXTRACT IMAGES (READ-ONLY)`);
+    console.log(` Output Dir: ${extractDir}`);
+  } else {
+    console.log(` Mode: ${isApply ? 'LIVE APPLY (WILL WRITE)' : 'DRY-RUN (SIMULATION ONLY)'}`);
+  }
   console.log(` Target DB: ${firebaseConfig.firestoreDatabaseId}`);
   console.log('====================================================');
 
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+  // If user requested extracting images, read settings/general, dump images to files, and exit
+  if (extractDir) {
+    const resolvedDir = path.resolve(process.cwd(), extractDir);
+    if (!fs.existsSync(resolvedDir)) {
+      fs.mkdirSync(resolvedDir, { recursive: true });
+    }
+
+    console.log(`\n--- EXTRACTING EMBEDDED BASE64 IMAGES FROM settings/general ---`);
+    console.log(`Target directory: ${resolvedDir}`);
+
+    const snap = await getDoc(doc(db, 'settings', 'general'));
+    if (!snap.exists()) {
+      console.log('Document settings/general not found.');
+      return;
+    }
+
+    const rawData = snap.data();
+    const extractedList: ExtractedImage[] = [];
+    for (const [k, v] of Object.entries(rawData)) {
+      findAndExtractBase64Images(v, k, resolvedDir, extractedList);
+    }
+
+    console.log(`\n[EXTRACTION COMPLETE] Saved ${extractedList.length} image files:`);
+    console.log('Filename'.padEnd(38) + 'Field Path'.padEnd(32) + 'MIME Type'.padEnd(16) + 'Size');
+    console.log('-'.repeat(105));
+    let totalBytes = 0;
+    for (const item of extractedList) {
+      totalBytes += item.sizeBytes;
+      console.log(
+        item.filename.padEnd(38) +
+        item.fieldPath.padEnd(32) +
+        item.mimeType.padEnd(16) +
+        `${(item.sizeBytes / 1024).toFixed(1)} KB (${item.sizeBytes} bytes)`
+      );
+    }
+    console.log('-'.repeat(105));
+    console.log(`Total extracted: ${(totalBytes / 1024).toFixed(1)} KB (${totalBytes} bytes)`);
+    console.log(`\n[INSTRUCTIONS]`);
+    console.log(`1. Upload these files from "${extractDir}" to Vercel Blob (or storage of choice).`);
+    console.log(`2. Paste the returned URLs into the respective fields in the Admin Portal.`);
+    console.log(`3. Once verified, run "npx tsx scripts/cleanup-firestore.ts --apply" to purge remaining Base64 from Firestore.`);
+    return;
+  }
 
   const backupData: Record<string, any> = {};
 

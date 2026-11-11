@@ -132,40 +132,29 @@ export async function POST(req: NextRequest) {
     const randomUuid = crypto.randomUUID();
     const uniqueFileName = `${randomUuid}${safeExt}`;
 
-    let imageUrl = '';
     const blobToken = getBlobToken();
-
-    // 7. Upload to Vercel Blob if token is found (under any custom or standard name)
-    if (blobToken) {
-      try {
-        const blob = await put(`uploads/${uniqueFileName}`, buffer, {
-          access: 'public',
-          token: blobToken,
-          contentType: clientMime,
-          addRandomSuffix: false,
-        });
-        imageUrl = blob.url;
-      } catch (blobErr: any) {
-        console.warn('Vercel Blob upload warning, attempting filesystem fallback:', blobErr);
-      }
+    if (!blobToken) {
+      return NextResponse.json(
+        { error: 'التخزين الدائم غير مفعّل على الخادم' },
+        { status: 503 }
+      );
     }
 
-    // 8. Resilient Fallbacks if Vercel Blob is not yet linked:
-    if (!imageUrl) {
-      // 8a. Local filesystem fallback (writes to public/uploads)
-      try {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        await fs.mkdir(uploadsDir, { recursive: true });
-        await fs.writeFile(path.join(uploadsDir, uniqueFileName), buffer);
-        imageUrl = `/uploads/${uniqueFileName}`;
-      } catch (fsErr: any) {
-        console.warn('Local filesystem write failed, using WebP base64 fallback:', fsErr);
-        // 8b. Data URL fallback so the user is never blocked under any circumstances
-        const base64 = buffer.toString('base64');
-        imageUrl = `data:${clientMime};base64,${base64}`;
-      }
+    let imageUrl = '';
+    try {
+      const blob = await put(`uploads/${uniqueFileName}`, buffer, {
+        access: 'public',
+        token: blobToken,
+        contentType: clientMime,
+        addRandomSuffix: false,
+      });
+      imageUrl = blob.url;
+    } catch (blobErr: any) {
+      console.error('Vercel Blob upload failed:', blobErr);
+      return NextResponse.json(
+        { error: 'التخزين الدائم غير مفعّل على الخادم' },
+        { status: 503 }
+      );
     }
 
     const sizeKB = `${(file.size / 1024).toFixed(1)} KB`;

@@ -81,7 +81,7 @@ export async function saveSiteSettingsToCloud(
       await setDoc(adminVaultDocRef, {
         mediaVault,
         updatedAt: new Date().toISOString(),
-        updatedBy: user?.email || auth?.currentUser?.email || 'admin@tech-bokra.com',
+        updatedBy: user?.email || auth?.currentUser?.email || 'system',
       });
       vaultSaved = true;
     } catch (vaultError) {
@@ -100,7 +100,7 @@ export async function saveSiteSettingsToCloud(
         await setDoc(adminVaultDocRef, {
           mediaVault: [],
           updatedAt: new Date().toISOString(),
-          updatedBy: user?.email || auth?.currentUser?.email || 'admin@tech-bokra.com',
+          updatedBy: user?.email || auth?.currentUser?.email || 'system',
         });
         vaultSaved = true;
       }
@@ -191,7 +191,7 @@ export async function migrateSettingsAndVaultSafely(user?: User | null): Promise
     await setDoc(adminVaultDocRef, {
       mediaVault: targetVaultItems,
       updatedAt: new Date().toISOString(),
-      updatedBy: user?.email || legacyUpdatedBy || 'admin@tech-bokra.com',
+      updatedBy: user?.email || legacyUpdatedBy || 'system',
     });
 
     // Step 3: Strictly VERIFY that settings/admin_vault was persisted successfully
@@ -317,7 +317,7 @@ export async function restoreSettingsFromBackup(backupPayload: {
       await setDoc(vaultDocRef, {
         mediaVault: Array.isArray(vaultData.mediaVault) ? vaultData.mediaVault : [],
         updatedAt: new Date().toISOString(),
-        updatedBy: vaultData.updatedBy || 'admin@tech-bokra.com',
+        updatedBy: vaultData.updatedBy || 'system',
       });
       restoredVault = true;
     }

@@ -13,7 +13,6 @@ export interface AdminSessionPayload {
   exp: number;
 }
 
-const DEFAULT_ALLOWED_EMAILS = 'tam.elshafey@gmail.com,admin@tech-bokra.com';
 const DEFAULT_HMAC_SECRET = 'tech-bokra-secure-admin-secret-2026-v1';
 
 /**
@@ -166,24 +165,24 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<{
 
 /**
  * Check if the verified email belongs to the list of authorized administrators.
- * Reads from ADMIN_ALLOWED_EMAILS environment variable (comma-separated) with safe fallback.
+ * Reads strictly from ADMIN_ALLOWED_EMAILS environment variable (comma-separated).
+ * Zero hardcoded emails. If the environment variable is not configured, returns false.
  */
 export function isEmailAuthorizedAdmin(email: string): boolean {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase();
 
-  const allowedEnv = process.env.ADMIN_ALLOWED_EMAILS || DEFAULT_ALLOWED_EMAILS;
+  const allowedEnv = process.env.ADMIN_ALLOWED_EMAILS;
+  if (!allowedEnv || allowedEnv.trim().length === 0) {
+    return false;
+  }
+
   const allowedSet = new Set(
     allowedEnv
       .split(',')
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean)
   );
-
-  // Guarantee bootstrap admin founder accounts are always valid
-  allowedSet.add('tam.elshafey@gmail.com');
-  allowedSet.add('techbokra@gmail.com');
-  allowedSet.add('admin@tech-bokra.com');
 
   return allowedSet.has(cleanEmail);
 }
