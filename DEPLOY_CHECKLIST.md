@@ -5,33 +5,43 @@
 
 ## 1. جدول متغيرات البيئة (Environment Variables Matrix)
 
-| اسم المتغير (Variable Name) | الغرض والوصف (Purpose & Description) | هل هو سر؟ (Secret?) | المكان (Scope) | القيمة الافتراضية / مثال |
+| اسم المتغير (Variable Name) | الغرض والوصف (Purpose & Description) | هل هو سر؟ (Secret?) | المكان (Scope) | ماذا يحدث عند غيابه؟ (Behavior When Missing) |
 | :--- | :--- | :--- | :--- | :--- |
-| `ADMIN_SESSION_SECRET` | سر التوقيع التشفيري الإجباري لجلسات المشرفين بخوارزمية HMAC-SHA256 لمنع تزوير الكوكيز | **نعم (سر أمني عالي الحساسية)** | Server Only | سلسلة عشوائية 64 حرفاً (`openssl rand -hex 32`) |
-| `ADMIN_ALLOWED_EMAILS` | **إجباري تماماً**: القائمة الحصرية لعناوين البريد المصرح لها بالإدارة. إن لم يُضبط يفشل الدخول بـ 503 مع حظر تام (لا توجد أي إيميلات مشفرة في الكود) | **نعم (إعداد إداري إلزامي)** | Server Only | `admin@tech-bokra.com,manager@example.com` |
-| `BLOB_READ_WRITE_TOKEN` | **إجباري لرفع الوسائط**: التوكن السحابي لـ Vercel Blob. في حال غيابه يعيد `/api/upload` رمز 503 وتظهر رسالة "التخزين الدائم غير مفعّل على الخادم" (تم حذف التراجع للقرص أو Base64) | **نعم (سر سحابي إلزامي)** | Server Only | يتم حقنه تلقائياً عند ربط Vercel Blob بالمشروع |
-| `GEMINI_API_KEY` | مفتاح واجهة الذكاء الاصطناعي لحسابات وأدوات الهندسة عبر السيرفر حصراً | **نعم (سر سحابي)** | Server Only | يتم حقنه تلقائياً في بيئة AI Studio |
-| `APP_URL` | الرابط الأساسي للمنصة المنشورة (يستخدم في الروابط والـ Canonical والـ Metadata) | لا | Server Only | `https://tech-bokra.com` |
-| `NEXT_PUBLIC_COMPANY_PHONE` | رقم الهاتف الرسمي المعتمد للشركة (يظهر للزوار فقط إن لم يكن TO_CONFIRM) | لا | Client & Server | `+20 101 234 5678` |
-| `NEXT_PUBLIC_COMPANY_WHATSAPP` | رقم الواتساب المخصص لطلبات المعاينات والدعم الفني | لا | Client & Server | `201012345678` |
-| `NEXT_PUBLIC_COMPANY_EMAIL` | البريد الإلكتروني الرسمي لخدمة العملاء | لا | Client & Server | `Support@tech-bokra.com` |
-| `NEXT_PUBLIC_COMPANY_CR` | رقم السجل التجاري للشركة (إن كان فارغاً أو TO_CONFIRM يُخفى تماماً) | لا | Client & Server | يُترك فارغاً أو يُحدد بعد التأكيد |
-| `NEXT_PUBLIC_COMPANY_TAX_ID` | رقم البطاقة الضريبية المصرية للشركة (إن كان فارغاً أو TO_CONFIRM يُخفى تماماً) | لا | Client & Server | يُترك فارغاً أو يُحدد بعد التأكيد |
+| `ADMIN_SESSION_SECRET` | **إجباري لدخول الإدارة**: سر التوقيع التشفيري لملف تعريف الجلسة `tb_admin_session` بخوارزمية HMAC-SHA256 | **نعم (سر أمني عالي الحساسية)** | Server Only | يفشل `/api/admin/auth` (POST/GET) ويعيد **HTTP 503** برسالة صريحة على شاشة الدخول: *"متغير ADMIN_SESSION_SECRET غير مضبوط أو ما زال قيمة افتراضية"* |
+| `ADMIN_ALLOWED_EMAILS` | **إجباري لدخول الإدارة**: القائمة الحصرية لإيميلات المشرفين مفصولة بفواصل (مثال: `admin@tech-bokra.com,owner@gmail.com`) | **نعم (إعداد إداري إلزامي)** | Server Only | عند غيابه يعيد `/api/admin/auth` **HTTP 503** مع منع أي دخول؛ وعند عدم وجود إيميل المستخدم فيه يعيد **HTTP 403** موضحاً البريد الذي حاول الدخول |
+| `BLOB_READ_WRITE_TOKEN` | **إجباري لرفع الوسائط**: التوكن السحابي لمخزن Vercel Blob | **نعم (سر سحابي إلزامي)** | Server Only | يعيد `/api/upload` رمز **HTTP 503** وتظهر في اللوحة رسالة: *"التخزين الدائم غير مفعّل على الخادم"* |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | *(اختياري تماماً)* مفتاح حساب خدمة Firebase Admin في حال الرغبة بفحص سحب الجلسات (`checkRevoked`) مستقبلاً. **ملاحظة:** التحقق الأساسي من التوكن على السيرفر يتم عبر مفاتيح Google x509 العامة (RS256) بدون الاعتماد على Web API Key ولا يتطلب هذا المتغير. | نعم (اختياري) | Server Only | لا يؤثر غيابه على تسجيل الدخول لأن السيرفر يتحقق تشفيرياً عبر شهادة Google العامة (`securetoken@system.gserviceaccount.com`) |
+| `GEMINI_API_KEY` | مفتاح واجهة الذكاء الاصطناعي لأدوات وحاسبات الهندسة عبر السيرفر | **نعم (سر سحابي)** | Server Only | تتعطل استعلامات الذكاء الاصطناعي السيرفرية فقط |
+| `APP_URL` | الرابط الأساسي للمنصة المنشورة (لـ Canonical والـ Metadata) | لا | Server Only | يُستخدم الدومين الافتراضي `https://tech-bokra.com` |
+| `NEXT_PUBLIC_COMPANY_PHONE` | رقم الهاتف الرسمي المعتمد للشركة (يُخفى إذا كان فارغاً أو `TO_CONFIRM`) | لا | Client & Server | يُخفى رقم الهاتف من الواجهة |
+| `NEXT_PUBLIC_COMPANY_WHATSAPP` | رقم الواتساب المخصص لطلبات المعاينات والدعم الفني | لا | Client & Server | يُخفى زر/رابط الواتساب |
+| `NEXT_PUBLIC_COMPANY_EMAIL` | البريد الإلكتروني الرسمي لخدمة العملاء | لا | Client & Server | يُستخدم البريد البديل المعتمد أو يُخفى |
+| `NEXT_PUBLIC_COMPANY_CR` | رقم السجل التجاري للشركة (إن كان فارغاً أو `TO_CONFIRM` يُخفى تماماً) | لا | Client & Server | يُخفى سطر السجل التجاري من الفوتر |
+| `NEXT_PUBLIC_COMPANY_TAX_ID` | رقم البطاقة الضريبية للشركة (إن كان فارغاً أو `TO_CONFIRM` يُخفى تماماً) | لا | Client & Server | يُخفى سطر البطاقة الضريبية من الفوتر |
 
-> **ملاحظة أمنية حاسمة:** لا تقم أبداً بوضع بادئة `NEXT_PUBLIC_` للمتغيرات `ADMIN_SESSION_SECRET` أو `BLOB_READ_WRITE_TOKEN` أو `GEMINI_API_KEY`، حيث إن أي متغير يحمل هذه البادئة يتم تضمينه في ملفات الـ JavaScript المفتوحة للزوار في المتصفح.
+> **ملاحظة أمنية حاسمة:** لا تقم أبداً بوضع بادئة `NEXT_PUBLIC_` للمتغيرات `ADMIN_SESSION_SECRET` أو `ADMIN_ALLOWED_EMAILS` أو `BLOB_READ_WRITE_TOKEN` أو `FIREBASE_SERVICE_ACCOUNT_KEY` أو `GEMINI_API_KEY`.
 
 ---
 
-## 2. متطلبات ملفات التكوين والخدمات السحابية (Cloud & Services)
+## 2. متطلبات ملفات التكوين والمصادقة (Firebase Auth & Security Rules)
 
-1. **ملف `firebase-applet-config.json`:**
+1. **ملف `firebase-applet-config.json` (إجباري لـ Client Auth وFirestore):**
    * يجب أن يحتوي على المعرفات الصحيحة لمشروع Firebase:
-     - `projectId`: معرف المشروع السحابي.
-     - `apiKey`: مفتاح واجهة مصادقة Google Identity Toolkit.
+     - `projectId`: معرف المشروع السحابي (يُستخدم أيضاً في مطابقة `aud` و`iss` أثناء التحقق التشفيري للتوكن على السيرفر).
+     - `apiKey`: مفتاح تطبيق الويب لمصادقة المتصفح (`signInWithPopup` / `signInWithEmailAndPassword`). في حال تقييده بـ HTTP Referrers في Google Cloud Console، **يستمر تحقق السيرفر في `/api/admin/auth` بالعمل بدون أي مشكلة** لأنه يعتمد على مفاتيح Google العامة (x509 RS256) وليس على `apiKey`.
      - `firestoreDatabaseId`: قاعدة بيانات Firestore المخصصة للمشروع (`ai-studio-techbokra-bb612efd-9fa2-4cc8-ac0c-3110827043fb`).
      - `authDomain`: نطاق المصادقة المصرح به في Firebase Console.
+   * **عند غياب أو تلف `firebase-applet-config.json`:** يتعطل تسجيل الدخول عبر Google وكلمة المرور من المتصفح وتتوقف قراءة/كتابة Firestore.
 
-2. **قواعد أمان Firestore (`firestore.rules`):**
+2. **النطاقات المصرح بها (Firebase Authorized Domains):**
+   * في **Firebase Console > Authentication > Settings > Authorized domains**، يجب إضافة كل نطاق تفتح منه لوحة التحكم (مثل `localhost`، `tech-bokra.com`، ونطاقات Vercel/AI Studio).
+   * إذا فُتحت اللوحة من نطاق غير مضاف تظهر رسالة واضحة للمدير: `auth/unauthorized-domain`.
+
+3. **سياسة التحقق من البريد والكوكيز (`tb_admin_session`):**
+   * يرفض الخادم أي حساب بريده غير مُحقَّق (`email_verified = false`) برمز `403`.
+   * تُصدر كوكي الجلسة `tb_admin_session` بخصائص `HttpOnly; SameSite=Lax; Path=/` مع `Secure=false` على `http://localhost` و`Secure=true` تلقائياً على `HTTPS` وبدون فرض `Domain` خاطئ.
+
+4. **قواعد أمان Firestore (`firestore.rules`):**
    * التأكد من حظر الكتابة العامة على مجموعات `settings/general` و`settings/admin_vault` واقتصارها على المشرفين المصرح لهم.
    * السماح بالقراءة العامة لمجموعة `settings/general` لضمان وصول التحديثات اللحظية لكافة الزوار.
 

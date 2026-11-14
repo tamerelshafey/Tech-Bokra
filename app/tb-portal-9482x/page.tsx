@@ -62,7 +62,7 @@ import {
 } from 'lucide-react';
 import TechBokraLogo, { LogoEmblemStyle } from '@/components/TechBokraLogo';
 import { useTheme } from '@/components/ThemeProvider';
-import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
+import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem, isBlockedLegacyProject } from '@/lib/content';
 import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById, LEGACY_PROJECT_IDS } from '@/lib/siteConfig';
 import ProjectModal from '@/components/ProjectModal';
 import { 
@@ -203,6 +203,7 @@ export default function SecureAdminPortalPage() {
   const [notificationMsg, setNotificationMsg] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [modifiedFields, setModifiedFields] = useState<string[]>([]);
+  const manualLoginInProgressRef = useRef<boolean>(false);
 
   // Projects CMS & Image Uploader Hub State
   const [projectFilter, setProjectFilter] = useState<'all' | 'published' | 'draft' | 'upcoming'>('all');
@@ -224,18 +225,66 @@ export default function SecureAdminPortalPage() {
   const [recentUploads, setRecentUploads] = useState<{ id: string; name: string; url: string; size: string }[]>([]);
   const [editLang, setEditLang] = useState<'ar' | 'en'>('ar');
 
-  // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate with Safety Timeout)
+  const formatFirebaseClientAuthError = (err: any, arMode: boolean, attemptedEmail?: string): string => {
+    const code = String(err?.code || '');
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'current-domain';
+
+    switch (code) {
+      case 'auth/unauthorized-domain':
+        return arMode
+          ? `الدومين (${currentHost}) غير مصرح به في إعدادات Firebase Authentication (auth/unauthorized-domain). أضف "${currentHost}" إلى Authorized domains في Firebase Console.`
+          : `Domain (${currentHost}) is not authorized in Firebase Authentication (auth/unauthorized-domain). Add it under Authorized domains in Firebase Console.`;
+      case 'auth/popup-blocked':
+        return arMode
+          ? 'تم حظر النافذة المنبثقة لتسجيل الدخول عبر Google (auth/popup-blocked). اسمح بالنوافذ المنبثقة لهذا الموقع أو استخدم الدخول بالبريد وكلمة المرور.'
+          : 'Google sign-in popup was blocked by the browser (auth/popup-blocked). Allow popups or use email & password.';
+      case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
+        return arMode
+          ? 'تم إغلاق نافذة تسجيل الدخول عبر Google قبل إكمال العملية (auth/popup-closed-by-user).'
+          : 'Google sign-in popup was closed before completion (auth/popup-closed-by-user).';
+      case 'auth/too-many-requests':
+        return arMode
+          ? 'تم حظر المحاولات مؤقتاً من خوادم Firebase لكثرة المحاولات الفاشلة (auth/too-many-requests). يرجى الانتظار بضع دقائق ثم المحاولة.'
+          : 'Too many failed attempts blocked temporarily by Firebase (auth/too-many-requests). Please wait and try again.';
+      case 'auth/network-request-failed':
+        return arMode
+          ? 'فشل الاتصال بخوادم Firebase Authentication (auth/network-request-failed). تحقق من الشبكة أو جدار الحماية.'
+          : 'Network error connecting to Firebase Authentication (auth/network-request-failed).';
+      case 'auth/operation-not-allowed':
+        return arMode
+          ? 'طريقة تسجيل الدخول المختارة غير مفعلة في Firebase Console (auth/operation-not-allowed).'
+          : 'This sign-in provider is disabled in Firebase Authentication (auth/operation-not-allowed).';
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+      case 'auth/invalid-email':
+        return arMode
+          ? `فشل تسجيل الدخول${attemptedEmail ? ` للحساب (${attemptedEmail})` : ''}: بيانات الاعتماد غير صحيحة أو الحساب غير موجود (${code}).`
+          : `Authentication failed${attemptedEmail ? ` for (${attemptedEmail})` : ''}: invalid credentials or account not found (${code}).`;
+      default:
+        return arMode
+          ? `تعذر إتمام تسجيل الدخول${code ? ` (${code})` : ''}: ${err?.message || 'خطأ غير معروف في المصادقة'}`
+          : `Authentication error${code ? ` (${code})` : ''}: ${err?.message || 'Unknown authentication error'}`;
+    }
+  };
+
+  // 1. Authoritative Firebase Auth State Listener (Zero-Trust Gate with Non-Blocking Timeout)
   useEffect(() => {
     let isMounted = true;
     const safetyTimer = setTimeout(() => {
       if (isMounted) setIsVerifyingAuth(false);
-    }, 2500);
+    }, 4000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // Avoid race / double POST to /api/admin/auth when manual login is running
+      if (manualLoginInProgressRef.current) {
+        return;
+      }
+
       try {
         if (user) {
           try {
-            // Guarantee maximum 3s wait so user is never blocked
             const verification = await Promise.race([
               verifyAdminStatus(user),
               new Promise<AdminVerificationResult>((resolve) =>
@@ -245,11 +294,15 @@ export default function SecureAdminPortalPage() {
                     isVerified: false,
                     email: user.email,
                     role: 'none',
-                    reason: isAr ? 'استغرقت عملية التحقق وقتاً طويلاً، أعد المحاولة.' : 'Authentication timed out. Please retry.',
+                    reason: isAr
+                      ? 'استغرقت عملية التحقق من جلسة الخادم وقتاً أطول من المعتاد (Timeout). يرجى إعادة تسجيل الدخول.'
+                      : 'Server session verification timed out. Please sign in again.',
                   });
-                }, 2500)
+                }, 12000)
               ),
             ]);
+
+            if (!isMounted || manualLoginInProgressRef.current) return;
 
             setAdminVerification(verification);
 
@@ -263,16 +316,6 @@ export default function SecureAdminPortalPage() {
                 localStorage.removeItem(BRUTE_FORCE_KEY);
               }
 
-              // Establish server-side signed httpOnly session cookie via real Firebase ID token
-              user.getIdToken(true).then((idToken) => {
-                return fetch('/api/admin/auth', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ idToken }),
-                  credentials: 'include',
-                });
-              }).catch((err) => console.warn('Failed to establish server admin session:', err));
-
               // Load isolated admin media vault from settings/admin_vault
               loadAdminVault().then((vaultData) => {
                 if (vaultData && Array.isArray(vaultData.mediaVault)) {
@@ -282,24 +325,37 @@ export default function SecureAdminPortalPage() {
                 console.warn('Admin vault load warning:', err);
               });
             } else {
-              await signOut(auth);
+              await Promise.race([
+                signOut(auth).catch(() => {}),
+                new Promise((r) => setTimeout(r, 1500)),
+              ]);
+              if (!isMounted) return;
               setCurrentUser(null);
               setAdminVerification(null);
               setIsAuthenticated(false);
               setInquiries([]);
               setLoginError(
-                isAr
-                  ? (verification.reason || 'هذا الحساب غير مصرح له بالدخول كمسؤول.')
-                  : (verification.reason || 'Unauthorized account. Administrator privileges required.')
+                verification.reason ||
+                  (isAr
+                    ? `الحساب (${user.email || ''}) غير مصرح له بالدخول كمسؤول.`
+                    : `Account (${user.email || ''}) is not authorized as an administrator.`)
               );
             }
           } catch (err: unknown) {
             console.error('Admin verification error:', err);
-            await signOut(auth);
+            await Promise.race([
+              signOut(auth).catch(() => {}),
+              new Promise((r) => setTimeout(r, 1500)),
+            ]);
+            if (!isMounted) return;
             setCurrentUser(null);
             setIsAuthenticated(false);
             setInquiries([]);
-            setLoginError(isAr ? 'تعذر التحقق من صلاحيات المدير.' : 'Failed to verify administrator privileges.');
+            setLoginError(
+              err instanceof Error && err.message
+                ? err.message
+                : (isAr ? 'تعذر التحقق من صلاحيات المدير على الخادم.' : 'Failed to verify administrator privileges.')
+            );
           }
         } else {
           setCurrentUser(null);
@@ -431,31 +487,48 @@ export default function SecureAdminPortalPage() {
     }
 
     setIsGoogleLoggingIn(true);
+    manualLoginInProgressRef.current = true;
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const cred = await signInWithPopup(auth, provider);
       const verification = await verifyAdminStatus(cred.user);
-      if (!verification.isAdmin) {
-        await signOut(auth);
+      setAdminVerification(verification);
+
+      if (verification.isAdmin) {
+        setCurrentUser(cred.user);
+        setIsAuthenticated(true);
+        setLoginError('');
+        setFailedAttempts(0);
+        setLockoutUntil(0);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(BRUTE_FORCE_KEY);
+        }
+        loadAdminVault().then((vaultData) => {
+          if (vaultData && Array.isArray(vaultData.mediaVault)) {
+            setConfig((prev) => ({ ...prev, mediaVault: vaultData.mediaVault }));
+          }
+        }).catch(() => {});
+      } else {
+        await Promise.race([
+          signOut(auth).catch(() => {}),
+          new Promise((r) => setTimeout(r, 1500)),
+        ]);
         setCurrentUser(null);
+        setAdminVerification(null);
         setIsAuthenticated(false);
         setLoginError(
-          isAr
-            ? `الحساب (${cred.user.email}) ليس لديه صلاحيات مدير معتمد.`
-            : `Account (${cred.user.email}) is not an authorized administrator.`
+          verification.reason ||
+            (isAr
+              ? `الحساب (${cred.user.email}) ليس لديه صلاحيات مدير معتمد.`
+              : `Account (${cred.user.email}) is not an authorized administrator.`)
         );
       }
     } catch (err: any) {
-      console.warn('Google login notice:', err?.message);
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        setLoginError(
-          isAr 
-            ? 'تعذر إتمام الدخول عبر Google. يرجى التأكد من اختيار حساب المدير المعتمد أو استخدام كلمة المرور.' 
-            : 'Google authentication was not completed.'
-        );
-      }
+      console.warn('Google login error:', err?.code, err?.message);
+      setLoginError(formatFirebaseClientAuthError(err, isAr));
     } finally {
+      manualLoginInProgressRef.current = false;
       setIsGoogleLoggingIn(false);
     }
   };
@@ -471,24 +544,46 @@ export default function SecureAdminPortalPage() {
     }
 
     setIsLoggingIn(true);
+    manualLoginInProgressRef.current = true;
     const enteredEmail = adminEmailInput.trim().toLowerCase();
     const enteredPassword = adminPasswordInput.trim();
 
     try {
       const cred = await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
       const verification = await verifyAdminStatus(cred.user);
-      if (!verification.isAdmin) {
-        await signOut(auth);
+      setAdminVerification(verification);
+
+      if (verification.isAdmin) {
+        setCurrentUser(cred.user);
+        setIsAuthenticated(true);
+        setLoginError('');
+        setFailedAttempts(0);
+        setLockoutUntil(0);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(BRUTE_FORCE_KEY);
+        }
+        loadAdminVault().then((vaultData) => {
+          if (vaultData && Array.isArray(vaultData.mediaVault)) {
+            setConfig((prev) => ({ ...prev, mediaVault: vaultData.mediaVault }));
+          }
+        }).catch(() => {});
+      } else {
+        await Promise.race([
+          signOut(auth).catch(() => {}),
+          new Promise((r) => setTimeout(r, 1500)),
+        ]);
         setCurrentUser(null);
+        setAdminVerification(null);
         setIsAuthenticated(false);
         setLoginError(
-          isAr
-            ? (verification.reason || `الحساب (${cred.user.email}) غير مصرح له أو بريده غير موثق.`)
-            : (verification.reason || `Account (${cred.user.email}) is unauthorized or unverified.`)
+          verification.reason ||
+            (isAr
+              ? `الحساب (${cred.user.email}) غير مصرح له أو بريده غير موثق.`
+              : `Account (${cred.user.email}) is unauthorized or unverified.`)
         );
       }
-    } catch {
-      // Firebase auth failed, increment brute force counter
+    } catch (err: any) {
+      const baseMsg = formatFirebaseClientAuthError(err, isAr, enteredEmail);
       const newCount = failedAttempts + 1;
       setFailedAttempts(newCount);
 
@@ -500,21 +595,22 @@ export default function SecureAdminPortalPage() {
           localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: until }));
         }
         setLoginError(
-          isAr 
-            ? 'تم تجاوز الحد الأقصى للمحاولات (5 محاولات). تم قفل البوابة المشفرة لمدة 10 دقائق.' 
-            : 'Max attempts reached. Security lockout active for 10 minutes.'
+          isAr
+            ? `تم تجاوز الحد الأقصى للمحاولات (5 محاولات). تم قفل البوابة لمدة 10 دقائق. (${err?.code || 'locked'})`
+            : `Max attempts reached. Security lockout active for 10 minutes. (${err?.code || 'locked'})`
         );
       } else {
         if (typeof window !== 'undefined') {
           localStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify({ count: newCount, lockoutUntil: 0 }));
         }
         setLoginError(
-          isAr 
-            ? `بيانات الدخول غير صحيحة عبر Firebase Auth. محاولة ${newCount} من 5 محاولات مصرح بها.` 
-            : `Invalid credentials via Firebase Auth. Attempt ${newCount} of 5 authorized.`
+          isAr
+            ? `${baseMsg} (محاولة ${newCount} من 5)`
+            : `${baseMsg} (Attempt ${newCount} of 5)`
         );
       }
     } finally {
+      manualLoginInProgressRef.current = false;
       setIsLoggingIn(false);
     }
   };
@@ -806,6 +902,7 @@ export default function SecureAdminPortalPage() {
     'isNDA',
     'slug',
     'type',
+    'seedRevision',
   ]);
 
   const NON_LINGUISTIC_SERVICE_FIELDS = new Set<keyof ServiceItem>([
@@ -871,9 +968,14 @@ export default function SecureAdminPortalPage() {
       // 3. Authorize and purge server cache AFTER successful Firestore commit with changed fields
       if (saveResult.generalSaved) {
         const changedFields = modifiedFields;
+        const activeSlugs = (config.projectsList || [])
+          .filter((p) => p && !isBlockedLegacyProject(p))
+          .flatMap((p) => [p.slug, p.id])
+          .filter((s): s is string => typeof s === 'string' && s.trim().length > 0);
         const payloadFields: Record<string, any> = {
           updatedAt: new Date().toISOString(),
           modifiedFields: changedFields.length > 0 ? changedFields : Object.keys(config),
+          projectSlugs: Array.from(new Set(activeSlugs)),
         };
         const keysToSend = changedFields.length > 0 ? changedFields : Object.keys(config);
         keysToSend.forEach((f) => {
@@ -1158,7 +1260,7 @@ export default function SecureAdminPortalPage() {
       image: CURATED_IMAGE_PRESETS.cctv[0].url,
       isDraft: false,
       isUpcoming: false,
-      verified: true,
+      verified: false,
       projectStatus: 'completed' as const,
       showOnSite: true,
       liveUrl: '',
@@ -1210,8 +1312,52 @@ export default function SecureAdminPortalPage() {
     setExpandedProjectIdx(0);
     setNotificationMsg(
       isAr 
-        ? 'تمت إضافة مشروع جديد في النسختين (العربية والإنجليزية) بنجاح! يمكنك الآن تحريره.' 
-        : 'New project created in both Arabic and English catalogs!'
+        ? 'تمت إضافة مشروع جديد في النسختين. فعّل خيار "مؤكد للنشر (verified)" ثم اضغط حفظ لنشره للزوار.' 
+        : 'New project created. Check "Verified to Publish" and Save when ready to publish.'
+    );
+    setTimeout(() => setNotificationMsg(''), 4500);
+  };
+
+  const handleToggleProjectVerified = (projId: string) => {
+    const arList = getProjectsForLang('ar');
+    const enList = getProjectsForLang('en');
+    const target = arList.find((p) => p.id === projId) || enList.find((p) => p.id === projId);
+
+    if (isBlockedLegacyProject(target) || isBlockedLegacyProject({ id: projId })) {
+      setNotificationMsg(
+        isAr
+          ? 'هذا المشروع ضمن القائمة المحظورة نهائياً ولا يمكن تفعيله أو نشره.'
+          : 'This legacy project is permanently blocked and cannot be verified or published.'
+      );
+      setTimeout(() => setNotificationMsg(''), 4000);
+      return;
+    }
+
+    let nextState = false;
+    const updatedAr = arList.map((p) => {
+      if (p.id === projId) {
+        nextState = !p.verified;
+        return { ...p, verified: nextState, seedRevision: CURRENT_CONTENT_VERSION };
+      }
+      return p;
+    });
+
+    const updatedEn = enList.map((p) => {
+      if (p.id === projId) {
+        return { ...p, verified: nextState, seedRevision: CURRENT_CONTENT_VERSION };
+      }
+      return p;
+    });
+
+    handleMultipleConfigChanges({
+      projectsList: updatedAr,
+      projectsListEn: updatedEn,
+    });
+
+    setNotificationMsg(
+      nextState
+        ? (isAr ? 'تم تأكيد المشروع للنشر (verified=true). اضغط "حفظ وتحديث فوري" لتفعيله في الموقع وخريطة الموقع.' : 'Project marked as Verified. Click Save to publish live.')
+        : (isAr ? 'تم إلغاء تأكيد المشروع للنشر (مخفي 404). اضغط حفظ لتطبيق التغيير.' : 'Project unverified (hidden 404). Click Save to apply.')
     );
     setTimeout(() => setNotificationMsg(''), 4000);
   };
@@ -1224,14 +1370,14 @@ export default function SecureAdminPortalPage() {
     const updatedAr = arList.map((p) => {
       if (p.id === projId) {
         nextState = !p.isDraft;
-        return { ...p, isDraft: nextState };
+        return { ...p, isDraft: nextState, seedRevision: CURRENT_CONTENT_VERSION };
       }
       return p;
     });
 
     const updatedEn = enList.map((p) => {
       if (p.id === projId) {
-        return { ...p, isDraft: nextState };
+        return { ...p, isDraft: nextState, seedRevision: CURRENT_CONTENT_VERSION };
       }
       return p;
     });
@@ -1244,7 +1390,7 @@ export default function SecureAdminPortalPage() {
     setNotificationMsg(
       nextState
         ? (isAr ? 'تم تحويل المشروع إلى "مسودة" في اللغتين (مخفي من الموقع للزوار)' : 'Project set to Draft in both languages (Hidden from visitors)')
-        : (isAr ? 'تم نشر المشروع في اللغتين بنجاح (ظاهر الآن لجميع زوار الموقع)' : 'Project Published to live site in both languages!')
+        : (isAr ? 'تم إخراج المشروع من المسودة في اللغتين بنجاح' : 'Project removed from Draft in both languages!')
     );
     setTimeout(() => setNotificationMsg(''), 3500);
   };
@@ -1332,15 +1478,25 @@ export default function SecureAdminPortalPage() {
     const targetProject = currentList[idx];
     if (!targetProject) return;
 
+    if (field === 'verified' && val === true && isBlockedLegacyProject(targetProject)) {
+      setNotificationMsg(
+        isAr
+          ? 'هذا المشروع محظور نهائياً ولا يمكن تفعيل "مؤكد للنشر" عليه.'
+          : 'This legacy project is permanently blocked and cannot be verified.'
+      );
+      setTimeout(() => setNotificationMsg(''), 4000);
+      return;
+    }
+
     const targetId = targetProject.id;
-    currentList[idx] = { ...currentList[idx], [field]: val };
+    currentList[idx] = { ...currentList[idx], [field]: val, seedRevision: CURRENT_CONTENT_VERSION };
 
     // Synchronize non-linguistic fields to the other catalog by project ID
     if (NON_LINGUISTIC_PROJECT_FIELDS.has(field)) {
       const otherList = [...getProjectsForLang(editLang === 'ar' ? 'en' : 'ar')];
       const otherIdx = otherList.findIndex((p) => p.id === targetId);
       if (otherIdx !== -1) {
-        otherList[otherIdx] = { ...otherList[otherIdx], [field]: val };
+        otherList[otherIdx] = { ...otherList[otherIdx], [field]: val, seedRevision: CURRENT_CONTENT_VERSION };
 
         // Handle projectStatus side effects (isUpcoming) in both languages
         if (field === 'projectStatus') {
@@ -3951,12 +4107,14 @@ export default function SecureAdminPortalPage() {
             {activeTab === 'projects' && (() => {
               const allProjects = getProjectsForLang(editLang);
               const totalCount = allProjects.length;
-              const publishedCount = allProjects.filter((p) => p.isDraft !== true).length;
+              const verifiedLiveCount = allProjects.filter(
+                (p) => !isBlockedLegacyProject(p) && p.verified === true && p.isDraft !== true && p.showOnSite !== false
+              ).length;
               const draftCount = allProjects.filter((p) => p.isDraft === true).length;
               const upcomingCount = allProjects.filter((p) => p.isUpcoming === true).length;
 
               const filteredProjectsList = allProjects.map((p, originalIdx) => ({ project: p, originalIdx })).filter(({ project }) => {
-                if (projectFilter === 'published' && project.isDraft === true) return false;
+                if (projectFilter === 'published' && (project.isDraft === true || project.verified !== true || project.showOnSite === false || isBlockedLegacyProject(project))) return false;
                 if (projectFilter === 'draft' && project.isDraft !== true) return false;
                 if (projectFilter === 'upcoming' && project.isUpcoming !== true) return false;
                 if (projectCategoryFilter !== 'all' && project.category !== projectCategoryFilter) return false;
@@ -3991,8 +4149,8 @@ export default function SecureAdminPortalPage() {
                         </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {editLang === 'ar'
-                            ? 'أنت الآن تحرر المحتوى العربي للمشاريع (projectsList). الحقول الفنية (الرابط، الصورة، الإظهار، المسودة) تتزامن تلقائياً بالـ ID مع الإنجليزية.'
-                            : 'You are editing the English projects catalog (projectsListEn). Technical flags (liveUrl, image, showOnSite, isDraft) sync automatically by ID with Arabic.'}
+                            ? 'أنت الآن تحرر المحتوى العربي للمشاريع (projectsList). الحقول الفنية (الرابط، الصورة، التأكيد للنشر، الإظهار، المسودة) تتزامن تلقائياً بالـ ID مع الإنجليزية.'
+                            : 'You are editing the English projects catalog (projectsListEn). Technical flags (liveUrl, image, verified, showOnSite, isDraft) sync automatically by ID with Arabic.'}
                         </p>
                       </div>
                     </div>
@@ -4032,8 +4190,8 @@ export default function SecureAdminPortalPage() {
                       </h3>
                       <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                         {isAr 
-                          ? 'التحكم الكامل في سابقة المشروعات، نشرها أو جعلها مسودة، إضافة مشروعات جديدة، رفع الصور، وتعديل التفاصيل الهندسية' 
-                          : 'Complete control: publish or draft, add new projects, upload photos, and edit case studies'}
+                          ? 'لا تظهر صفحة /projects ولا روابط المشاريع إلا عند تفعيل "مؤكد للنشر (verified)" لمشروع واحد على الأقل مع الضغط على حفظ.' 
+                          : '/projects route and links only become live when at least one project has "verified" enabled and saved.'}
                       </p>
                     </div>
 
@@ -4076,8 +4234,8 @@ export default function SecureAdminPortalPage() {
 
                     <div className="p-3.5 rounded-xl bg-[#071120] border border-emerald-500/20 flex items-center justify-between">
                       <div>
-                        <span className="text-[11px] text-emerald-400 font-bold block">{isAr ? 'منشور للجمهور' : 'Published'}</span>
-                        <span className="text-xl font-black font-mono text-emerald-400">{publishedCount}</span>
+                        <span className="text-[11px] text-emerald-400 font-bold block">{isAr ? 'مؤكد ومنشور للجمهور' : 'Verified & Live'}</span>
+                        <span className="text-xl font-black font-mono text-emerald-400">{verifiedLiveCount}</span>
                       </div>
                       <Eye className="w-5 h-5 text-emerald-400" />
                     </div>
@@ -4132,7 +4290,7 @@ export default function SecureAdminPortalPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       {[
                         { id: 'all', labelAr: `الكل (${totalCount})`, labelEn: `All (${totalCount})` },
-                        { id: 'published', labelAr: `🟢 منشور للجمهور (${publishedCount})`, labelEn: `Published (${publishedCount})` },
+                        { id: 'published', labelAr: `🟢 مؤكد ومنشور (${verifiedLiveCount})`, labelEn: `Verified Live (${verifiedLiveCount})` },
                         { id: 'draft', labelAr: `🟡 مسودات (${draftCount})`, labelEn: `Drafts (${draftCount})` },
                         { id: 'upcoming', labelAr: `🔵 قيد التطوير (${upcomingCount})`, labelEn: `Upcoming (${upcomingCount})` },
                       ].map((tab) => (
@@ -4159,14 +4317,18 @@ export default function SecureAdminPortalPage() {
                     {filteredProjectsList.map(({ project: proj, originalIdx }) => {
                       const isExpanded = expandedProjectIdx === originalIdx;
                       const isDraft = proj.isDraft === true;
+                      const isBlocked = isBlockedLegacyProject(proj);
+                      const isVerified = !isBlocked && proj.verified === true;
 
                       return (
                         <div
                           key={proj.id || originalIdx}
                           className={`rounded-2xl border transition-all overflow-hidden ${
-                            isDraft
-                              ? 'bg-[#071120]/95 border-amber-500/30'
-                              : 'bg-[#071120] border-white/10 hover:border-[#00F2FE]/40'
+                            isBlocked
+                              ? 'bg-[#071120]/90 border-rose-500/40'
+                              : isDraft || !isVerified
+                                ? 'bg-[#071120]/95 border-amber-500/30'
+                                : 'bg-[#071120] border-emerald-500/30 hover:border-[#00F2FE]/40'
                           }`}
                         >
                           {/* CARD HEADER (Collapsed view with key info & quick controls) */}
@@ -4210,16 +4372,28 @@ export default function SecureAdminPortalPage() {
                                     {proj.title}
                                   </h4>
                                   
-                                  {/* Status Badges */}
-                                  {isDraft ? (
+                                  {/* Verification & Status Badges */}
+                                  {isBlocked ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                                      <ShieldAlert className="w-3 h-3" />
+                                      <span>{isAr ? 'محظور نهائياً - لا يمكن نشره' : 'Blocked Legacy'}</span>
+                                    </span>
+                                  ) : isVerified ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                      <ShieldCheck className="w-3 h-3" />
+                                      <span>{isAr ? 'مؤكد للنشر (verified)' : 'Verified'}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700/40 text-slate-300 border border-slate-500/40 flex items-center gap-1">
+                                      <Lock className="w-3 h-3" />
+                                      <span>{isAr ? 'غير مؤكد (مخفي 404)' : 'Unverified (404)'}</span>
+                                    </span>
+                                  )}
+
+                                  {isDraft && (
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
                                       <EyeOff className="w-3 h-3" />
                                       <span>{isAr ? 'مسودة (مخفي)' : 'Draft'}</span>
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                                      <Eye className="w-3 h-3" />
-                                      <span>{isAr ? 'منشور للزوار' : 'Published'}</span>
                                     </span>
                                   )}
 
@@ -4256,6 +4430,30 @@ export default function SecureAdminPortalPage() {
 
                             {/* Actions Toolbar */}
                             <div className="flex items-center gap-2 flex-wrap pt-2 lg:pt-0">
+                              {/* Quick Verified Toggle Button */}
+                              <button
+                                type="button"
+                                disabled={isBlocked}
+                                onClick={() => handleToggleProjectVerified(proj.id)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border ${
+                                  isBlocked
+                                    ? 'bg-rose-950/40 text-rose-400/60 border-rose-500/20 cursor-not-allowed'
+                                    : isVerified
+                                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40 cursor-pointer'
+                                      : 'bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/40 cursor-pointer'
+                                }`}
+                                title={isBlocked ? (isAr ? 'محظور نهائياً' : 'Blocked') : (isAr ? 'تبديل حالة مؤكد للنشر (verified)' : 'Toggle Verified')}
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>
+                                  {isBlocked
+                                    ? (isAr ? 'محظور' : 'Blocked')
+                                    : isVerified
+                                      ? (isAr ? 'مؤكد للنشر ✓' : 'Verified ✓')
+                                      : (isAr ? 'تفعيل (مؤكد للنشر)' : 'Verify to Publish')}
+                                </span>
+                              </button>
+
                               {/* Toggle Draft / Publish Button */}
                               <button
                                 type="button"
@@ -4265,12 +4463,12 @@ export default function SecureAdminPortalPage() {
                                     ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
                                     : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
                                 }`}
-                                title={isDraft ? (isAr ? 'نشر المشروع للجمهور' : 'Publish') : (isAr ? 'جعل المشروع مسودة مخفية' : 'Make Draft')}
+                                title={isDraft ? (isAr ? 'إلغاء المسودة' : 'Unmark Draft') : (isAr ? 'جعل المشروع مسودة مخفية' : 'Make Draft')}
                               >
                                 {isDraft ? (
                                   <>
                                     <Eye className="w-3.5 h-3.5" />
-                                    <span>{isAr ? 'نشر المشروع' : 'Publish'}</span>
+                                    <span>{isAr ? 'إلغاء المسودة' : 'Unmark Draft'}</span>
                                   </>
                                 ) : (
                                   <>
@@ -4335,6 +4533,29 @@ export default function SecureAdminPortalPage() {
                                 </h5>
 
                                 <div className="grid sm:grid-cols-3 gap-4 pt-1">
+                                  {/* Verified To Publish Switch */}
+                                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${
+                                    isBlocked
+                                      ? 'bg-rose-950/30 border-rose-500/30 opacity-60'
+                                      : isVerified
+                                        ? 'bg-emerald-950/30 border-emerald-500/40'
+                                        : 'bg-[#071120] border-[#00F2FE]/30'
+                                  }`}>
+                                    <input
+                                      type="checkbox"
+                                      id={`verified-toggle-${proj.id}`}
+                                      checked={isVerified}
+                                      disabled={isBlocked}
+                                      onChange={(e) => handleUpdateProjectField(originalIdx, 'verified', e.target.checked)}
+                                      className="w-4 h-4 text-[#00F2FE] rounded cursor-pointer disabled:cursor-not-allowed"
+                                    />
+                                    <label htmlFor={`verified-toggle-${proj.id}`} className="text-xs font-bold text-slate-200 cursor-pointer">
+                                      {isBlocked
+                                        ? (isAr ? 'محظور نهائياً (غير قابل للتفعيل)' : 'Permanently Blocked')
+                                        : (isAr ? 'مؤكد للنشر (verified)' : 'Verified to Publish (verified)')}
+                                    </label>
+                                  </div>
+
                                   {/* Draft Switch */}
                                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#071120] border border-white/5">
                                     <input

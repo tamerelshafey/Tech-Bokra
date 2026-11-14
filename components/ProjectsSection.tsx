@@ -24,7 +24,7 @@ import {
   PhoneCall,
   Clock
 } from 'lucide-react';
-import { Project, SiteLanguageData, getProjectStatus, getProjectType, getVerifiedMetrics } from '@/lib/content';
+import { Project, SiteLanguageData, getProjectStatus, getProjectType, getVerifiedMetrics, isBlockedLegacyProject } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface ProjectsSectionProps {
@@ -95,14 +95,17 @@ export default function ProjectsSection({
           projectStatus: customMatch.projectStatus || p.projectStatus,
           status: customMatch.status || p.status,
           showOnSite: customMatch.showOnSite !== undefined ? customMatch.showOnSite : p.showOnSite,
+          verified: customMatch.verified !== undefined ? customMatch.verified : p.verified,
         };
       }
     }
     return p;
   });
 
-  // Exclude projects marked as draft or explicitly hidden from site
-  const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false);
+  // Exclude projects marked as draft, unverified, blocked legacy, or explicitly hidden from site
+  const activeProjects = rawProjects.filter(
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
+  );
 
   // Apply URL overrides if specified
   const resolvedProjects = activeProjects.map((p) => {

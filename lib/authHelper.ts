@@ -140,16 +140,26 @@ export async function verifyAdminStatus(user: User | null): Promise<AdminVerific
       isVerified: false,
       email: null,
       role: 'none',
-      reason: 'No authenticated user session found.',
+      reason: 'لا توجد جلسة مصادقة نشطة في المتصفح (يرجى تسجيل الدخول).',
     };
   }
 
   const userEmail = user.email.trim().toLowerCase();
   const isVerified = Boolean(user.emailVerified);
 
-  // Check 1: Authoritative check against server ADMIN_ALLOWED_EMAILS
+  if (!isVerified) {
+    return {
+      isAdmin: false,
+      isVerified: false,
+      email: userEmail,
+      role: 'none',
+      reason: `البريد الإلكتروني (${userEmail}) غير مُحقَّق (email_verified=false). يرجى تأكيد بريدك الإلكتروني أولاً.`,
+    };
+  }
+
+  // Authoritative verification via server /api/admin/auth (establishes httpOnly tb_admin_session cookie)
   try {
-    const idToken = await user.getIdToken();
+    const idToken = await user.getIdToken(true);
     const res = await fetch('/api/admin/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -174,145 +184,18 @@ export async function verifyAdminStatus(user: User | null): Promise<AdminVerific
       isVerified,
       email: userEmail,
       role: 'none',
-      reason: errData?.error || 'هذا الحساب غير مصرح له كمسؤول في إعدادات الخادم (ADMIN_ALLOWED_EMAILS).',
+      reason:
+        errData?.error ||
+        `رفض الخادم التحقق من الصلاحيات للبريد (${userEmail}) — رمز الحالة HTTP ${res.status}.`,
     };
-  } catch (netErr) {
-    console.warn('Server auth verification check warning:', netErr);
+  } catch (netErr: any) {
+    console.error('Server auth verification error:', netErr);
+    return {
+      isAdmin: false,
+      isVerified,
+      email: userEmail,
+      role: 'none',
+      reason: `تعذر الاتصال بخادم المصادقة (/api/admin/auth): ${netErr?.message || 'Network Error'}. تحقق من تشغيل الخادم واتصال الشبكة.`,
+    };
   }
-
-  // Check 2: Check Firestore /settings/admin_roster
-  try {
-    const rosterRef = doc(db, 'settings', 'admin_roster');
-    const rosterSnap = await getDoc(rosterRef);
-    if (rosterSnap.exists()) {
-      const rosterData = rosterSnap.data();
-      const list: AdminAccount[] = rosterData?.admins || [];
-      const found = list.find((a) => (a.email || '').trim().toLowerCase() === userEmail);
-      if (found) {
-        if (found.status !== 'active') {
-          return {
-            isAdmin: false,
-            isVerified,
-            email: userEmail,
-            role: 'none',
-            reason: 'This administrator account has been deactivated by the Super Admin.',
-          };
-        }
-        if (!isVerified) {
-          return {
-            isAdmin: false,
-            isVerified: false,
-            email: userEmail,
-            role: found.role,
-            reason: 'Email must be verified to activate administrator privileges.',
-          };
-        }
-        return {
-          isAdmin: true,
-          isVerified: true,
-          email: userEmail,
-          role: found.role,
-          name: found.name,
-        };
-      }
-    }
-  } catch (rosterErr) {
-    console.warn('Roster check note:', rosterErr);
-  }
-
-  // Check 3: Check Firestore RBAC document /admins/{uid} or /admins/{sanitizedEmail}
-  try {
-    const adminDocRef = doc(db, 'admins', user.uid);
-    let snap = await getDoc(adminDocRef);
-
-    if (!snap.exists()) {
-      const safeId = userEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const emailDocRef = doc(db, 'admins', safeId);
-      snap = await getDoc(emailDocRef);
-    }
-
-    if (snap.exists()) {
-      const data = snap.data();
-      const docEmail = (data?.email || '').trim().toLowerCase();
-      const docRole = data?.role;
-
-      if (docEmail && docEmail !== userEmail) {
-        return {
-          isAdmin: false,
-          isVerified,
-          email: userEmail,
-          role: 'none',
-          reason: 'Administrator record email mismatch.',
-        };
-      }
-
-      if (data?.status === 'inactive') {
-        return {
-          isAdmin: false,
-          isVerified,
-          email: userEmail,
-          role: 'none',
-          reason: 'This account has been deactivated.',
-        };
-      }
-
-      if (docRole !== 'super_admin' && docRole !== 'admin' && docRole !== 'editor') {
-        return {
-          isAdmin: false,
-          isVerified,
-          email: userEmail,
-          role: 'none',
-          reason: 'Account role is not authorized for administration.',
-        };
-      }
-
-      if (!isVerified) {
-        return {
-          isAdmin: false,
-          isVerified: false,
-          email: userEmail,
-          role: docRole,
-          reason: 'Email must be verified to activate administrator privileges.',
-        };
-      }
-
-      return {
-        isAdmin: true,
-        isVerified: true,
-        email: userEmail,
-        role: docRole,
-        name: data?.name,
-      };
-    }
-  } catch (err) {
-    console.warn('Admins RBAC check note:', err);
-  }
-
-  // Check 4: Local Storage roster fallback
-  if (typeof window !== 'undefined') {
-    try {
-      const raw = localStorage.getItem(ADMIN_ROSTER_STORAGE_KEY);
-      if (raw) {
-        const list: AdminAccount[] = JSON.parse(raw);
-        const found = list.find((a) => (a.email || '').trim().toLowerCase() === userEmail && a.status === 'active');
-        if (found && isVerified) {
-          return {
-            isAdmin: true,
-            isVerified: true,
-            email: userEmail,
-            role: found.role,
-            name: found.name,
-          };
-        }
-      }
-    } catch {}
-  }
-
-  return {
-    isAdmin: false,
-    isVerified,
-    email: userEmail,
-    role: 'none',
-    reason: 'This account does not have administrator privileges.',
-  };
 }

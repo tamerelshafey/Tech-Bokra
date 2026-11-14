@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, User } from '@/lib/firebase';
 import { EditableConfig, defaultEditableConfig, MediaVaultItem, CURRENT_CONTENT_VERSION, mergeCollectionsById, LEGACY_PROJECT_IDS } from '@/lib/siteConfig';
+import { isBlockedLegacyProject } from '@/lib/content';
 
 export interface FirestoreInquiry {
   id: string;
@@ -111,8 +112,24 @@ export async function saveSiteSettingsToCloud(
 
   // Step 2: Save public general settings
   try {
+    const sanitizeSavedProjects = (list?: any[]) => {
+      if (!Array.isArray(list)) return list;
+      return list
+        .filter((p) => p && !isBlockedLegacyProject(p))
+        .map((p) => ({
+          ...p,
+          seedRevision: Math.max(Number(p.seedRevision || 0), CURRENT_CONTENT_VERSION),
+        }));
+    };
+
     const generalPayload: Record<string, any> = {
       ...publicConfig,
+      ...(Array.isArray(publicConfig.projectsList)
+        ? { projectsList: sanitizeSavedProjects(publicConfig.projectsList) }
+        : {}),
+      ...(Array.isArray(publicConfig.projectsListEn)
+        ? { projectsListEn: sanitizeSavedProjects(publicConfig.projectsListEn) }
+        : {}),
       contentVersion: CURRENT_CONTENT_VERSION,
       updatedAt: new Date().toISOString(),
     };

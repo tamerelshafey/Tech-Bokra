@@ -74,6 +74,15 @@ export async function POST(req: NextRequest) {
       if (touches(projectKeys)) {
         pathsToRevalidate.add('/');
         pathsToRevalidate.add('/projects');
+        pathsToRevalidate.add('/sitemap.xml');
+        revalidatePath('/projects/[slug]', 'page');
+        if (Array.isArray(body.projectSlugs)) {
+          for (const s of body.projectSlugs) {
+            if (typeof s === 'string' && s.trim()) {
+              pathsToRevalidate.add(`/projects/${s.trim()}`);
+            }
+          }
+        }
       }
 
       // If payload is empty or unrecognized, default to homepage only without layout revalidation

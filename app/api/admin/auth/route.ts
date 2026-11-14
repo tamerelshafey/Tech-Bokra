@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  signSessionPayload, 
-  verifyAdminRequest, 
+import {
+  signSessionPayload,
+  verifyAdminRequest,
   verifyFirebaseIdToken,
   isEmailAuthorizedAdmin,
+  isSessionSecretConfigured,
+  isHttpsRequest,
   checkLoginRateLimit,
   recordFailedLogin,
   resetLoginRateLimit,
   getClientIp,
-  SESSION_COOKIE_NAME, 
-  SESSION_MAX_AGE_SECONDS 
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
 } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
@@ -17,12 +19,45 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
 
-  // 1. Rate Limiting Check
+  // 1. Server Secret Check (must run before issuing/evaluating sessions)
+  if (!isSessionSecretConfigured()) {
+    console.error('[SECURITY] ADMIN_SESSION_SECRET is missing or still set to a placeholder.');
+    return NextResponse.json(
+      {
+        code: 'MISSING_SESSION_SECRET',
+        error:
+          'متغير ADMIN_SESSION_SECRET غير مضبوط أو ما زال قيمة افتراضية على الخادم. يرجى ضبطه في إعدادات البيئة لإصدار جلسة الدخول.',
+      },
+      { status: 503 }
+    );
+  }
+
+  // 2. Rate Limiting Check (shows exact remaining cooldown time)
   const rateLimit = checkLoginRateLimit(ip);
   if (!rateLimit.allowed) {
+    const retryAfter = rateLimit.retryAfterSeconds || 60;
     return NextResponse.json(
-      { error: `Too many failed login attempts. Please try again in ${rateLimit.retryAfterSeconds} seconds.` },
-      { status: 429 }
+      {
+        code: 'RATE_LIMIT_EXCEEDED',
+        retryAfterSeconds: retryAfter,
+        error: `تم تجاوز الحد الأقصى لمحاولات الدخول الفاشلة. يرجى المحاولة مرة أخرى بعد ${retryAfter} ثانية.`,
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfter) },
+      }
+    );
+  }
+
+  // 3. Whitelist Env Var Check
+  if (!process.env.ADMIN_ALLOWED_EMAILS || process.env.ADMIN_ALLOWED_EMAILS.trim().length === 0) {
+    console.warn('[SECURITY] ADMIN_ALLOWED_EMAILS is not configured in server environment.');
+    return NextResponse.json(
+      {
+        code: 'MISSING_ALLOWED_EMAILS',
+        error: 'متغير ADMIN_ALLOWED_EMAILS غير مضبوط على الخادم. يرجى إضافته في إعدادات البيئة للسماح بالدخول.',
+      },
+      { status: 503 }
     );
   }
 
@@ -30,41 +65,56 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { idToken } = body;
 
-    // Reject requests without authentic Firebase ID token
     if (!idToken || typeof idToken !== 'string') {
       recordFailedLogin(ip);
       return NextResponse.json(
-        { error: 'Firebase ID token is required for server authentication' },
+        {
+          code: 'MISSING_ID_TOKEN',
+          error: 'لم يتم إرسال توكن المصادقة (Firebase ID token) إلى الخادم.',
+        },
         { status: 400 }
       );
     }
 
-    // 2. Authoritative verification of the ID Token via Google Identity Toolkit
+    // 4. Cryptographic Verification of Firebase ID Token (Google public x509 keys)
     const tokenResult = await verifyFirebaseIdToken(idToken);
     if (!tokenResult.valid || !tokenResult.email) {
       recordFailedLogin(ip);
       return NextResponse.json(
-        { error: tokenResult.error || 'Authentication failed: Invalid or expired Firebase ID token' },
+        {
+          code: tokenResult.code || 'TOKEN_VERIFICATION_FAILED',
+          error: tokenResult.error || 'فشل التحقق من توكن Firebase ID على الخادم.',
+        },
         { status: 401 }
       );
     }
 
     const verifiedEmail = tokenResult.email;
 
-    // 3. Strict Admin Whitelist Verification
-    if (!process.env.ADMIN_ALLOWED_EMAILS || process.env.ADMIN_ALLOWED_EMAILS.trim().length === 0) {
-      console.warn('[SECURITY] ADMIN_ALLOWED_EMAILS is not configured in server environment.');
+    // 5. Strict Email Verification Enforcement
+    if (!tokenResult.emailVerified) {
+      recordFailedLogin(ip);
+      console.warn(`[SECURITY] Unverified email login blocked: ${verifiedEmail} from IP: ${ip}`);
       return NextResponse.json(
-        { error: 'متغير ADMIN_ALLOWED_EMAILS غير مضبوط على الخادم. يرجى إضافته في إعدادات البيئة للسماح بالدخول.' },
-        { status: 503 }
+        {
+          code: 'EMAIL_NOT_VERIFIED',
+          email: verifiedEmail,
+          error: `البريد الإلكتروني (${verifiedEmail}) غير مُحقَّق (email_verified=false). يرجى تأكيد البريد الإلكتروني في حسابك قبل دخول لوحة التحكم.`,
+        },
+        { status: 403 }
       );
     }
 
+    // 6. Strict Admin Whitelist Verification (exposes the attempted email clearly)
     if (!isEmailAuthorizedAdmin(verifiedEmail)) {
       recordFailedLogin(ip);
       console.warn(`[SECURITY] Unauthorized login attempt for non-whitelisted email: ${verifiedEmail} from IP: ${ip}`);
       return NextResponse.json(
-        { error: `البريد (${verifiedEmail}) غير مصرح له كمسؤول. يجب إضافته إلى ADMIN_ALLOWED_EMAILS على الخادم.` },
+        {
+          code: 'EMAIL_NOT_ALLOWED',
+          email: verifiedEmail,
+          error: `البريد (${verifiedEmail}) غير مسموح له بدخول لوحة التحكم (غير مدرج في ADMIN_ALLOWED_EMAILS على الخادم).`,
+        },
         { status: 403 }
       );
     }
@@ -72,7 +122,7 @@ export async function POST(req: NextRequest) {
     // Success: Reset rate limit for this IP
     resetLoginRateLimit(ip);
 
-    // 4. Create cryptographically signed HMAC session payload
+    // 7. Create cryptographically signed HMAC session payload
     const now = Date.now();
     const payload = {
       email: verifiedEmail,
@@ -83,7 +133,7 @@ export async function POST(req: NextRequest) {
     };
 
     const signedToken = signSessionPayload(payload);
-    const isProd = process.env.NODE_ENV === 'production';
+    const secureCookie = isHttpsRequest(req);
 
     const response = NextResponse.json({
       success: true,
@@ -93,12 +143,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 5. Issue httpOnly, SameSite=Lax, Secure (in production) cookie
+    // 8. Issue httpOnly, SameSite=Lax cookie (secure=false on http://localhost, secure=true on HTTPS, no explicit Domain)
     response.cookies.set({
       name: SESSION_COOKIE_NAME,
       value: signedToken,
       httpOnly: true,
-      secure: isProd,
+      secure: secureCookie,
       sameSite: 'lax',
       path: '/',
       maxAge: SESSION_MAX_AGE_SECONDS,
@@ -110,16 +160,33 @@ export async function POST(req: NextRequest) {
     recordFailedLogin(ip);
     console.error('Admin authentication route error:', err);
     return NextResponse.json(
-      { error: err?.message || 'Internal authentication error' },
+      {
+        code: 'INTERNAL_AUTH_ERROR',
+        error: err?.message || 'حدث خطأ داخلي أثناء المصادقة على الخادم.',
+      },
       { status: 500 }
     );
   }
 }
 
 export async function GET(req: NextRequest) {
+  if (!isSessionSecretConfigured()) {
+    return NextResponse.json(
+      {
+        authenticated: false,
+        code: 'MISSING_SESSION_SECRET',
+        error: 'متغير ADMIN_SESSION_SECRET غير مضبوط أو ما زال قيمة افتراضية على الخادم.',
+      },
+      { status: 503 }
+    );
+  }
+
   const auth = await verifyAdminRequest(req);
   if (!auth.valid || !auth.user) {
-    return NextResponse.json({ authenticated: false, error: auth.error }, { status: 401 });
+    return NextResponse.json(
+      { authenticated: false, code: 'NO_ACTIVE_SESSION', error: auth.error },
+      { status: 401 }
+    );
   }
   return NextResponse.json({
     authenticated: true,
@@ -130,13 +197,14 @@ export async function GET(req: NextRequest) {
   });
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const secureCookie = isHttpsRequest(req);
   const response = NextResponse.json({ success: true, message: 'Admin session terminated' });
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: '',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookie,
     sameSite: 'lax',
     path: '/',
     maxAge: 0,

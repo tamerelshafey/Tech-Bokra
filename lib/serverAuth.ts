@@ -13,17 +13,52 @@ export interface AdminSessionPayload {
   exp: number;
 }
 
-const DEFAULT_HMAC_SECRET = 'tech-bokra-secure-admin-secret-2026-v1';
+const PLACEHOLDER_SECRETS = new Set([
+  'MY_ADMIN_SESSION_SECRET',
+  'tech-bokra-secure-admin-secret-2026-v1',
+  'changeme',
+  'default-secret',
+]);
 
 /**
- * Get the HMAC secret from environment with reliable fallback.
+ * Check whether ADMIN_SESSION_SECRET is explicitly configured to a real secret on the server.
+ */
+export function isSessionSecretConfigured(): boolean {
+  const secret = process.env.ADMIN_SESSION_SECRET?.trim() || '';
+  return secret.length > 0 && !PLACEHOLDER_SECRETS.has(secret);
+}
+
+/**
+ * Get the HMAC secret strictly from environment. Throws explicitly when missing/placeholder.
  */
 export function getRequiredHmacSecret(): string {
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  if (!secret || secret.trim().length === 0) {
-    return DEFAULT_HMAC_SECRET;
+  if (!isSessionSecretConfigured()) {
+    throw new Error('ADMIN_SESSION_SECRET غير مضبوط أو ما زال قيمة افتراضية على الخادم.');
   }
-  return secret.trim();
+  return process.env.ADMIN_SESSION_SECRET!.trim();
+}
+
+/**
+ * Determine whether the incoming request arrived over HTTPS.
+ * Ensures localhost HTTP never sets Secure=true even under `next start` (NODE_ENV=production).
+ */
+export function isHttpsRequest(req: NextRequest | Request): boolean {
+  const forwardedProto = (req.headers.get('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
+  if (forwardedProto) {
+    return forwardedProto === 'https';
+  }
+  const host = (req.headers.get('host') || '').toLowerCase();
+  if (host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('[::1]')) {
+    return false;
+  }
+  if ('nextUrl' in req && (req as NextRequest).nextUrl?.protocol) {
+    return (req as NextRequest).nextUrl.protocol === 'https:';
+  }
+  try {
+    return new URL(req.url).protocol === 'https:';
+  } catch {
+    return process.env.NODE_ENV === 'production';
+  }
 }
 
 /**
@@ -91,76 +126,263 @@ export function getClientIp(req: NextRequest | Request): string {
 }
 
 /**
- * Verify Firebase ID Token authoritatively with Google Identity Toolkit API.
- * Guarantees that client cannot forge authentication or email subject.
+ * Google official public x509 certificates for Firebase ID tokens (RS256).
+ * Does NOT depend on Firebase Web API Key, so it works reliably even when
+ * the API key has strict HTTP referrer restrictions in Google Cloud Console.
+ */
+const GOOGLE_SECURETOKEN_CERTS_URL =
+  'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+
+interface CertsCache {
+  certs: Record<string, string>;
+  expiresAt: number;
+}
+
+let cachedGoogleCerts: CertsCache | null = null;
+
+async function fetchGooglePublicCerts(forceRefresh = false): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (!forceRefresh && cachedGoogleCerts && now < cachedGoogleCerts.expiresAt) {
+    return cachedGoogleCerts.certs;
+  }
+
+  const res = await fetch(GOOGLE_SECURETOKEN_CERTS_URL, { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`Google public x509 certs endpoint returned HTTP ${res.status}`);
+  }
+
+  const certs = (await res.json()) as Record<string, string>;
+  if (!certs || typeof certs !== 'object' || Object.keys(certs).length === 0) {
+    throw new Error('Google public x509 certs response is empty or invalid');
+  }
+
+  const cacheControl = res.headers.get('cache-control') || '';
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
+  const maxAgeMs = maxAgeMatch ? Math.max(60, parseInt(maxAgeMatch[1], 10)) * 1000 : 3600 * 1000;
+
+  cachedGoogleCerts = {
+    certs,
+    expiresAt: now + maxAgeMs,
+  };
+
+  return certs;
+}
+
+/**
+ * Verify Firebase ID Token cryptographically using Google's official public x509 keys (RS256).
+ * Zero dependency on Firebase Web API key (immune to API_KEY_HTTP_REFERRER_BLOCKED).
+ * Never falls back to unsigned base64 JWT decoding.
  */
 export async function verifyFirebaseIdToken(idToken: string): Promise<{
   valid: boolean;
   email?: string;
   emailVerified?: boolean;
   uid?: string;
+  code?: string;
   error?: string;
 }> {
   if (!idToken || typeof idToken !== 'string') {
-    return { valid: false, error: 'Missing or malformed Firebase ID token' };
+    return { valid: false, code: 'MISSING_ID_TOKEN', error: 'توكن Firebase مفقود أو غير صالح.' };
   }
 
+  const parts = idToken.split('.');
+  if (parts.length !== 3) {
+    return {
+      valid: false,
+      code: 'MALFORMED_ID_TOKEN',
+      error: 'توكن Firebase غير صالح الصيغة (يجب أن يكون JWT مكوناً من 3 أجزاء).',
+    };
+  }
+
+  const [headerB64, payloadB64, signatureB64] = parts;
+  let header: { alg?: string; kid?: string };
+  let payload: Record<string, any>;
+
+  try {
+    header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf-8'));
+    payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'));
+  } catch {
+    return {
+      valid: false,
+      code: 'MALFORMED_JWT_JSON',
+      error: 'تعذر فك بنية JWT الخاصة بتوكن Firebase.',
+    };
+  }
+
+  if (header?.alg !== 'RS256' || typeof header?.kid !== 'string' || !header.kid.trim()) {
+    return {
+      valid: false,
+      code: 'INVALID_JWT_HEADER',
+      error: 'خوارزمية التوكن غير مدعومة أو معرف المفتاح (kid) مفقود (مطلوب RS256).',
+    };
+  }
+
+  // Primary cryptographic verification via Google public x509 certificates (API-key free)
+  let certsFetchError: string | null = null;
+  let certs: Record<string, string> | null = null;
+
+  try {
+    certs = await fetchGooglePublicCerts(false);
+    if (!certs[header.kid]) {
+      certs = await fetchGooglePublicCerts(true);
+    }
+  } catch (err: any) {
+    certs = null;
+    certsFetchError = err?.message || 'Network error fetching Google public keys';
+  }
+
+  if (certs) {
+    const certPem = certs[header.kid];
+    if (!certPem) {
+      return {
+        valid: false,
+        code: 'UNKNOWN_KEY_ID',
+        error: `معرف مفتاح التوقيع (${header.kid}) غير موجود ضمن مفاتيح Google العامة المعتمدة.`,
+      };
+    }
+
+    try {
+      const verifier = crypto.createVerify('RSA-SHA256');
+      verifier.update(`${headerB64}.${payloadB64}`);
+      verifier.end();
+      const isSignatureValid = verifier.verify(certPem, signatureB64, 'base64url');
+      if (!isSignatureValid) {
+        return {
+          valid: false,
+          code: 'INVALID_JWT_SIGNATURE',
+          error: 'تم رفض توكن Firebase: التوقيع التشفيري غير صحيح أو التوكن مزوّر (Invalid RS256 signature).',
+        };
+      }
+    } catch (sigErr: any) {
+      return {
+        valid: false,
+        code: 'SIGNATURE_VERIFY_ERROR',
+        error: `خطأ أثناء فحص التوقيع التشفيري للتوكن: ${sigErr?.message || 'verify failed'}`,
+      };
+    }
+
+    const projectId = firebaseConfig.projectId;
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    if (payload.aud !== projectId) {
+      return {
+        valid: false,
+        code: 'INVALID_AUDIENCE',
+        error: `التوكن يخص مشروع Firebase آخر (aud=${String(payload.aud)}).`,
+      };
+    }
+
+    const expectedIssuer = `https://securetoken.google.com/${projectId}`;
+    if (payload.iss !== expectedIssuer) {
+      return {
+        valid: false,
+        code: 'INVALID_ISSUER',
+        error: `مصدر التوكن (iss) غير مطابق لمشروع Firebase المعتمد.`,
+      };
+    }
+
+    if (typeof payload.sub !== 'string' || payload.sub.length === 0 || payload.sub.length > 128) {
+      return {
+        valid: false,
+        code: 'INVALID_SUBJECT',
+        error: 'التوكن لا يحتوي على معرف مستخدم (sub) صالح.',
+      };
+    }
+
+    if (typeof payload.exp !== 'number' || payload.exp <= nowSec) {
+      return {
+        valid: false,
+        code: 'TOKEN_EXPIRED',
+        error: 'انتهت صلاحية توكن تسجيل الدخول (ID token expired). يرجى إعادة تسجيل الدخول.',
+      };
+    }
+
+    if (typeof payload.iat !== 'number' || payload.iat > nowSec + 300) {
+      return {
+        valid: false,
+        code: 'INVALID_IAT',
+        error: 'تاريخ إصدار توكن تسجيل الدخول (iat) غير صالح.',
+      };
+    }
+
+    if (typeof payload.auth_time !== 'number' || payload.auth_time > nowSec + 300) {
+      return {
+        valid: false,
+        code: 'INVALID_AUTH_TIME',
+        error: 'زمن المصادقة (auth_time) في التوكن غير صالح.',
+      };
+    }
+
+    if (typeof payload.email !== 'string' || !payload.email.includes('@')) {
+      return {
+        valid: false,
+        code: 'MISSING_EMAIL_CLAIM',
+        error: 'توكن Firebase لا يتضمن عنوان بريد إلكتروني صالح.',
+      };
+    }
+
+    return {
+      valid: true,
+      email: payload.email.toLowerCase(),
+      emailVerified: Boolean(payload.email_verified),
+      uid: payload.sub,
+    };
+  }
+
+  // Secondary fallback ONLY when fetching Google's public x509 certs failed due to network:
+  // Call Identity Toolkit and strictly parse & surface Google's exact error text (e.g. API_KEY_HTTP_REFERRER_BLOCKED).
   const apiKey = firebaseConfig.apiKey;
-  if (!apiKey) {
-    return { valid: false, error: 'Firebase API key is missing on the server' };
-  }
+  if (apiKey) {
+    try {
+      const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
 
-  try {
-    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const user = data.users?.[0];
-
-      if (user && user.email) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const user = data?.users?.[0];
+        if (user && user.email) {
+          return {
+            valid: true,
+            email: String(user.email).toLowerCase(),
+            emailVerified: Boolean(user.emailVerified),
+            uid: user.localId,
+          };
+        }
         return {
-          valid: true,
-          email: user.email.toLowerCase(),
-          emailVerified: Boolean(user.emailVerified),
-          uid: user.localId,
+          valid: false,
+          code: 'IDENTITY_TOOLKIT_EMPTY_USER',
+          error: 'استجابة Google Identity Toolkit لم تعد بيانات مستخدم صالحة.',
         };
       }
+
+      const toolkitMsg =
+        data?.error?.message ||
+        data?.error?.errors?.[0]?.reason ||
+        `HTTP ${res.status}`;
+      return {
+        valid: false,
+        code: 'IDENTITY_TOOLKIT_REJECTED',
+        error: `رفض Google Identity Toolkit التحقق من التوكن (${toolkitMsg}).${
+          certsFetchError ? ` [سبب فشل المفاتيح العامة: ${certsFetchError}]` : ''
+        }`,
+      };
+    } catch (netErr: any) {
+      return {
+        valid: false,
+        code: 'TOKEN_VERIFICATION_NETWORK_ERROR',
+        error: `تعذر الوصول إلى خوادم التحقق من Google (${netErr?.message || certsFetchError || 'Network error'}).`,
+      };
     }
-  } catch (netErr: any) {
-    console.warn('Identity toolkit network check notice:', netErr?.message);
   }
 
-  // Authoritative JWT payload fallback if accounts:lookup fails or has referrer restrictions
-  try {
-    const parts = idToken.split('.');
-    if (parts.length === 3) {
-      const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
-      const payload = JSON.parse(payloadJson);
-      const nowSec = Math.floor(Date.now() / 1000);
-
-      const isAudValid = payload.aud === firebaseConfig.projectId;
-      const isIssValid = payload.iss === `https://securetoken.google.com/${firebaseConfig.projectId}`;
-      const isNotExpired = typeof payload.exp === 'number' && payload.exp > nowSec;
-      const hasEmail = typeof payload.email === 'string' && payload.email.includes('@');
-
-      if (isAudValid && isIssValid && isNotExpired && hasEmail) {
-        return {
-          valid: true,
-          email: payload.email.toLowerCase(),
-          emailVerified: Boolean(payload.email_verified),
-          uid: payload.user_id || payload.sub,
-        };
-      }
-    }
-  } catch (jwtErr) {
-    console.warn('JWT fallback decode notice:', jwtErr);
-  }
-
-  return { valid: false, error: 'Firebase ID token verification failed' };
+  return {
+    valid: false,
+    code: 'TOKEN_VERIFICATION_UNAVAILABLE',
+    error: `فشل التحقق من التوكن: ${certsFetchError || 'تعذر جلب مفاتيح Google العامة'}`,
+  };
 }
 
 /**

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { contentAr, contentEn, Project, getProjectStatus, getProjectType, getVerifiedMetrics } from '@/lib/content';
+import { contentAr, contentEn, Project, getProjectStatus, getProjectType, getVerifiedMetrics, isBlockedLegacyProject } from '@/lib/content';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
 import { 
@@ -75,13 +75,16 @@ export default function ProjectsClientPage() {
           projectStatus: customMatch.projectStatus || p.projectStatus,
           status: customMatch.status || p.status,
           showOnSite: customMatch.showOnSite !== undefined ? customMatch.showOnSite : p.showOnSite,
+          verified: customMatch.verified !== undefined ? customMatch.verified : p.verified,
         };
       }
     }
     return p;
   });
 
-  const activeProjects = rawProjects.filter((p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false);
+  const activeProjects = rawProjects.filter(
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
+  );
 
   if (activeProjects.length === 0 || customConfig.showProjectsSection === false) {
     notFound();

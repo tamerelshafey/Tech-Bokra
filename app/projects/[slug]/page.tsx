@@ -4,20 +4,24 @@ import { notFound } from 'next/navigation';
 import ProjectDetailView from '@/components/ProjectDetailView';
 import { defaultEditableConfig } from '@/lib/siteConfig';
 import { fetchPublishedSiteSettings } from '@/lib/dbService';
-import { getProjectStatus, getProjectType, getVerifiedMetrics } from '@/lib/content';
+import { getProjectStatus, getProjectType, getVerifiedMetrics, isBlockedLegacyProject } from '@/lib/content';
 
 export const revalidate = false;
 export const dynamic = 'force-static';
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  const rawProjects = defaultEditableConfig.projectsList || [];
+  const publishedConfig = await fetchPublishedSiteSettings();
+  if (publishedConfig.showProjectsSection === false) {
+    return [];
+  }
+  const rawProjects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
   const publishedProjects = rawProjects.filter(
-    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
   const params: { slug: string }[] = [];
   const seen = new Set<string>();
@@ -46,7 +50,7 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
 
   const rawProjects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
   const publishedProjects = rawProjects.filter(
-    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
 
   const cleanSlug = slug.toLowerCase();
@@ -101,7 +105,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const rawProjects = publishedConfig.projectsList || defaultEditableConfig.projectsList || [];
   const publishedProjects = rawProjects.filter(
-    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
 
   const cleanSlug = slug.toLowerCase();

@@ -102,13 +102,40 @@ export function getVerifiedMetrics(p: Project): ProjectMetric[] {
   return verified;
 }
 
+export const BLOCKED_PROJECT_SLUGS: readonly string[] = [
+  'alrehla',
+  'alrehla-platform',
+  'contracting-ops-platform',
+  'helio-property',
+  'widad-tech',
+];
+
+export function isBlockedLegacyProject(p?: { id?: string; slug?: string } | null): boolean {
+  if (!p) return false;
+  const idLower = typeof p.id === 'string' ? p.id.trim().toLowerCase() : '';
+  const slugLower = typeof p.slug === 'string' ? p.slug.trim().toLowerCase() : '';
+  return BLOCKED_PROJECT_SLUGS.some(
+    (blocked) => blocked === idLower || (slugLower !== '' && blocked === slugLower)
+  );
+}
+
 /**
  * Check if there is any verified, active project.
  * When false, /projects route and projects sections are completely hidden from visitors.
  */
 export function hasVerifiedProjects(projects?: Project[]): boolean {
   const list = projects && Array.isArray(projects) && projects.length > 0 ? projects : contentAr.projects.list;
-  return Array.isArray(list) && list.some((p) => p && p.verified === true && p.isDraft !== true && p.showOnSite !== false);
+  return (
+    Array.isArray(list) &&
+    list.some(
+      (p) =>
+        p &&
+        !isBlockedLegacyProject(p) &&
+        p.verified === true &&
+        p.isDraft !== true &&
+        p.showOnSite !== false
+    )
+  );
 }
 
 export interface ServiceItem {

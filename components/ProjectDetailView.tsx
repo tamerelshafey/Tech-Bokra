@@ -22,7 +22,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCustomConfig } from '@/lib/useCustomConfig';
-import { Project, getProjectStatus, getVerifiedMetrics } from '@/lib/content';
+import { Project, getProjectStatus, getVerifiedMetrics, isBlockedLegacyProject } from '@/lib/content';
 
 export default function ProjectDetailView({ slug }: { slug: string }) {
   const { lang, isAr, toggleLanguage, data } = useLanguage();
@@ -34,15 +34,12 @@ export default function ProjectDetailView({ slug }: { slug: string }) {
   }
 
   // 1. Locate project from the authoritative portal version (Ar) and localized list (En/Ar)
-  // Filter first to published projects only (isDraft !== true && verified === true && showOnSite !== false)
+  // Filter first to published, verified, non-blocked projects only
   const rawListAr = customConfig.projectsList || [];
   const rawListEn = customConfig.projectsListEn || [];
 
   const publishedListAr = rawListAr.filter(
-    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
-  );
-  const publishedListEn = rawListEn.filter(
-    (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+    (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
   );
 
   const cleanSlug = slug.toLowerCase();
@@ -58,7 +55,7 @@ export default function ProjectDetailView({ slug }: { slug: string }) {
   // 2. Select language-specific content
   const localizedCandidate = isAr 
     ? portalProjectAr 
-    : publishedListEn.find((p) => p.id === portalProjectAr.id) || portalProjectAr;
+    : rawListEn.find((p) => p.id === portalProjectAr.id && !isBlockedLegacyProject(p)) || portalProjectAr;
 
   // 3. Merge live cloud overrides from portal version for both languages
   const project: Project = {
@@ -70,6 +67,7 @@ export default function ProjectDetailView({ slug }: { slug: string }) {
     projectStatus: portalProjectAr.projectStatus,
     status: portalProjectAr.status,
     showOnSite: portalProjectAr.showOnSite,
+    verified: portalProjectAr.verified,
   };
 
 

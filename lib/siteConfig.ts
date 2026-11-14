@@ -1,4 +1,4 @@
-import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem } from '@/lib/content';
+import { siteConfig as defaultSiteConfig, contentAr, contentEn, Project, ServiceItem, BLOCKED_PROJECT_SLUGS } from '@/lib/content';
 import { LogoEmblemStyle } from '@/components/TechBokraLogo';
 
 export interface MediaVaultItem {
@@ -126,45 +126,50 @@ export interface EditableConfig {
 
 export const CURRENT_CONTENT_VERSION = 4;
 
-export const LEGACY_PROJECT_IDS: readonly string[] = [
-  'alrehla',
-  'alrehla-platform',
-  'contracting-ops-platform',
-  'helio-property',
-  'widad-tech',
-];
+export const LEGACY_PROJECT_IDS: readonly string[] = BLOCKED_PROJECT_SLUGS;
 
 /**
  * Merge two collections of items by unique 'id'.
- * If seed has an equal or higher seedRevision, updates to the corrected seed version
+ * If seed has a strictly higher seedRevision than cloud item, updates to the corrected seed version
  * while preserving custom administrator visibility and draft flags.
- * Ignores any legacy IDs passed via ignoredIds to purge stale cloud entries safely.
+ * When cloud item has an equal or higher seedRevision (saved by Admin CMS on current version),
+ * preserves all admin customizations including `verified`.
+ * Ignores any legacy IDs or slugs passed via ignoredIds to purge stale cloud entries safely.
  */
 export function mergeCollectionsById<T extends { id: string; seedRevision?: number }>(
   seedList: T[], 
   cloudList?: T[],
   ignoredIds?: readonly string[] | string[]
 ): T[] {
-  const ignoredSet = new Set<string>(ignoredIds || []);
+  const ignoredSet = new Set<string>((ignoredIds || []).map((id) => id.trim().toLowerCase()));
+
+  const isIgnored = (item: any): boolean => {
+    if (!item || !item.id) return true;
+    const idL = String(item.id).trim().toLowerCase();
+    const slugL = typeof item.slug === 'string' ? item.slug.trim().toLowerCase() : '';
+    return ignoredSet.has(idL) || (slugL !== '' && ignoredSet.has(slugL));
+  };
 
   if (!cloudList || !Array.isArray(cloudList) || cloudList.length === 0) {
     if (ignoredSet.size > 0) {
-      return seedList.filter((s) => s && s.id && !ignoredSet.has(s.id));
+      return seedList.filter((s) => !isIgnored(s));
     }
     return seedList;
   }
 
   const seedById = new Map<string, T>();
-  for (const s of seedList) if (s && s.id && !ignoredSet.has(s.id)) seedById.set(s.id, s);
+  for (const s of seedList) {
+    if (!isIgnored(s)) seedById.set(s.id, s);
+  }
 
   const processedIds = new Set<string>(ignoredSet);
   const merged: T[] = [];
 
   for (const item of cloudList) {
-    if (!item || !item.id || processedIds.has(item.id)) continue;
+    if (isIgnored(item) || processedIds.has(item.id)) continue;
     const seed = seedById.get(item.id);
-    if (seed && (seed.seedRevision ?? 0) >= (item.seedRevision ?? 0)) {
-      // الكود أحدث أو مكافئ: نستبدل النسخة القديمة مع الإبقاء على اختيارات المشرف للإظهار والمسودة
+    if (seed && (seed.seedRevision ?? 0) > (item.seedRevision ?? 0)) {
+      // الكود أحدث من بيانات السحابة القديمة: نستبدل النسخة القديمة مع الإبقاء على خيارات الإظهار والمسودة
       const keep: Record<string, unknown> = {};
       const flags = item as unknown as Record<string, unknown>;
       if (flags.showOnSite !== undefined) keep.showOnSite = flags.showOnSite;
@@ -183,7 +188,7 @@ export function mergeCollectionsById<T extends { id: string; seedRevision?: numb
   }
 
   for (const s of seedList) {
-    if (s && s.id && !processedIds.has(s.id)) {
+    if (!isIgnored(s) && !processedIds.has(s.id)) {
       merged.push(s);
       processedIds.add(s.id);
     }

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SUB_SERVICES, SERVICE_CATEGORIES } from '@/lib/services';
-import { hasVerifiedProjects } from '@/lib/content';
+import { hasVerifiedProjects, isBlockedLegacyProject } from '@/lib/content';
 import { fetchPublishedSiteSettings } from '@/lib/dbService';
 
 export const revalidate = false;
@@ -47,10 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  // Dedicated dynamic projects pages (published only, deduplicated by slug)
+  // Dedicated dynamic projects pages (published & verified only, deduplicated by slug)
   const publishedProjects = showProjects && liveConfig.projectsList
     ? liveConfig.projectsList.filter(
-        (p) => p.isDraft !== true && p.verified === true && p.showOnSite !== false
+        (p) => !isBlockedLegacyProject(p) && p.isDraft !== true && p.verified === true && p.showOnSite !== false
       )
     : [];
 
