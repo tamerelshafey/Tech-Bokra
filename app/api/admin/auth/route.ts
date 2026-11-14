@@ -5,12 +5,11 @@ import {
   verifyFirebaseIdToken,
   isEmailAuthorizedAdmin,
   isSessionSecretConfigured,
-  isHttpsRequest,
+  getSessionCookieOptions,
   checkLoginRateLimit,
   recordFailedLogin,
   resetLoginRateLimit,
   getClientIp,
-  SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
 } from '@/lib/serverAuth';
 
@@ -133,7 +132,6 @@ export async function POST(req: NextRequest) {
     };
 
     const signedToken = signSessionPayload(payload);
-    const secureCookie = isHttpsRequest(req);
 
     const response = NextResponse.json({
       success: true,
@@ -143,15 +141,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 8. Issue httpOnly, SameSite=Lax cookie (secure=false on http://localhost, secure=true on HTTPS, no explicit Domain)
+    // 8. Issue httpOnly cookie (SameSite=None; Secure for preview iframes, SameSite=Lax on localhost & direct production)
     response.cookies.set({
-      name: SESSION_COOKIE_NAME,
+      ...getSessionCookieOptions(req, SESSION_MAX_AGE_SECONDS),
       value: signedToken,
-      httpOnly: true,
-      secure: secureCookie,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_MAX_AGE_SECONDS,
     });
 
     console.info(`[ADMIN LOGIN SUCCESS] Admin ${verifiedEmail} authenticated from IP: ${ip}`);
@@ -198,16 +191,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const secureCookie = isHttpsRequest(req);
   const response = NextResponse.json({ success: true, message: 'Admin session terminated' });
   response.cookies.set({
-    name: SESSION_COOKIE_NAME,
+    ...getSessionCookieOptions(req, 0),
     value: '',
-    httpOnly: true,
-    secure: secureCookie,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
   });
   return response;
 }

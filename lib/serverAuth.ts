@@ -62,6 +62,26 @@ export function isHttpsRequest(req: NextRequest | Request): boolean {
 }
 
 /**
+ * Determine cookie attributes for tb_admin_session across localhost HTTP,
+ * AI Studio HTTPS preview iframes (*.run.app), and standard production domains.
+ */
+export function getSessionCookieOptions(req: NextRequest | Request, maxAge: number) {
+  const secure = isHttpsRequest(req);
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').toLowerCase().split(':')[0];
+  const secFetchDest = (req.headers.get('sec-fetch-dest') || '').toLowerCase();
+  const isAiStudioPreview = host.endsWith('.run.app') || secFetchDest === 'iframe';
+
+  return {
+    name: SESSION_COOKIE_NAME,
+    httpOnly: true,
+    secure,
+    sameSite: (secure && isAiStudioPreview ? 'none' : 'lax') as 'none' | 'lax',
+    path: '/',
+    maxAge,
+  };
+}
+
+/**
  * In-memory IP-based rate limiting for authentication attempts.
  * Maximum 5 failed attempts per 15-minute window per IP.
  */
